@@ -1,52 +1,55 @@
 #include <Arduino.h>
 #include "M5StickCPlus2.h"
 #include "../lib/Pet/pet.h"
+#include "../lib/Display/display_manager.h"
 
-// Global pet instance
+// Global instances
 Pet myPet;
-
+DisplayManager display;
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);  // Initialize serial for debugging
-  
-  // Initialize pet (already done in constructor)
-  Serial.println("Virtual Pet initialized!");
-  
-  // Example: Check initial pet state
-  Serial.print("Pet happiness: ");
-  Serial.println(myPet.getHappy());
-  
+  // Initialize M5Stick C Plus2
+  M5.begin();
+
+  // Initialize display
+  display.init();
+
+  // Show initialization message
+  display.showMessage("Virtual Pet initialized!");
+
+  // Small delay to show message
+  delay(2000);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  
+  M5.update();  // Update M5Stick C Plus2 state
+
   // Example pet interactions
   static unsigned long lastUpdate = 0;
   if (millis() - lastUpdate > 5000) {  // Every 5 seconds
     // Simulate pet getting hungry over time
     myPet.setHungry(myPet.getHungry() + 5);
-    
-    // Print current dominant mood
-    int mood = myPet.getDominantMood();
-    Serial.print("Pet mood: ");
-    switch(mood) {
-      case 0: Serial.println("Hungry"); break;
-      case 1: Serial.println("Tired"); break;
-      case 2: Serial.println("Happy"); break;
-      case 3: Serial.println("Sick"); break;
-      case 4: Serial.println("Sad"); break;
-      case 5: Serial.println("Clean"); break;
-      case 6: Serial.println("Energised"); break;
-    }
-    
+
+    // Update display with current pet status
+    display.showPetStatus(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised());
+    display.showPetMood(myPet.getDominantMood());
+
     lastUpdate = millis();
   }
-  
-  // Example: Feed pet when button A is pressed (you'll need to add button handling)
-  // if (M5.BtnA.wasPressed()) {
-  //   myPet.feed();
-  //   Serial.println("Fed the pet!");
-  // }
+
+  // Example: Feed pet when button A is pressed
+  if (M5.BtnA.wasPressed()) {
+    myPet.feed();
+    display.showActionFeedback("Fed the pet!");
+    delay(1000);  // Show feedback briefly
+  }
+
+  // Example: Play with pet when button B is pressed
+  if (M5.BtnB.wasPressed()) {
+    myPet.play();
+    display.showActionFeedback("Played with pet!");
+    delay(1000);  // Show feedback briefly
+  }
 }
+  // }
+
