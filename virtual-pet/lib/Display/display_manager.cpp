@@ -1,7 +1,14 @@
 #include "display_manager.h"
+#include "../Actions/action_menu.h"
 
 // Constructor
-DisplayManager::DisplayManager() {
+DisplayManager::DisplayManager() 
+    : currentState(DisplayState::STATUS_VIEW),
+      lastStatusUpdate(0),
+      lastHappiness(0),
+      lastHunger(0),
+      lastEnergy(0),
+      lastMoodIndex(0) {
     // Constructor - initialization handled in init()
 }
 
@@ -20,6 +27,86 @@ void DisplayManager::clearScreen() {
 void DisplayManager::clearScreen(uint32_t color) {
     M5.Lcd.clear(color);
 }
+
+// Fill a rectangular region with a color
+void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t color) {
+    M5.Lcd.fillRect(x, y, width, height, color);
+}
+
+// Set the current display state
+void DisplayManager::setDisplayState(DisplayState newState) {
+    currentState = newState;
+}
+
+// Get the current display state
+DisplayState DisplayManager::getDisplayState() const {
+    return currentState;
+}
+
+// Check if enough time has passed to update the status display
+bool DisplayManager::shouldUpdateStatusDisplay() {
+    unsigned long currentTime = millis();
+    if (currentTime - lastStatusUpdate >= STATUS_UPDATE_INTERVAL) {
+        lastStatusUpdate = currentTime;
+        return true;
+    }
+    return false;
+}
+
+// Render the entire display based on current state
+// This is the main coordinated render function
+void DisplayManager::renderFrame(int happiness, int hunger, int energy, int moodIndex) {
+    // Only update if status has changed or if it's time for a refresh
+    if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
+        // Clear once for full status update
+        clearScreen();
+        showPetStatus(happiness, hunger, energy);
+        showPetMood(moodIndex);
+        lastHappiness = happiness;
+        lastHunger = hunger;
+        lastEnergy = energy;
+        lastMoodIndex = moodIndex;
+    }
+}
+
+// Unified display render - renders pet status AND menu indicator together at same refresh rate
+// This eliminates flickering caused by separate render calls at different frequencies
+void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu) {
+    // Only update if it's time for a refresh (every 5 seconds)
+    if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
+        // Clear entire screen once
+        clearScreen();
+        
+        // Render pet status
+        showPetStatus(happiness, hunger, energy);
+        showPetMood(moodIndex);
+        
+        // Render menu indicator overlay on same update cycle
+        drawMenuIndicator(menu, 5, 220);
+        
+        // Cache current values
+        lastHappiness = happiness;
+        lastHunger = hunger;
+        lastEnergy = energy;
+        lastMoodIndex = moodIndex;
+    }
+}
+
+// Draw menu indicator - moved to DisplayManager for coordinated rendering
+void DisplayManager::drawMenuIndicator(const ActionMenu& menu, int x, int y) {
+    Action selectedAction = menu.getSelectedAction();
+    
+    // Clear only the indicator area before redrawing
+    fillRect(x, y, 130, 20, TFT_BLACK);
+    
+    // Draw small box around the indication area
+    M5.Lcd.drawRect(x, y, 130, 20, TFT_CYAN);
+    
+    // Show selected action name in small text
+    printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
+    printText(selectedAction.name, x + 50, y + 4, TFT_YELLOW, 1);
+}
+
 
 // Print text at specific coordinates
 void DisplayManager::printText(const char* text, int x, int y, uint32_t color, uint8_t size) {
@@ -50,10 +137,8 @@ void DisplayManager::printCenteredText(const char* text, int y, uint32_t color, 
     M5.Lcd.print(text);
 }
 
-// Show pet status information
+// Show pet status information (does not clear screen - must be called by renderFrame)
 void DisplayManager::showPetStatus(int happiness, int hunger, int energy) {
-    clearScreen();
-
     // Title
     printCenteredText("Virtual Pet", 10, TFT_YELLOW, 2);
 
@@ -77,7 +162,7 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy) {
     drawStatusBar(energy, 100, 5, 110, 100, TFT_BLUE);
 }
 
-// Show current pet mood
+// Show current pet mood (does not clear screen - called by renderFrame after showPetStatus)
 void DisplayManager::showPetMood(int moodIndex) {
     const char* moodText;
     uint32_t moodColor;
