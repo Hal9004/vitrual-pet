@@ -18,3 +18,28 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Compiled files and build artifacts
+*.o
+*.a
+*.elf
+*.hex
+*.bin
+*.elf.map
+*.d
+
+# IDE and editor files
+.idea/
+*.sublime-workspace
+*.sublime-project
+.clangd/
+compile_commands.json
+
+# Dependency directories
+node_modules/
+/dependencies/
+
+# Temporary and backup files
+*.bak
+*.tmp
+*.log
