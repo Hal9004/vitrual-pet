@@ -4,12 +4,15 @@
 #include "../lib/Display/display_manager.h"
 #include "../lib/Button/button_handler.h"
 #include "../lib/Actions/action_menu.h"
+#include "../lib/Timer/time_manager.h"
 
-// Global instances
-Pet myPet;
-DisplayManager display;
-ButtonHandler buttons;
-ActionMenu menu;
+// Global instances — one object per system area.
+// Each manager is responsible for exactly one job.
+Pet myPet;               // Holds all of the pet's stats and care actions.
+DisplayManager display;  // Draws everything to the screen.
+ButtonHandler buttons;   // Reads and tracks button presses.
+ActionMenu menu;         // Manages the list of actions the player can choose.
+TimerManager timers;     // Handles all automatic stat changes over time.
 
 void setup() {
   // Initialize M5Stick C Plus2
@@ -36,13 +39,9 @@ void loop() {
   // This eliminates flickering caused by separate render calls
   display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getDominantMood(), menu);
   
-  // Regularly update hunger simulation
-  static unsigned long lastHungerUpdate = 0;
-  if (millis() - lastHungerUpdate > 3000) {  // Every 3 seconds
-    // Simulate pet getting hungry over time
-    myPet.setHungry(myPet.getHungry() + 2);
-    lastHungerUpdate = millis();
-  }
+  // Run all automatic stat changes (hunger increase, happiness decay, etc.).
+  // The rules for what changes and how fast live in TimerManager, not here.
+  timers.update(myPet);
 
   // Confirm action with Button A
   if (buttons.wasButtonAPressed()) {
