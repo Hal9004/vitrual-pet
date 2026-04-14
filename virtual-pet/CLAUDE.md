@@ -47,7 +47,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Energy auto-drain timer — add `applyEnergyDrain()` to `lib/Timer/time_manager.cpp`. Full step-by-step instructions are in DEV_ROADMAP.md Part 4.
+**Next task on the queue:** Death / Reset condition (Task 3) — check for critical stats reaching 0 or 100 and handle pet death. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 
@@ -62,3 +62,68 @@ For any animation faster than the current 5-second status refresh, draw to an of
 
 **4 — Every `lib/` `.cpp` file needs `#include <Arduino.h>`.**
 PlatformIO does not inject Arduino functions automatically into library files. `millis()`, `delay()`, `pinMode()` etc. will fail to compile without this include at the top of the file.
+
+## Git Strategy
+
+The git history is part of the curriculum. A student reading `git log` should be able to see exactly what changed at each step and understand why. Clear branches and commit messages also make it safe to experiment — if something goes wrong on a branch, you can delete it and start the task again without touching working code on `main`.
+
+### Branch naming
+
+Every task gets its own branch before any code is written. Use the task number from the complexity queue in `DEV_ROADMAP.md`:
+
+```
+task/N-short-description
+```
+
+Examples: `task/3-death-reset-condition`, `task/4-state-machine`, `task/8-buzzer-sound-feedback`
+
+```
+git checkout -b task/3-death-reset-condition
+```
+
+### Commit message format
+
+```
+<type>: <short summary in present tense, under 72 characters>
+
+<1–3 sentences explaining what changed and why it was necessary>
+```
+
+The body answers "why was this necessary?" not just "what did I type?". The type prefix must be one of:
+
+| Type | Use it when |
+|---|---|
+| `feat:` | Adding new working functionality |
+| `fix:` | Correcting something broken or incorrect |
+| `docs:` | Updating comments, README, CLAUDE.md, or roadmap files only |
+| `chore:` | Build config, `.gitignore`, or file organisation with no behaviour change |
+| `refactor:` | Restructuring code without changing its observable behaviour |
+
+### Atomic commits — one logical change per commit
+
+Commit one complete, logical change at a time. If you find yourself writing "and" in the commit subject line, split it into two commits.
+
+### Merge rule
+
+`main` always contains working code. Test the feature on the device before merging a branch back to `main`. If you discover a bug after merging, create a `fix/` branch to fix it rather than pushing directly to `main`.
+
+### Everyday workflow
+
+```
+# 1. Start from a clean main
+git checkout main
+
+# 2. Create a branch for the task
+git checkout -b task/3-death-reset-condition
+
+# 3. Work, committing one logical change at a time
+git add lib/Pet/pet.h lib/Pet/pet.cpp
+git commit -m "feat: add isDead() — returns true when hunger hits 100 or energy hits 0
+
+The pet had no way to detect a critical stat. This is the first step
+toward a proper death and reset flow so the game loop can respond."
+
+# 4. Test on device, then merge back when working
+git checkout main
+git merge task/3-death-reset-condition
+```
