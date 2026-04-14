@@ -15,13 +15,21 @@ const unsigned long HAPPINESS_DECAY_INTERVAL = 5000;
 // How many points happiness drops each interval.
 const int HAPPINESS_DECAY_AMOUNT = 1;
 
+// How many milliseconds between each energy drain.
+// 8000 ms = 8 seconds.
+const unsigned long ENERGY_DRAIN_INTERVAL = 8000;
+
+// How many points energy drops each interval.
+const int ENERGY_DRAIN_AMOUNT = 1;
+
 
 // Constructor — initialise all timestamps to 0.
 // Setting them to 0 means the first check in update() will always find
 // that "enough time has passed", so the first decay fires immediately.
 TimerManager::TimerManager()
     : lastHungerIncreaseTime(0),
-      lastHappinessDecayTime(0) {
+      lastHappinessDecayTime(0),
+      lastEnergyDrainTime(0) {
 }
 
 
@@ -31,6 +39,7 @@ TimerManager::TimerManager()
 void TimerManager::update(Pet& pet) {
     applyHungerIncrease(pet);
     applyHappinessDecay(pet);
+    applyEnergyDrain(pet);
 }
 
 
@@ -56,5 +65,18 @@ void TimerManager::applyHappinessDecay(Pet& pet) {
     if (currentTime - lastHappinessDecayTime > HAPPINESS_DECAY_INTERVAL) {
         pet.setHappy(pet.getHappy() - HAPPINESS_DECAY_AMOUNT);
         lastHappinessDecayTime = currentTime;
+    }
+}
+
+
+// applyEnergyDrain()
+// Checks whether ENERGY_DRAIN_INTERVAL milliseconds have passed since
+// energy was last decreased. If yes, decreases energy and resets the timer.
+void TimerManager::applyEnergyDrain(Pet& pet) {
+    unsigned long currentTime = millis();
+
+    if (currentTime - lastEnergyDrainTime > ENERGY_DRAIN_INTERVAL) {
+        pet.setEnergised(pet.getEnergised() - ENERGY_DRAIN_AMOUNT);
+        lastEnergyDrainTime = currentTime;
     }
 }

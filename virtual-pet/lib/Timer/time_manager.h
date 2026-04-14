@@ -37,6 +37,9 @@ private:
     // Tracks when happiness was last decreased.
     unsigned long lastHappinessDecayTime;
 
+    // Tracks when energy was last decreased.
+    unsigned long lastEnergyDrainTime;
+
     // -----------------------------------------------------------------
     // Private helper methods — one per stat that changes automatically.
     // Keeping each rule in its own function makes them easy to find,
@@ -50,4 +53,8 @@ private:
     // Decreases happiness by a fixed amount every few seconds.
     // The pet gets sad if you ignore it.
     void applyHappinessDecay(Pet& pet);
+
+    // Decreases energy by a fixed amount every few seconds.
+    // The pet gets tired over time whether you interact with it or not.
+    void applyEnergyDrain(Pet& pet);
 };
