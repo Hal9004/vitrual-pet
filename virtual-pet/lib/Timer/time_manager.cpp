@@ -29,6 +29,16 @@ const unsigned long CLEANLINESS_DECAY_INTERVAL = 10000;
 // How many points cleanliness drops each interval.
 const int CLEANLINESS_DECAY_AMOUNT = 1;
 
+// How many milliseconds between each sickness increase (when cleanliness is low).
+// 12000 ms = 12 seconds.
+const unsigned long SICKNESS_ACCUMULATION_INTERVAL = 12000;
+
+// How many points sick rises each interval.
+const int SICKNESS_ACCUMULATION_AMOUNT = 1;
+
+// Cleanliness must fall below this value before sickness starts accumulating.
+const int CLEANLINESS_DANGER_THRESHOLD = 30;
+
 
 // Constructor — initialise all timestamps to 0.
 // Setting them to 0 means the first check in update() will always find
@@ -37,7 +47,8 @@ TimerManager::TimerManager()
     : lastHungerIncreaseTime(0),
       lastHappinessDecayTime(0),
       lastEnergyDrainTime(0),
-      lastCleanlinessDecayTime(0) {
+      lastCleanlinessDecayTime(0),
+      lastSicknessAccumulationTime(0) {
 }
 
 
@@ -49,6 +60,7 @@ void TimerManager::update(Pet& pet) {
     applyHappinessDecay(pet);
     applyEnergyDrain(pet);
     applyCleanlinessDecay(pet);
+    applySicknessAccumulation(pet);
 }
 
 
@@ -101,5 +113,20 @@ void TimerManager::applyCleanlinessDecay(Pet& pet) {
     if (currentTime - lastCleanlinessDecayTime > CLEANLINESS_DECAY_INTERVAL) {
         pet.setCleanliness(pet.getCleanliness() - CLEANLINESS_DECAY_AMOUNT);
         lastCleanlinessDecayTime = currentTime;
+    }
+}
+
+
+// applySicknessAccumulation()
+// Increases sick only when cleanliness has fallen below CLEANLINESS_DANGER_THRESHOLD.
+// A dirty pet gradually becomes unwell — the player must bathe it to stop this.
+void TimerManager::applySicknessAccumulation(Pet& pet) {
+    unsigned long currentTime = millis();
+
+    if (pet.getCleanliness() < CLEANLINESS_DANGER_THRESHOLD) {
+        if (currentTime - lastSicknessAccumulationTime > SICKNESS_ACCUMULATION_INTERVAL) {
+            pet.setSick(pet.getSick() + SICKNESS_ACCUMULATION_AMOUNT);
+            lastSicknessAccumulationTime = currentTime;
+        }
     }
 }

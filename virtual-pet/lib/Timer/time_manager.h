@@ -43,6 +43,9 @@ private:
     // Tracks when cleanliness was last decreased.
     unsigned long lastCleanlinessDecayTime;
 
+    // Tracks when sickness was last increased.
+    unsigned long lastSicknessAccumulationTime;
+
     // -----------------------------------------------------------------
     // Private helper methods — one per stat that changes automatically.
     // Keeping each rule in its own function makes them easy to find,
@@ -64,4 +67,8 @@ private:
     // Decreases cleanliness by a fixed amount every few seconds.
     // The pet gets dirty over time and needs bathing.
     void applyCleanlinessDecay(Pet& pet);
+
+    // Increases sickness when cleanliness is dangerously low.
+    // A dirty pet gradually becomes unwell — bathing prevents this.
+    void applySicknessAccumulation(Pet& pet);
 };
