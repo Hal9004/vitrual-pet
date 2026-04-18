@@ -29,17 +29,26 @@ void setup() {
 }
 
 void loop() {
-  M5.update();  // Update M5Stick C Plus2 state
-  buttons.update();  // Update button states
+  M5.update();      // Read the latest hardware state (buttons, IMU, etc.)
+  buttons.update(); // Detect which buttons were pressed this frame
 
-  // Handle menu navigation (buttons A and B cycle through actions)
+  // Render the display first — passing isDead() lets DisplayManager decide what to show.
+  // This must run every frame regardless of pet state so the screen is never skipped.
+  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getDominantMood(), menu, myPet.isDead());
+
+  // If the pet is dead, only check for the restart button then exit early.
+  // The early return skips timers and menu navigation while the pet is in the dead state.
+  if (myPet.isDead()) {
+    if (buttons.wasButtonAPressed()) {
+      myPet.reset();
+    }
+    return;
+  }
+
+  // Handle menu navigation (buttons B and C cycle through actions)
   menu.update(buttons);
 
-  // Unified display render - renders pet status and menu indicator at same refresh rate
-  // This eliminates flickering caused by separate render calls
-  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getDominantMood(), menu);
-  
-  // Run all automatic stat changes (hunger increase, happiness decay, etc.).
+  // Run all automatic stat changes (hunger increase, happiness decay, energy drain).
   // The rules for what changes and how fast live in TimerManager, not here.
   timers.update(myPet);
 
@@ -48,5 +57,4 @@ void loop() {
     menu.confirmAction(myPet, display);
   }
 }
-  // }
 

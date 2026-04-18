@@ -9,7 +9,8 @@ class ActionMenu;
 // Display state enum for coordinating what should be rendered
 enum class DisplayState {
     STATUS_VIEW,      // Showing pet status as primary view
-    MENU_INDICATOR    // Showing menu indicator overlay
+    MENU_INDICATOR,   // Showing menu indicator overlay
+    DEAD              // Showing the game-over death screen
 };
 
 class DisplayManager {
@@ -54,15 +55,18 @@ public:
     // Coordinated render function
     void renderFrame(int happiness, int hunger, int energy, int moodIndex);
 
-    // Unified display render - handles both pet status and menu indicator
-    // Call this once per loop to render everything at the same refresh rate
-    void renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu);
+    // Unified display render - handles status view, menu indicator, and death screen.
+    // Call this once per loop. petIsDead controls which screen is shown.
+    void renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu, bool petIsDead);
 
     // Pet-specific display functions
     void showPetStatus(int happiness, int hunger, int energy);
     void showPetMood(int moodIndex);
     void showMessage(const char* message);
     void showActionFeedback(const char* action);
+
+    // Shows the game-over screen when the pet has died
+    void showDeathScreen();
 
     // Menu indicator rendering
     void drawMenuIndicator(const ActionMenu& menu, int x, int y);

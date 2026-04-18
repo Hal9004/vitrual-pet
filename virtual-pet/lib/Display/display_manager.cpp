@@ -69,22 +69,37 @@ void DisplayManager::renderFrame(int happiness, int hunger, int energy, int mood
     }
 }
 
-// Unified display render - renders pet status AND menu indicator together at same refresh rate
-// This eliminates flickering caused by separate render calls at different frequencies
-void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu) {
-    // Only update if it's time for a refresh (every 5 seconds)
+// Unified display render - renders pet status AND menu indicator together at same refresh rate.
+// Also handles the death screen. Comparing currentState before drawing prevents redrawing
+// the same screen every frame, which is what causes LCD flicker.
+void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu, bool petIsDead) {
+    // --- Death state ---
+    // If the pet just died, draw the death screen once and stop.
+    // The currentState check means we only draw on the first frame of death, not every frame.
+    if (petIsDead) {
+        if (currentState != DisplayState::DEAD) {
+            currentState = DisplayState::DEAD;
+            showDeathScreen();
+        }
+        return;
+    }
+
+    // --- Revival: coming back from dead state ---
+    // The pet was just reset. Switch back to STATUS_VIEW and clear lastStatusUpdate
+    // so the normal screen redraws immediately instead of waiting up to 5 seconds.
+    if (currentState == DisplayState::DEAD) {
+        currentState = DisplayState::STATUS_VIEW;
+        lastStatusUpdate = 0;
+    }
+
+    // --- Normal alive render ---
+    // Only redraw every STATUS_UPDATE_INTERVAL milliseconds to avoid flicker.
     if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
-        // Clear entire screen once
         clearScreen();
-        
-        // Render pet status
         showPetStatus(happiness, hunger, energy);
         showPetMood(moodIndex);
-        
-        // Render menu indicator overlay on same update cycle
         drawMenuIndicator(menu, 5, 220);
-        
-        // Cache current values
+
         lastHappiness = happiness;
         lastHunger = hunger;
         lastEnergy = energy;
@@ -205,6 +220,24 @@ void DisplayManager::drawStatusBar(int value, int maxValue, int x, int y, int wi
     if (fillWidth > 0) {
         M5.Lcd.fillRect(x, y, fillWidth, 10, color);
     }
+}
+
+// showDeathScreen()
+// Clears the screen and displays a game-over message with restart instructions.
+// Resets lastStatusUpdate so the normal status screen redraws immediately after restart.
+void DisplayManager::showDeathScreen() {
+    clearScreen(TFT_BLACK);
+
+    // Red title to signal the pet has died
+    printCenteredText("Your pet", 60, TFT_RED, 2);
+    printCenteredText("has died!", 85, TFT_RED, 2);
+
+    // Instruction line below
+    printCenteredText("Press A to", 130, TFT_WHITE, 2);
+    printCenteredText("restart", 155, TFT_WHITE, 2);
+
+    // Force a full status redraw on the next loop after the player restarts
+    lastStatusUpdate = 0;
 }
 
 // Draw a simple pet face based on mood
