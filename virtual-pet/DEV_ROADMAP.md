@@ -26,8 +26,8 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING) | ❌ Missing | No `PetState` enum exists. The `Pet` class only tracks numeric stats, not behavioural states |
 | Hunger Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHungerIncrease()` |
 | Happiness Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHappinessDecay()` |
-| Energy/Sleep Logic (recovery vs. depletion) | ⚠️ Partial | Manual energy change exists in `pet.cpp` actions but no automatic decay over time |
-| Death/Reset Condition (handle 0 stats) | ❌ Missing | No check anywhere for critical stats reaching 0 |
+| Energy/Sleep Logic (recovery vs. depletion) | ✅ Done | Auto-drain in `lib/Timer/time_manager.cpp` → `applyEnergyDrain()`. Manual recovery via `pet.cpp` → `sleep()` |
+| Death/Reset Condition (handle 0 stats) | ✅ Done | `lib/Pet/pet.h` → `isDead()` / `reset()`. Death screen routed through `display_manager.cpp` → `renderDisplay()` |
 
 ### Phase 3: Interaction & Menu System
 
@@ -65,11 +65,11 @@ Tasks ordered from **easiest** to **hardest** so a student always has a clear ne
 ```
 LEVEL 1 — COPY THE PATTERN (no new concepts)
   1. Happiness auto-decay timer        ✅ Done
-  2. Energy auto-drain timer           ← ★ NEXT TASK (see Part 4)
-  3. Death / Reset condition
+  2. Energy auto-drain timer           ✅ Done
+  3. Death / Reset condition           ✅ Done
 
 LEVEL 2 — SMALL NEW CONCEPT
-  4. State Machine Architecture        (new: enum + switch statement)
+  4. State Machine Architecture        ← ★ NEXT TASK (new: enum + switch statement)
   5. Screen Real Estate constants      (new: named layout constants, no more magic numbers)
 
 LEVEL 3 — NEW HARDWARE API (library already in project)
@@ -200,57 +200,97 @@ void drawFrame() {
 
 ## Part 4 — Next Best Foundational Task
 
-**Task: Energy auto-drain timer**
+**Task: State Machine Architecture (Task 4)**
 
 **Why this task next?**
 
-Energy drain is the natural third timer because:
+The pet currently tracks numbers but has no concept of what it is *doing*. A state machine fixes that:
 
-1. **The pattern is now fully established.** The student has seen hunger increase and happiness decrease. Energy drain is a third repetition of the exact same pattern — `applyEnergyDrain()` added to `time_manager.cpp` alongside the two existing methods.
-2. **It introduces a twist.** Energy should drain faster when the pet is playing and slower at rest. This is still the same millis pattern, but the student can start thinking about *variable rates* — a small step toward the state machine in task 4.
-3. **It completes the three main visible bars.** All three status bars on screen (Happiness, Hunger, Energy) will then be live and changing, making the pet feel genuinely dynamic for the first time.
+1. **It introduces one new concept at a time.** The student learns `enum` (a named list of states) and `switch` (a clean way to branch on it) — nothing else.
+2. **It unlocks everything above it.** Evolution (task 9) needs a state to transition through. Animations need a state to key off. Without it, every future feature adds more `if` chains.
+3. **The pattern is universally reusable.** A switch-based state machine appears in almost every embedded project. Learning it here pays off far beyond this pet.
 
-**Exactly where to add the code — `lib/Timer/time_manager.cpp`:**
+**Exactly where to add the code:**
 
-Step 1 — Add two new constants at the top of the file alongside the existing ones:
+Step 1 — Add the enum to `lib/Pet/pet.h` before the class declaration:
 ```cpp
-// How many milliseconds between each energy drain.
-const unsigned long ENERGY_DRAIN_INTERVAL = 8000;  // Every 8 seconds
-
-// How many points energy drops each interval.
-const int ENERGY_DRAIN_AMOUNT = 1;
+// PetState — the list of behaviours the pet can currently be doing.
+// Only one state is active at a time.
+enum PetState {
+    STATE_IDLE,      // Default — pet is awake but doing nothing
+    STATE_EATING,    // Triggered by feed() — pet is eating
+    STATE_SLEEPING,  // Triggered by sleep() — pet is resting
+    STATE_EVOLVING   // Reserved for future evolution logic (task 9)
+};
 ```
 
-Step 2 — Add a new private member variable to `time_manager.h`:
+Step 2 — Add a `currentState` member and interface to the `Pet` class in `pet.h`:
 ```cpp
-// Tracks when energy was last decreased.
-unsigned long lastEnergyDrainTime;
+private:
+    PetState currentState;   // Which behaviour the pet is currently in
+
+public:
+    PetState getState() const;         // Returns the current state
+    void setState(PetState newState);  // Changes the current state
+    void updateState();                // Runs the switch handler each loop
 ```
 
-Step 3 — Initialise it to 0 in the constructor in `time_manager.cpp`:
+Step 3 — Initialise it in the constructor in `pet.cpp`:
 ```cpp
-TimerManager::TimerManager()
-    : lastHungerIncreaseTime(0),
-      lastHappinessDecayTime(0),
-      lastEnergyDrainTime(0) {   // <-- add this line
+Pet::Pet() : hungry(20), tired(20), happy(80), sick(0), sad(0),
+             cleanliness(80), energised(80), currentState(STATE_IDLE) {
 }
 ```
 
-Step 4 — Add the new method and call it from `update()`:
+Step 4 — Add the switch handler in `pet.cpp`:
 ```cpp
-// applyEnergyDrain()
-// Checks whether ENERGY_DRAIN_INTERVAL milliseconds have passed since
-// energy was last decreased. If yes, decreases energy and resets the timer.
-void TimerManager::applyEnergyDrain(Pet& pet) {
-    unsigned long currentTime = millis();
+// updateState()
+// Runs once per loop. Checks the current state and applies any
+// behaviour that belongs to it. Add new states here as the game grows.
+void Pet::updateState() {
+    switch (currentState) {
+        case STATE_IDLE:
+            // Nothing special happens while idle
+            break;
 
-    if (currentTime - lastEnergyDrainTime > ENERGY_DRAIN_INTERVAL) {
-        pet.setEnergised(pet.getEnergised() - ENERGY_DRAIN_AMOUNT);
-        lastEnergyDrainTime = currentTime;
+        case STATE_EATING:
+            // Eating is handled instantly by feed() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_SLEEPING:
+            // Sleeping is handled instantly by sleep() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_EVOLVING:
+            // Placeholder — evolution logic added in task 9
+            setState(STATE_IDLE);
+            break;
     }
 }
 ```
 
-**Stretch goal for advanced students:** Check whether the pet is currently "playing" (happy stat recently increased) and double the drain rate by using `ENERGY_DRAIN_AMOUNT * 2` in that case.
+Step 5 — Wire state transitions into existing actions in `pet.cpp`:
+```cpp
+void Pet::feed() {
+    setState(STATE_EATING);   // <-- add this line
+    hungry = hungry - 20;
+    happy  = happy  + 5;
+    constrainValues();
+}
 
-**Files touched:** `lib/Timer/time_manager.h` and `lib/Timer/time_manager.cpp` only. `main.cpp` does not change.
+void Pet::sleep() {
+    setState(STATE_SLEEPING); // <-- add this line
+    tired     = tired     - 30;
+    energised = energised + 30;
+    constrainValues();
+}
+```
+
+Step 6 — Call `updateState()` from `main.cpp`'s `loop()`:
+```cpp
+myPet.updateState();
+```
+
+**Files touched:** `lib/Pet/pet.h` and `lib/Pet/pet.cpp`. One line added to `src/main.cpp`.

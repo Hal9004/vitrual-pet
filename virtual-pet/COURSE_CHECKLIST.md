@@ -10,8 +10,8 @@
 - [ ] State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING)
 - [x] Hunger Logic (Timer-based decrement)
 - [x] Happiness Logic (Timer-based decrement)
-- [ ] Energy/Sleep Logic (Recovery vs. Depletion)
-- [ ] Death/Reset Condition (Handling 0 stats)
+- [x] Energy/Sleep Logic (Recovery vs. Depletion)
+- [x] Death/Reset Condition (Handling 0 stats)
 
 ## Phase 3: Interaction & Menu System
 - [x] Navigation Logic (Buttons B & C to cycle; Button A to confirm)
