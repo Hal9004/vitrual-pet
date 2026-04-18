@@ -16,8 +16,37 @@ enum class DisplayState {
 class DisplayManager {
 private:
     // Display dimensions for M5Stick C Plus2
-    static const int SCREEN_WIDTH = 135;
+    static const int SCREEN_WIDTH  = 135;
     static const int SCREEN_HEIGHT = 240;
+
+    // Shared left margin and width used by every stat bar and label
+    static const int STAT_LEFT_MARGIN = 5;
+    static const int STAT_BAR_WIDTH   = 125;
+
+    // Y position of each stat label, and the bar drawn 10 px below it
+    static const int HAPPY_LABEL_Y  = 26;
+    static const int HAPPY_BAR_Y    = 36;
+    static const int HUNGER_LABEL_Y = 48;
+    static const int HUNGER_BAR_Y   = 58;
+    static const int ENERGY_LABEL_Y = 70;
+    static const int ENERGY_BAR_Y   = 80;
+    static const int CLEAN_LABEL_Y  = 92;
+    static const int CLEAN_BAR_Y    = 102;
+    static const int SICK_LABEL_Y   = 114;
+    static const int SICK_BAR_Y     = 124;
+
+    // Pet face drawn below the five stat bars
+    static const int PET_FACE_Y      = 152;
+    static const int PET_FACE_RADIUS = 18;
+
+    // Mood text printed just below the pet face
+    static const int MOOD_TEXT_Y = 180;
+
+    // Menu indicator strip pinned to the bottom of the screen
+    static const int MENU_INDICATOR_X      = 5;
+    static const int MENU_INDICATOR_Y      = 220;
+    static const int MENU_INDICATOR_WIDTH  = 130;
+    static const int MENU_INDICATOR_HEIGHT = 20;
     
     // Display state management
     DisplayState currentState;
