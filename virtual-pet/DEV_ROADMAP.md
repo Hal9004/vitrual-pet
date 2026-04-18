@@ -23,11 +23,15 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING) | ❌ Missing | No `PetState` enum exists. The `Pet` class only tracks numeric stats, not behavioural states |
+| State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING) | ✅ Done | `lib/Pet/pet.h` → `PetState` enum. `lib/Pet/pet.cpp` → `updateState()` / `setState()` / `getState()` |
+| State Machine — Full Action Coverage (PLAYING, SICK, HEALING, BATHING) | ❌ Missing | `play()`, `heal()`, `bathe()` do not call `setState()`. No cases for these states exist in the switch handler |
 | Hunger Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHungerIncrease()` |
 | Happiness Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHappinessDecay()` |
 | Energy/Sleep Logic (recovery vs. depletion) | ✅ Done | Auto-drain in `lib/Timer/time_manager.cpp` → `applyEnergyDrain()`. Manual recovery via `pet.cpp` → `sleep()` |
 | Death/Reset Condition (handle 0 stats) | ✅ Done | `lib/Pet/pet.h` → `isDead()` / `reset()`. Death screen routed through `display_manager.cpp` → `renderDisplay()` |
+| Cleanliness Decay Logic (timer-based decrement) | ❌ Missing | No auto-decay timer for `cleanliness` in `time_manager.cpp`. `bathe()` increases it but nothing decreases it over time |
+| Sickness Accumulation Logic (rises when cleanliness is low) | ❌ Missing | `sick` is never increased automatically. Should rise slowly when `cleanliness` is low |
+| Cleanliness / Sickness Display | ❌ Missing | Neither `cleanliness` nor `sick` is passed to or shown by `display_manager.cpp` |
 
 ### Phase 3: Interaction & Menu System
 
@@ -67,9 +71,12 @@ LEVEL 1 — COPY THE PATTERN (no new concepts)
   1. Happiness auto-decay timer        ✅ Done
   2. Energy auto-drain timer           ✅ Done
   3. Death / Reset condition           ✅ Done
+ 3a. Cleanliness decay timer           ← ★ NEXT TASK (same millis() pattern — cleanliness drops over time)
+ 3b. Sickness accumulation timer       (same millis() pattern — sick rises when cleanliness is low)
 
 LEVEL 2 — SMALL NEW CONCEPT
-  4. State Machine Architecture        ← ★ NEXT TASK (new: enum + switch statement)
+  4. State Machine Architecture        ✅ Done
+ 4b. Expand State Machine              (extend task 4 — add PLAYING, SICK, HEALING, BATHING states)
   5. Screen Real Estate constants      (new: named layout constants, no more magic numbers)
 
 LEVEL 3 — NEW HARDWARE API (library already in project)
@@ -198,99 +205,171 @@ void drawFrame() {
 
 ---
 
-## Part 4 — Next Best Foundational Task
+## Part 4 — Next Best Foundational Tasks
 
-**Task: State Machine Architecture (Task 4)**
+---
+
+### Task 3a — Cleanliness Decay Timer ✅ Next
 
 **Why this task next?**
 
-The pet currently tracks numbers but has no concept of what it is *doing*. A state machine fixes that:
-
-1. **It introduces one new concept at a time.** The student learns `enum` (a named list of states) and `switch` (a clean way to branch on it) — nothing else.
-2. **It unlocks everything above it.** Evolution (task 9) needs a state to transition through. Animations need a state to key off. Without it, every future feature adds more `if` chains.
-3. **The pattern is universally reusable.** A switch-based state machine appears in almost every embedded project. Learning it here pays off far beyond this pet.
+`cleanliness` can already be increased by `bathe()`, but it never decreases on its own. The pet can stay perfectly clean forever without any effort, which makes the bathe action pointless. This task adds the missing decay timer using the exact same `millis()` pattern students have already seen three times in Tasks 1–3. No new concepts — just practice.
 
 **Exactly where to add the code:**
 
-Step 1 — Add the enum to `lib/Pet/pet.h` before the class declaration:
+Step 1 — Add the decay function declaration to `lib/Timer/time_manager.h`, alongside the existing timer declarations:
 ```cpp
-// PetState — the list of behaviours the pet can currently be doing.
-// Only one state is active at a time.
-enum PetState {
-    STATE_IDLE,      // Default — pet is awake but doing nothing
-    STATE_EATING,    // Triggered by feed() — pet is eating
-    STATE_SLEEPING,  // Triggered by sleep() — pet is resting
-    STATE_EVOLVING   // Reserved for future evolution logic (task 9)
-};
+// Decreases cleanliness over time so the pet gets dirty without bathing
+void applyCleanlinessDecay(Pet& pet);
 ```
 
-Step 2 — Add a `currentState` member and interface to the `Pet` class in `pet.h`:
+Step 2 — Add the implementation to `lib/Timer/time_manager.cpp`:
 ```cpp
-private:
-    PetState currentState;   // Which behaviour the pet is currently in
+// applyCleanlinessDecay()
+// Decreases cleanliness by 1 every 8 seconds. The pet gets dirty over time
+// and will need bathing, making the bathe action meaningful.
+void TimerManager::applyCleanlinessDecay(Pet& pet) {
+    static unsigned long lastCleanlinessDecayTime = 0;
+    unsigned long cleanlinessDecayInterval = 8000;
 
-public:
-    PetState getState() const;         // Returns the current state
-    void setState(PetState newState);  // Changes the current state
-    void updateState();                // Runs the switch handler each loop
-```
-
-Step 3 — Initialise it in the constructor in `pet.cpp`:
-```cpp
-Pet::Pet() : hungry(20), tired(20), happy(80), sick(0), sad(0),
-             cleanliness(80), energised(80), currentState(STATE_IDLE) {
-}
-```
-
-Step 4 — Add the switch handler in `pet.cpp`:
-```cpp
-// updateState()
-// Runs once per loop. Checks the current state and applies any
-// behaviour that belongs to it. Add new states here as the game grows.
-void Pet::updateState() {
-    switch (currentState) {
-        case STATE_IDLE:
-            // Nothing special happens while idle
-            break;
-
-        case STATE_EATING:
-            // Eating is handled instantly by feed() — return to idle
-            setState(STATE_IDLE);
-            break;
-
-        case STATE_SLEEPING:
-            // Sleeping is handled instantly by sleep() — return to idle
-            setState(STATE_IDLE);
-            break;
-
-        case STATE_EVOLVING:
-            // Placeholder — evolution logic added in task 9
-            setState(STATE_IDLE);
-            break;
+    if (millis() - lastCleanlinessDecayTime >= cleanlinessDecayInterval) {
+        pet.setCleanliness(pet.getCleanliness() - 1);
+        lastCleanlinessDecayTime = millis();
     }
 }
 ```
 
-Step 5 — Wire state transitions into existing actions in `pet.cpp`:
+Step 3 — Call it inside `TimerManager::update()` in `time_manager.cpp`:
 ```cpp
-void Pet::feed() {
-    setState(STATE_EATING);   // <-- add this line
-    hungry = hungry - 20;
-    happy  = happy  + 5;
+applyCleanlinessDecay(pet);
+```
+
+**Files touched:** `lib/Timer/time_manager.h` and `lib/Timer/time_manager.cpp`.
+
+---
+
+### Task 3b — Sickness Accumulation Timer
+
+**Why this task next?**
+
+`sick` can only be decreased by `heal()`, but it never increases — the pet can never actually get sick. This task makes sickness a real threat by slowly increasing `sick` when `cleanliness` is low. It uses the same `millis()` timer pattern but introduces a simple conditional: the timer only fires when a condition is met. A natural next step after 3a.
+
+**Exactly where to add the code:**
+
+Step 1 — Add the declaration to `lib/Timer/time_manager.h`:
+```cpp
+// Increases sickness over time when the pet is dirty
+void applySicknessAccumulation(Pet& pet);
+```
+
+Step 2 — Add the implementation to `lib/Timer/time_manager.cpp`:
+```cpp
+// applySicknessAccumulation()
+// Increases sick by 1 every 10 seconds when cleanliness is below 30.
+// A dirty pet gradually becomes unwell — bathing prevents this.
+void TimerManager::applySicknessAccumulation(Pet& pet) {
+    static unsigned long lastSicknessAccumulationTime = 0;
+    unsigned long sicknessAccumulationInterval = 10000;
+    int cleanlinessDangerThreshold = 30;
+
+    if (pet.getCleanliness() < cleanlinessDangerThreshold) {
+        if (millis() - lastSicknessAccumulationTime >= sicknessAccumulationInterval) {
+            pet.setSick(pet.getSick() + 1);
+            lastSicknessAccumulationTime = millis();
+        }
+    }
+}
+```
+
+Step 3 — Call it inside `TimerManager::update()`:
+```cpp
+applySicknessAccumulation(pet);
+```
+
+**Files touched:** `lib/Timer/time_manager.h` and `lib/Timer/time_manager.cpp`.
+
+---
+
+### Task 4b — Expand State Machine (PLAYING, SICK, HEALING, BATHING)
+
+**Why this task next?**
+
+Task 4 added the state machine foundation but only wired two actions into it — `feed()` and `sleep()`. The remaining three care actions (`play()`, `bathe()`, `heal()`) still set no state, which means the switch handler can never react to them. This task closes that gap. The student already knows the enum and switch pattern from Task 4 — this is purely practice: add four more states, four more cases, and four more `setState()` calls.
+
+**Exactly where to add the code:**
+
+Step 1 — Add the four new states to the `PetState` enum in `lib/Pet/pet.h`:
+```cpp
+enum PetState {
+    STATE_IDLE,      // Default — pet is awake but doing nothing
+    STATE_EATING,    // Triggered by feed() — pet is eating
+    STATE_SLEEPING,  // Triggered by sleep() — pet is resting
+    STATE_PLAYING,   // Triggered by play() — pet is exercising
+    STATE_SICK,      // Entered automatically when sick stat is high — pet is unwell
+    STATE_HEALING,   // Triggered by heal() — pet is receiving treatment
+    STATE_BATHING,   // Triggered by bathe() — pet is being cleaned
+    STATE_EVOLVING   // Reserved for future evolution logic (task 9)
+};
+```
+
+Step 2 — Add the four new cases to the switch in `Pet::updateState()` in `pet.cpp`:
+```cpp
+case STATE_PLAYING:
+    // Playing is handled instantly by play() — return to idle
+    setState(STATE_IDLE);
+    break;
+
+case STATE_SICK:
+    // Pet stays sick until heal() is called — no automatic return to idle
+    break;
+
+case STATE_HEALING:
+    // Healing is handled instantly by heal() — return to idle
+    setState(STATE_IDLE);
+    break;
+
+case STATE_BATHING:
+    // Bathing is handled instantly by bathe() — return to idle
+    setState(STATE_IDLE);
+    break;
+```
+
+Step 3 — Wire `setState()` calls into the remaining actions in `pet.cpp`:
+```cpp
+void Pet::play() {
+    setState(STATE_PLAYING);   // <-- add this line
+    happy     = happy     + 25;
+    tired     = tired     + 20;
+    energised = energised - 20;
+    hungry    = hungry    + 15;
     constrainValues();
 }
 
-void Pet::sleep() {
-    setState(STATE_SLEEPING); // <-- add this line
-    tired     = tired     - 30;
-    energised = energised + 30;
+void Pet::bathe() {
+    setState(STATE_BATHING);   // <-- add this line
+    cleanliness = cleanliness + 30;
+    tired       = tired       + 10;
+    energised   = energised   - 10;
+    constrainValues();
+}
+
+void Pet::heal() {
+    setState(STATE_HEALING);   // <-- add this line
+    sick  = sick  - 50;
+    tired = tired + 20;
+    happy = happy - 5;
     constrainValues();
 }
 ```
 
-Step 6 — Call `updateState()` from `main.cpp`'s `loop()`:
+Step 4 — Enter `STATE_SICK` automatically when `sick` is high. Add this check inside the `STATE_IDLE` case in `Pet::updateState()`:
 ```cpp
-myPet.updateState();
+case STATE_IDLE:
+    // If the sick stat is dangerously high, transition to the sick state automatically
+    if (sick >= 50) {
+        setState(STATE_SICK);
+    }
+    break;
 ```
 
-**Files touched:** `lib/Pet/pet.h` and `lib/Pet/pet.cpp`. One line added to `src/main.cpp`.
+**Files touched:** `lib/Pet/pet.h` and `lib/Pet/pet.cpp`.

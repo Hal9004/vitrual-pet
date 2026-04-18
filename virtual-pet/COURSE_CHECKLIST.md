@@ -7,11 +7,14 @@
 - [ ] Screen Real Estate Management (Layout for stats vs. pet area)
 
 ## Phase 2: Core Logic & State Machine
-- [ ] State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING)
+- [x] State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING)
+- [ ] State Machine — Full Action Coverage (PLAYING, SICK, HEALING, BATHING)
 - [x] Hunger Logic (Timer-based decrement)
 - [x] Happiness Logic (Timer-based decrement)
 - [x] Energy/Sleep Logic (Recovery vs. Depletion)
 - [x] Death/Reset Condition (Handling 0 stats)
+- [ ] Cleanliness Decay Logic (Timer-based decrement)
+- [ ] Sickness Accumulation Logic (Rises when cleanliness is low)
 
 ## Phase 3: Interaction & Menu System
 - [x] Navigation Logic (Buttons B & C to cycle; Button A to confirm)
