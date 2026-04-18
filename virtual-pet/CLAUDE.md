@@ -47,7 +47,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Screen Real Estate Constants (Task 5) — replace magic pixel numbers in `display_manager.cpp` with named layout constants. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** MPU6886 Motion Play (Task 6) — use `M5.Imu.getAccel()` to detect shake gestures and trigger the Play action. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 

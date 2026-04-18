@@ -4,7 +4,7 @@
 - [x] Hardware Initialization (M5.begin, LCD, Serial)
 - [ ] Asset Pipeline (Converting images/gifs to C++ arrays/sprites)
 - [ ] Basic Sprite Rendering (Drawing the pet to the screen)
-- [ ] Screen Real Estate Management (Layout for stats vs. pet area)
+- [x] Screen Real Estate Management (Layout for stats vs. pet area)
 
 ## Phase 2: Core Logic & State Machine
 - [x] State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING)

@@ -373,3 +373,108 @@ case STATE_IDLE:
 ```
 
 **Files touched:** `lib/Pet/pet.h` and `lib/Pet/pet.cpp`.
+
+---
+
+### Task 5 — Screen Real Estate Constants
+
+**Why this task?**
+
+`display_manager.cpp` currently uses raw pixel numbers like `5`, `36`, `125`, and `152` scattered across several functions. These are called **magic numbers** — numbers with no explanation of what they represent. If a student wants to move the pet face down by 10 pixels, they have to hunt through the file to find every related number and hope they don't miss one. Named constants fix this: change the value in one place, and it updates everywhere.
+
+**New concept introduced:** `static const` class members in a header file. The `static` keyword means the constant belongs to the class itself, not to any single object — every `DisplayManager` instance shares the same value without wasting extra memory.
+
+**Exactly where to add the code:**
+
+Step 1 — Add the layout constants to the `private:` section of `DisplayManager` in `lib/Display/display_manager.h`, below the existing `SCREEN_WIDTH` and `SCREEN_HEIGHT` constants:
+
+```cpp
+// Shared left margin and width used by every stat bar and label
+static const int STAT_LEFT_MARGIN = 5;
+static const int STAT_BAR_WIDTH   = 125;
+
+// Y position of each stat label, and the bar drawn 10 px below it
+static const int HAPPY_LABEL_Y  = 26;
+static const int HAPPY_BAR_Y    = 36;
+static const int HUNGER_LABEL_Y = 48;
+static const int HUNGER_BAR_Y   = 58;
+static const int ENERGY_LABEL_Y = 70;
+static const int ENERGY_BAR_Y   = 80;
+static const int CLEAN_LABEL_Y  = 92;
+static const int CLEAN_BAR_Y    = 102;
+static const int SICK_LABEL_Y   = 114;
+static const int SICK_BAR_Y     = 124;
+
+// Pet face drawn below the five stat bars
+static const int PET_FACE_Y      = 152;
+static const int PET_FACE_RADIUS = 18;
+
+// Mood text printed just below the pet face
+static const int MOOD_TEXT_Y = 180;
+
+// Menu indicator strip pinned to the bottom of the screen
+static const int MENU_INDICATOR_X      = 5;
+static const int MENU_INDICATOR_Y      = 220;
+static const int MENU_INDICATOR_WIDTH  = 130;
+static const int MENU_INDICATOR_HEIGHT = 20;
+```
+
+Step 2 — In `lib/Display/display_manager.cpp`, replace the raw numbers in `showPetStatus()` with the new constants:
+
+```cpp
+// Before (magic numbers)
+M5.Lcd.setCursor(5, 26);
+drawStatusBar(happiness, 100, 5, 36, 125, TFT_GREEN);
+
+// After (named constants)
+M5.Lcd.setCursor(STAT_LEFT_MARGIN, HAPPY_LABEL_Y);
+drawStatusBar(happiness, 100, STAT_LEFT_MARGIN, HAPPY_BAR_Y, STAT_BAR_WIDTH, TFT_GREEN);
+```
+
+Repeat for all five stats (Hunger, Energy, Clean, Sick) using the matching `_LABEL_Y` and `_BAR_Y` constants.
+
+Step 3 — Replace magic numbers in `showPetMood()`:
+
+```cpp
+// Before
+printCenteredText(moodText, 180, moodColor, 2);
+
+// After
+printCenteredText(moodText, MOOD_TEXT_Y, moodColor, 2);
+```
+
+Step 4 — Replace magic numbers in `drawPetFace()`:
+
+```cpp
+// Before
+int faceY = 152;
+int faceRadius = 18;
+
+// After
+int faceY = PET_FACE_Y;
+int faceRadius = PET_FACE_RADIUS;
+```
+
+Step 5 — Replace magic numbers in `drawMenuIndicator()`:
+
+```cpp
+// Before
+fillRect(x, y, 130, 20, TFT_BLACK);
+M5.Lcd.drawRect(x, y, 130, 20, TFT_CYAN);
+
+// After
+fillRect(x, y, MENU_INDICATOR_WIDTH, MENU_INDICATOR_HEIGHT, TFT_BLACK);
+M5.Lcd.drawRect(x, y, MENU_INDICATOR_WIDTH, MENU_INDICATOR_HEIGHT, TFT_CYAN);
+```
+
+Step 6 — Replace the hardcoded call site in `renderDisplay()`:
+
+```cpp
+// Before
+drawMenuIndicator(menu, 5, 220);
+
+// After
+drawMenuIndicator(menu, MENU_INDICATOR_X, MENU_INDICATOR_Y);
+```
+
+**Files touched:** `lib/Display/display_manager.h` and `lib/Display/display_manager.cpp`.
