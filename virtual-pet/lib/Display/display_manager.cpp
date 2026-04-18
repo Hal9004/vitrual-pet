@@ -56,24 +56,10 @@ bool DisplayManager::shouldUpdateStatusDisplay() {
 
 // Render the entire display based on current state
 // This is the main coordinated render function
-void DisplayManager::renderFrame(int happiness, int hunger, int energy, int moodIndex) {
-    // Only update if status has changed or if it's time for a refresh
-    if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
-        // Clear once for full status update
-        clearScreen();
-        showPetStatus(happiness, hunger, energy);
-        showPetMood(moodIndex);
-        lastHappiness = happiness;
-        lastHunger = hunger;
-        lastEnergy = energy;
-        lastMoodIndex = moodIndex;
-    }
-}
-
 // Unified display render - renders pet status AND menu indicator together at same refresh rate.
 // Also handles the death screen. Comparing currentState before drawing prevents redrawing
 // the same screen every frame, which is what causes LCD flicker.
-void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu, bool petIsDead) {
+void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead) {
     // --- Death state ---
     // If the pet just died, draw the death screen once and stop.
     // The currentState check means we only draw on the first frame of death, not every frame.
@@ -97,7 +83,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int mo
     // Only redraw every STATUS_UPDATE_INTERVAL milliseconds to avoid flicker.
     if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
         clearScreen();
-        showPetStatus(happiness, hunger, energy);
+        showPetStatus(happiness, hunger, energy, cleanliness, sick);
         showPetMood(moodIndex);
         drawMenuIndicator(menu, 5, 220);
 
@@ -164,28 +150,39 @@ void DisplayManager::printCenteredText(const char* text, int y, uint32_t color, 
 }
 
 // Show pet status information (does not clear screen - must be called by renderFrame)
-void DisplayManager::showPetStatus(int happiness, int hunger, int energy) {
+// Layout fits 5 stat bars above the pet face at y=152.
+void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick) {
     // Title
-    printCenteredText("Virtual Pet", 10, TFT_YELLOW, 2);
+    printCenteredText("Virtual Pet", 5, TFT_YELLOW, 2);
 
-    // Status bars
+    // Stat bars — each block is: label at y, bar at y+10, next block starts at y+22
     M5.Lcd.setTextSize(1);
     M5.Lcd.setTextColor(TFT_WHITE);
 
     // Happiness
-    M5.Lcd.setCursor(5, 40);
+    M5.Lcd.setCursor(5, 26);
     M5.Lcd.printf("Happy: %d", happiness);
-    drawStatusBar(happiness, 100, 5, 50, 100, TFT_GREEN);
+    drawStatusBar(happiness, 100, 5, 36, 125, TFT_GREEN);
 
     // Hunger
-    M5.Lcd.setCursor(5, 70);
+    M5.Lcd.setCursor(5, 48);
     M5.Lcd.printf("Hunger: %d", hunger);
-    drawStatusBar(hunger, 100, 5, 80, 100, TFT_RED);
+    drawStatusBar(hunger, 100, 5, 58, 125, TFT_RED);
 
     // Energy
-    M5.Lcd.setCursor(5, 100);
+    M5.Lcd.setCursor(5, 70);
     M5.Lcd.printf("Energy: %d", energy);
-    drawStatusBar(energy, 100, 5, 110, 100, TFT_BLUE);
+    drawStatusBar(energy, 100, 5, 80, 125, TFT_BLUE);
+
+    // Cleanliness
+    M5.Lcd.setCursor(5, 92);
+    M5.Lcd.printf("Clean: %d", cleanliness);
+    drawStatusBar(cleanliness, 100, 5, 102, 125, TFT_CYAN);
+
+    // Sick (higher is worse — bar colour turns red to signal danger)
+    M5.Lcd.setCursor(5, 114);
+    M5.Lcd.printf("Sick: %d", sick);
+    drawStatusBar(sick, 100, 5, 124, 125, TFT_PURPLE);
 }
 
 // Show current pet mood (does not clear screen - called by renderFrame after showPetStatus)
@@ -204,8 +201,8 @@ void DisplayManager::showPetMood(int moodIndex) {
         default: moodText = "Neutral"; moodColor = TFT_WHITE; break;
     }
 
-    // Show mood at bottom of screen
-    printCenteredText(moodText, 200, moodColor, 2);
+    // Show mood below the pet face
+    printCenteredText(moodText, 180, moodColor, 2);
 
     // Draw simple pet face based on mood
     drawPetFace(moodIndex);
@@ -252,31 +249,33 @@ void DisplayManager::showDeathScreen() {
 }
 
 // Draw a simple pet face based on mood
+// Face is centered at y=152 with radius 18 to fit below the five stat bars.
 void DisplayManager::drawPetFace(int moodIndex) {
     int centerX = SCREEN_WIDTH / 2;
-    int faceY = 140;
+    int faceY = 152;
+    int faceRadius = 18;
 
     // Face circle
-    M5.Lcd.drawCircle(centerX, faceY, 25, TFT_WHITE);
+    M5.Lcd.drawCircle(centerX, faceY, faceRadius, TFT_WHITE);
 
     // Eyes
-    M5.Lcd.fillCircle(centerX - 10, faceY - 5, 3, TFT_WHITE);
-    M5.Lcd.fillCircle(centerX + 10, faceY - 5, 3, TFT_WHITE);
+    M5.Lcd.fillCircle(centerX - 7, faceY - 5, 2, TFT_WHITE);
+    M5.Lcd.fillCircle(centerX + 7, faceY - 5, 2, TFT_WHITE);
 
     // Mouth based on mood
     switch(moodIndex) {
-        case 2: // Happy
-            M5.Lcd.drawCircle(centerX, faceY + 5, 8, TFT_WHITE);
-            M5.Lcd.fillCircle(centerX, faceY + 5, 8, TFT_BLACK);
-            M5.Lcd.drawCircle(centerX, faceY + 3, 8, TFT_WHITE);
+        case 2: // Happy — smile curves upward
+            M5.Lcd.drawCircle(centerX, faceY + 3, 6, TFT_WHITE);
+            M5.Lcd.fillCircle(centerX, faceY + 3, 6, TFT_BLACK);
+            M5.Lcd.drawCircle(centerX, faceY + 1, 6, TFT_WHITE);
             break;
-        case 4: // Sad
-            M5.Lcd.drawCircle(centerX, faceY + 10, 8, TFT_WHITE);
-            M5.Lcd.fillCircle(centerX, faceY + 10, 8, TFT_BLACK);
-            M5.Lcd.drawCircle(centerX, faceY + 13, 8, TFT_WHITE);
+        case 4: // Sad — frown curves downward
+            M5.Lcd.drawCircle(centerX, faceY + 9, 6, TFT_WHITE);
+            M5.Lcd.fillCircle(centerX, faceY + 9, 6, TFT_BLACK);
+            M5.Lcd.drawCircle(centerX, faceY + 11, 6, TFT_WHITE);
             break;
-        default: // Neutral
-            M5.Lcd.drawLine(centerX - 8, faceY + 8, centerX + 8, faceY + 8, TFT_WHITE);
+        default: // Neutral — straight line
+            M5.Lcd.drawLine(centerX - 6, faceY + 6, centerX + 6, faceY + 6, TFT_WHITE);
             break;
     }
 }

@@ -40,6 +40,9 @@ private:
     // Tracks when energy was last decreased.
     unsigned long lastEnergyDrainTime;
 
+    // Tracks when cleanliness was last decreased.
+    unsigned long lastCleanlinessDecayTime;
+
     // -----------------------------------------------------------------
     // Private helper methods — one per stat that changes automatically.
     // Keeping each rule in its own function makes them easy to find,
@@ -57,4 +60,8 @@ private:
     // Decreases energy by a fixed amount every few seconds.
     // The pet gets tired over time whether you interact with it or not.
     void applyEnergyDrain(Pet& pet);
+
+    // Decreases cleanliness by a fixed amount every few seconds.
+    // The pet gets dirty over time and needs bathing.
+    void applyCleanlinessDecay(Pet& pet);
 };

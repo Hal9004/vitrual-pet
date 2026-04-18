@@ -35,7 +35,7 @@ void loop() {
 
   // Render the display first — passing isDead() lets DisplayManager decide what to show.
   // This must run every frame regardless of pet state so the screen is never skipped.
-  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getDominantMood(), menu, myPet.isDead());
+  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(), menu, myPet.isDead());
 
   // If the pet is dead, only check for the restart button then exit early.
   // The early return skips timers and menu navigation while the pet is in the dead state.

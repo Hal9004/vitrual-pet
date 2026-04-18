@@ -53,15 +53,12 @@ public:
     DisplayState getDisplayState() const;
     bool shouldUpdateStatusDisplay();
     
-    // Coordinated render function
-    void renderFrame(int happiness, int hunger, int energy, int moodIndex);
-
     // Unified display render - handles status view, menu indicator, and death screen.
     // Call this once per loop. petIsDead controls which screen is shown.
-    void renderDisplay(int happiness, int hunger, int energy, int moodIndex, const ActionMenu& menu, bool petIsDead);
+    void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead);
 
     // Pet-specific display functions
-    void showPetStatus(int happiness, int hunger, int energy);
+    void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick);
     void showPetMood(int moodIndex);
     void showMessage(const char* message);
     void showActionFeedback(const char* action);

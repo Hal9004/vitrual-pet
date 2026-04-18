@@ -22,6 +22,13 @@ const unsigned long ENERGY_DRAIN_INTERVAL = 8000;
 // How many points energy drops each interval.
 const int ENERGY_DRAIN_AMOUNT = 1;
 
+// How many milliseconds between each cleanliness decrease.
+// 10000 ms = 10 seconds.
+const unsigned long CLEANLINESS_DECAY_INTERVAL = 10000;
+
+// How many points cleanliness drops each interval.
+const int CLEANLINESS_DECAY_AMOUNT = 1;
+
 
 // Constructor — initialise all timestamps to 0.
 // Setting them to 0 means the first check in update() will always find
@@ -29,7 +36,8 @@ const int ENERGY_DRAIN_AMOUNT = 1;
 TimerManager::TimerManager()
     : lastHungerIncreaseTime(0),
       lastHappinessDecayTime(0),
-      lastEnergyDrainTime(0) {
+      lastEnergyDrainTime(0),
+      lastCleanlinessDecayTime(0) {
 }
 
 
@@ -40,6 +48,7 @@ void TimerManager::update(Pet& pet) {
     applyHungerIncrease(pet);
     applyHappinessDecay(pet);
     applyEnergyDrain(pet);
+    applyCleanlinessDecay(pet);
 }
 
 
@@ -78,5 +87,19 @@ void TimerManager::applyEnergyDrain(Pet& pet) {
     if (currentTime - lastEnergyDrainTime > ENERGY_DRAIN_INTERVAL) {
         pet.setEnergised(pet.getEnergised() - ENERGY_DRAIN_AMOUNT);
         lastEnergyDrainTime = currentTime;
+    }
+}
+
+
+// applyCleanlinessDecay()
+// Checks whether CLEANLINESS_DECAY_INTERVAL milliseconds have passed since
+// cleanliness was last decreased. If yes, decreases cleanliness and resets the timer.
+// The pet gets dirty over time — bathing is the only way to keep it clean.
+void TimerManager::applyCleanlinessDecay(Pet& pet) {
+    unsigned long currentTime = millis();
+
+    if (currentTime - lastCleanlinessDecayTime > CLEANLINESS_DECAY_INTERVAL) {
+        pet.setCleanliness(pet.getCleanliness() - CLEANLINESS_DECAY_AMOUNT);
+        lastCleanlinessDecayTime = currentTime;
     }
 }
