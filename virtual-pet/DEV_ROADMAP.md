@@ -39,7 +39,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | Navigation Logic (B & C cycle, A confirms) | ✅ Done | `lib/Button/button_handler.cpp`, `lib/Actions/action_menu.cpp`, `src/main.cpp:33–49` |
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
-| Motion Play (MPU6886 accelerometer for Play mode) | ❌ Missing | `lib/Speaker/` — empty. M5.Imu not called anywhere |
+| Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
 | Sound Feedback (buzzer melodies) | ❌ Missing | `lib/Speaker/speaker_manager.cpp` — empty |
 | Voice Memos (microphone record/playback) | ❌ Missing | `lib/Microphone/microphone_manager.cpp` — empty |
 
@@ -47,7 +47,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| MPU6886 "Shake to Wake" (low-power wake) | ❌ Missing | No accelerometer code exists at all |
+| MPU6886 "Shake to Wake" (low-power wake) | ❌ Missing | `ImuManager` exists but low-power wake not yet wired up |
 | RTC (Real Time Clock for overnight logic) | ❌ Missing | `lib/Timer/time_manager.cpp` exists (decay timers implemented) but RTC/BM8563 integration not started |
 | EEPROM/Preferences (save pet on power-off) | ❌ Missing | `lib/Storage/storage_manager.cpp` — empty |
 | Evolution Logic (growth stages based on care/time) | ❌ Missing | No growth stage tracking in `Pet` class |
@@ -58,7 +58,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
 | Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
-| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants and the `lambda` in `constrainValues()` should be simplified for students |
+| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Remaining: bitmap sprites and animation |
 
 ---
 
@@ -77,11 +77,11 @@ LEVEL 1 — COPY THE PATTERN (no new concepts)
 LEVEL 2 — SMALL NEW CONCEPT
   4. State Machine Architecture        ✅ Done
  4b. Expand State Machine              ✅ Done
-  5. Screen Real Estate constants      ← ★ NEXT TASK (new: named layout constants, no more magic numbers)
+  5. Screen Real Estate constants      ✅ Done
 
 LEVEL 3 — NEW HARDWARE API (library already in project)
-  6. MPU6886 Motion Play               (new: M5.Imu.getAccel, threshold detection)
-  7. MPU6886 Shake to Wake             (builds directly on task 6)
+  6. MPU6886 Motion Play               ✅ Done
+  7. MPU6886 Shake to Wake             ← ★ NEXT TASK (builds directly on task 6)
   8. Buzzer Sound Feedback             (new: M5.Speaker.tone() for simple melodies)
 
 LEVEL 4 — DATA + PLANNING
