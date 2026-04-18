@@ -47,7 +47,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** State Machine Architecture (Task 4) — add a `PetState` enum (IDLE, EATING, SLEEPING, EVOLVING) and a switch-based state handler. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** Screen Real Estate Constants (Task 5) — replace magic pixel numbers in `display_manager.cpp` with named layout constants. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 

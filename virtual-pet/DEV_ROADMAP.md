@@ -24,14 +24,14 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
 | State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING) | ✅ Done | `lib/Pet/pet.h` → `PetState` enum. `lib/Pet/pet.cpp` → `updateState()` / `setState()` / `getState()` |
-| State Machine — Full Action Coverage (PLAYING, SICK, HEALING, BATHING) | ❌ Missing | `play()`, `heal()`, `bathe()` do not call `setState()`. No cases for these states exist in the switch handler |
+| State Machine — Full Action Coverage (PLAYING, SICK, HEALING, BATHING) | ✅ Done | `lib/Pet/pet.h` → expanded `PetState` enum. `lib/Pet/pet.cpp` → new cases in `updateState()`, `setState()` wired into `play()`, `bathe()`, `heal()` |
 | Hunger Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHungerIncrease()` |
 | Happiness Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyHappinessDecay()` |
 | Energy/Sleep Logic (recovery vs. depletion) | ✅ Done | Auto-drain in `lib/Timer/time_manager.cpp` → `applyEnergyDrain()`. Manual recovery via `pet.cpp` → `sleep()` |
 | Death/Reset Condition (handle 0 stats) | ✅ Done | `lib/Pet/pet.h` → `isDead()` / `reset()`. Death screen routed through `display_manager.cpp` → `renderDisplay()` |
-| Cleanliness Decay Logic (timer-based decrement) | ❌ Missing | No auto-decay timer for `cleanliness` in `time_manager.cpp`. `bathe()` increases it but nothing decreases it over time |
-| Sickness Accumulation Logic (rises when cleanliness is low) | ❌ Missing | `sick` is never increased automatically. Should rise slowly when `cleanliness` is low |
-| Cleanliness / Sickness Display | ❌ Missing | Neither `cleanliness` nor `sick` is passed to or shown by `display_manager.cpp` |
+| Cleanliness Decay Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyCleanlinessDecay()`. Drops by 1 every 10 seconds |
+| Sickness Accumulation Logic (rises when cleanliness is low) | ✅ Done | `lib/Timer/time_manager.cpp` → `applySicknessAccumulation()`. Rises by 1 every 12 seconds when `cleanliness` is below 30 |
+| Cleanliness / Sickness Display | ✅ Done | Both bars shown in `display_manager.cpp` → `showPetStatus()`. Layout tightened to fit all five stats |
 
 ### Phase 3: Interaction & Menu System
 
@@ -71,13 +71,13 @@ LEVEL 1 — COPY THE PATTERN (no new concepts)
   1. Happiness auto-decay timer        ✅ Done
   2. Energy auto-drain timer           ✅ Done
   3. Death / Reset condition           ✅ Done
- 3a. Cleanliness decay timer           ← ★ NEXT TASK (same millis() pattern — cleanliness drops over time)
- 3b. Sickness accumulation timer       (same millis() pattern — sick rises when cleanliness is low)
+ 3a. Cleanliness decay timer           ✅ Done
+ 3b. Sickness accumulation timer       ✅ Done
 
 LEVEL 2 — SMALL NEW CONCEPT
   4. State Machine Architecture        ✅ Done
- 4b. Expand State Machine              (extend task 4 — add PLAYING, SICK, HEALING, BATHING states)
-  5. Screen Real Estate constants      (new: named layout constants, no more magic numbers)
+ 4b. Expand State Machine              ✅ Done
+  5. Screen Real Estate constants      ← ★ NEXT TASK (new: named layout constants, no more magic numbers)
 
 LEVEL 3 — NEW HARDWARE API (library already in project)
   6. MPU6886 Motion Play               (new: M5.Imu.getAccel, threshold detection)
