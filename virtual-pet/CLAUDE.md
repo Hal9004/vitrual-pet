@@ -21,7 +21,7 @@ These rules apply to every line of code written in this project:
 | Button A | Confirm / execute selected action |
 | Button B | Next menu item |
 | Button C | Previous menu item |
-| Motion | MPU6886 accelerometer — used for Play mode and Shake to Wake |
+| Motion | MPU6886 accelerometer — used for Play mode (shake gesture). INT pin not routed on this board so interrupt-driven wake is not possible |
 | Audio out | Built-in buzzer — use `M5.Speaker` |
 | Audio in | Built-in microphone — use heap buffers only (see Gotchas) |
 | Persistence | ESP32 NVS via Arduino `Preferences` library |
@@ -48,7 +48,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** MPU6886 Shake to Wake (Task 7) — use the ImuManager shake detection to wake the device from a low-power sleep state. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** Buzzer Sound Feedback (Task 8) — use `M5.Speaker.tone()` to play melodies for key pet events (level up, hunger alert, etc.). See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 

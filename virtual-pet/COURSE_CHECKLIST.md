@@ -24,7 +24,6 @@
 - [ ] Voice Memos (Microphone recording/playback for short sound bites)
 
 ## Phase 4: Environmental & Advanced Features
-- [ ] MPU6886 "Shake to Wake" (Waking device from low-power mode)
 - [ ] RTC (Real Time Clock) for overnight logic
 - [ ] EEPROM/Preferences (Saving pet state on power off)
 - [ ] Evolution Logic (Growth stages based on care/time)

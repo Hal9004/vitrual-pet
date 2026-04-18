@@ -47,7 +47,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| MPU6886 "Shake to Wake" (low-power wake) | ❌ Missing | `ImuManager` exists but low-power wake not yet wired up |
+| MPU6886 "Shake to Wake" (low-power wake) | 🚫 Removed | Hardware investigation confirmed the MPU6886 INT pin is not routed to an ESP32 GPIO on the M5StickCPlus2 — interrupt-driven wake is not possible on this board |
 | RTC (Real Time Clock for overnight logic) | ❌ Missing | `lib/Timer/time_manager.cpp` exists (decay timers implemented) but RTC/BM8563 integration not started |
 | EEPROM/Preferences (save pet on power-off) | ❌ Missing | `lib/Storage/storage_manager.cpp` — empty |
 | Evolution Logic (growth stages based on care/time) | ❌ Missing | No growth stage tracking in `Pet` class |
@@ -81,8 +81,8 @@ LEVEL 2 — SMALL NEW CONCEPT
 
 LEVEL 3 — NEW HARDWARE API (library already in project)
   6. MPU6886 Motion Play               ✅ Done
-  7. MPU6886 Shake to Wake             ← ★ NEXT TASK (builds directly on task 6)
-  8. Buzzer Sound Feedback             (new: M5.Speaker.tone() for simple melodies)
+  7. MPU6886 Shake to Wake             🚫 Removed — INT pin not routed on M5StickCPlus2
+  8. Buzzer Sound Feedback             ← ★ NEXT TASK (new: M5.Speaker.tone() for simple melodies)
 
 LEVEL 4 — DATA + PLANNING
   9. Evolution Logic                   (requires: state machine from task 4 + age counter)
