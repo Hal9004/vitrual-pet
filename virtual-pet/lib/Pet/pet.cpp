@@ -42,24 +42,27 @@ void Pet::sleep() {
 }
 
 void Pet::play() {
-    happy = happy + 25;        // Significantly increase happiness
-    tired = tired + 20;        // Increase tiredness
-    energised = energised - 20; // Use energy
-    hungry = hungry + 15;      // Playing makes them hungry
+    setState(STATE_PLAYING);        // Signal that the pet is now playing
+    happy = happy + 25;             // Significantly increase happiness
+    tired = tired + 20;             // Increase tiredness
+    energised = energised - 20;     // Use energy
+    hungry = hungry + 15;           // Playing makes them hungry
     constrainValues();
 }
 
 void Pet::bathe() {
-    cleanliness = cleanliness + 30; // Improve cleanliness
-    tired = tired + 10;             // Bathing is tiring
-    energised = energised - 10;     // Uses some energy
+    setState(STATE_BATHING);            // Signal that the pet is now being cleaned
+    cleanliness = cleanliness + 30;     // Improve cleanliness
+    tired = tired + 10;                 // Bathing is tiring
+    energised = energised - 10;         // Uses some energy
     constrainValues();
 }
 
 void Pet::heal() {
-    sick = sick - 50;  // Reduce sickness
-    tired = tired + 20; // Medicine makes pet tired
-    happy = happy - 5;  // Unpleasant experience
+    setState(STATE_HEALING);    // Signal that the pet is now receiving treatment
+    sick = sick - 50;           // Reduce sickness
+    tired = tired + 20;         // Medicine makes pet tired
+    happy = happy - 5;          // Unpleasant experience
     constrainValues();
 }
 
@@ -82,7 +85,10 @@ void Pet::setState(PetState newState) {
 void Pet::updateState() {
     switch (currentState) {
         case STATE_IDLE:
-            // Nothing special happens while idle
+            // If the sick stat is dangerously high, transition to sick automatically
+            if (sick >= 50) {
+                setState(STATE_SICK);
+            }
             break;
 
         case STATE_EATING:
@@ -92,6 +98,25 @@ void Pet::updateState() {
 
         case STATE_SLEEPING:
             // Sleeping is handled instantly by sleep() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_PLAYING:
+            // Playing is handled instantly by play() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_SICK:
+            // Pet stays sick until heal() is called — no automatic return to idle
+            break;
+
+        case STATE_HEALING:
+            // Healing is handled instantly by heal() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_BATHING:
+            // Bathing is handled instantly by bathe() — return to idle
             setState(STATE_IDLE);
             break;
 

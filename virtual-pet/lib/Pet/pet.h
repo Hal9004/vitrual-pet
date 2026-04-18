@@ -7,6 +7,10 @@ enum PetState {
     STATE_IDLE,      // Default — pet is awake but doing nothing
     STATE_EATING,    // Triggered by feed() — pet is eating
     STATE_SLEEPING,  // Triggered by sleep() — pet is resting
+    STATE_PLAYING,   // Triggered by play() — pet is exercising
+    STATE_SICK,      // Entered automatically when sick stat is high — pet is unwell
+    STATE_HEALING,   // Triggered by heal() — pet is receiving treatment
+    STATE_BATHING,   // Triggered by bathe() — pet is being cleaned
     STATE_EVOLVING   // Reserved for future evolution logic (task 9)
 };
 
