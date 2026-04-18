@@ -4,6 +4,7 @@
 #include "../Pet/pet.h"
 #include "../Display/display_manager.h"
 #include "../Button/button_handler.h"
+#include "../Speaker/speaker_manager.h"
 
 /**
  * ActionMenu
@@ -75,12 +76,10 @@ public:
      */
     int getCurrentActionIndex() const;
 
-    /**
-     * confirmAction(Pet&, DisplayManager&)
-     * Executes the currently selected pet action and shows feedback on display.
-     * Call this when user confirms (normally Button C press).
-     */
-    void confirmAction(Pet& pet, DisplayManager& display);
+    // confirmAction(Pet&, DisplayManager&, SpeakerManager&)
+    // Executes the currently selected pet action, plays the matching sound,
+    // and shows feedback on the display. Call this when the user presses Button A.
+    void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker);
 
     /**
      * displayCurrentMenu(DisplayManager&)

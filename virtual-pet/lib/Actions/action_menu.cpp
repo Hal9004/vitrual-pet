@@ -55,16 +55,35 @@ void ActionMenu::executePetAction(Pet& pet, ActionType actionType) {
     }
 }
 
-void ActionMenu::confirmAction(Pet& pet, DisplayManager& display) {
+void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker) {
     Action selectedAction = getSelectedAction();
-    
-    // Execute the pet action
+
+    // Execute the pet action — updates the pet's stats and sets the new state.
     executePetAction(pet, selectedAction.type);
-    
-    // Show feedback on display
+
+    // Play the sound that matches the action so the player gets audio confirmation.
+    switch (selectedAction.type) {
+        case ActionType::FEED:
+            speaker.playFeedSound();
+            break;
+        case ActionType::PLAY:
+            speaker.playPlaySound();
+            break;
+        case ActionType::SLEEP:
+            speaker.playSleepSound();
+            break;
+        case ActionType::BATHE:
+            speaker.playBatheSound();
+            break;
+        case ActionType::HEAL:
+            speaker.playHealSound();
+            break;
+    }
+
+    // Show the action name on screen so the player can see what just happened.
     display.showActionFeedback(selectedAction.name);
-    
-    // Brief delay to show feedback
+
+    // Hold the feedback message long enough for the player to read it.
     delay(1000);
 }
 
