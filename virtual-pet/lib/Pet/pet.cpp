@@ -1,9 +1,9 @@
 #include "pet.h"
 
 // Constructor - Initialize pet with neutral values
-Pet::Pet() 
-    : hungry(30), tired(20), happy(70), sick(0), sad(10), 
-      cleanliness(60), energised(80) {
+Pet::Pet()
+    : hungry(30), tired(20), happy(70), sick(0), sad(10),
+      cleanliness(60), energised(80), currentState(STATE_IDLE) {
 }
 
 // Getters
@@ -26,6 +26,7 @@ void Pet::setEnergised(int value) { energised = value; constrainValues(); }
 
 // Pet care actions
 void Pet::feed() {
+    setState(STATE_EATING);    // Signal that the pet is now eating
     hungry = hungry - 30;      // Reduce hunger
     happy = happy + 10;        // Slightly increase happiness
     energised = energised - 5; // Small energy cost
@@ -33,6 +34,7 @@ void Pet::feed() {
 }
 
 void Pet::sleep() {
+    setState(STATE_SLEEPING);  // Signal that the pet is now sleeping
     tired = tired - 40;        // Reduce tiredness significantly
     energised = energised + 30; // Restore energy
     hungry = hungry + 10;      // Wake up hungry
@@ -59,6 +61,45 @@ void Pet::heal() {
     tired = tired + 20; // Medicine makes pet tired
     happy = happy - 5;  // Unpleasant experience
     constrainValues();
+}
+
+// getState()
+// Returns the behaviour the pet is currently in so other systems can react to it.
+PetState Pet::getState() const {
+    return currentState;
+}
+
+// setState()
+// Changes the pet's current behaviour. All state transitions go through here
+// so there is always one place to look when debugging unexpected state changes.
+void Pet::setState(PetState newState) {
+    currentState = newState;
+}
+
+// updateState()
+// Runs once per loop. Checks the current state and applies any
+// behaviour that belongs to it. Add new states here as the game grows.
+void Pet::updateState() {
+    switch (currentState) {
+        case STATE_IDLE:
+            // Nothing special happens while idle
+            break;
+
+        case STATE_EATING:
+            // Eating is handled instantly by feed() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_SLEEPING:
+            // Sleeping is handled instantly by sleep() — return to idle
+            setState(STATE_IDLE);
+            break;
+
+        case STATE_EVOLVING:
+            // Placeholder — evolution logic added in task 9
+            setState(STATE_IDLE);
+            break;
+    }
 }
 
 // isDead()

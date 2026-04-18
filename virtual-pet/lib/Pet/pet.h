@@ -1,6 +1,15 @@
 #ifndef PET_H
 #define PET_H
 
+// PetState — the list of behaviours the pet can currently be doing.
+// Only one state is active at a time.
+enum PetState {
+    STATE_IDLE,      // Default — pet is awake but doing nothing
+    STATE_EATING,    // Triggered by feed() — pet is eating
+    STATE_SLEEPING,  // Triggered by sleep() — pet is resting
+    STATE_EVOLVING   // Reserved for future evolution logic (task 9)
+};
+
 class Pet {
 private:
     // Pet condition values (0-100 scale)
@@ -11,6 +20,8 @@ private:
     int sad;          // 0 = neutral, 100 = very sad
     int cleanliness;  // 0 = dirty, 100 = very clean
     int energised;    // 0 = no energy, 100 = full energy
+
+    PetState currentState;  // Which behaviour the pet is currently in
 
 public:
     // Constructor
@@ -46,6 +57,15 @@ public:
 
     // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
     bool isDead() const;
+
+    // Returns the current behavioural state of the pet
+    PetState getState() const;
+
+    // Changes the pet's current behavioural state
+    void setState(PetState newState);
+
+    // Runs once per loop — checks the current state and applies any behaviour that belongs to it
+    void updateState();
 
     // Restores all stats to their starting values so the game can begin again
     void reset();

@@ -53,6 +53,9 @@ void loop() {
   // The rules for what changes and how fast live in TimerManager, not here.
   timers.update(myPet);
 
+  // Run the state machine — checks the current state and handles any behaviour tied to it.
+  myPet.updateState();
+
   // Confirm action with Button A
   if (buttons.wasButtonAPressed()) {
     menu.confirmAction(myPet, display);
