@@ -40,7 +40,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Navigation Logic (B & C cycle, A confirms) | ✅ Done | `lib/Button/button_handler.cpp`, `lib/Actions/action_menu.cpp`, `src/main.cpp:33–49` |
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
 | Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
-| Sound Feedback (buzzer melodies) | ❌ Missing | `lib/Speaker/speaker_manager.cpp` — empty |
+| Sound Feedback (buzzer melodies) | ✅ Done | `lib/Speaker/speaker_manager.h/.cpp` — melodies for all 5 actions, death, reset, hunger alert, sickness alert |
 | Voice Memos (microphone record/playback) | ❌ Missing | `lib/Microphone/microphone_manager.cpp` — empty |
 
 ### Phase 4: Environmental & Advanced Features
@@ -82,10 +82,10 @@ LEVEL 2 — SMALL NEW CONCEPT
 LEVEL 3 — NEW HARDWARE API (library already in project)
   6. MPU6886 Motion Play               ✅ Done
   7. MPU6886 Shake to Wake             🚫 Removed — INT pin not routed on M5StickCPlus2
-  8. Buzzer Sound Feedback             ← ★ NEXT TASK (new: M5.Speaker.tone() for simple melodies)
+  8. Buzzer Sound Feedback             ✅ Done
 
 LEVEL 4 — DATA + PLANNING
-  9. Evolution Logic                   (requires: state machine from task 4 + age counter)
+  9. Evolution Logic                   ← ★ NEXT TASK (requires: state machine from task 4 + age counter)
  10. EEPROM / Preferences persistence  (new: Preferences library, key/value storage)
 
 LEVEL 5 — ASSET PIPELINE
@@ -478,3 +478,54 @@ drawMenuIndicator(menu, MENU_INDICATOR_X, MENU_INDICATOR_Y);
 ```
 
 **Files touched:** `lib/Display/display_manager.h` and `lib/Display/display_manager.cpp`.
+
+---
+
+### Task 8 — Buzzer Sound Feedback ✅ Done
+
+**Why this task?**
+
+The pet could already show what it was doing on screen, but gave no audio cue. This task fills in `lib/Speaker/speaker_manager.h/.cpp` and wires it into the action menu and main loop so every care action, every alert, and the death/reset lifecycle each play a distinct melody. It introduces a new hardware API (`M5.Speaker.tone()`) and teaches the difference between blocking sound calls (acceptable inside `confirmAction()`) and non-blocking alert patterns (millis()-debounced in the main loop).
+
+**Architecture — what was added:**
+
+`SpeakerManager` follows the same single-responsibility pattern as every other `lib/` module. It has one job: play sounds. It knows nothing about pet stats or the display.
+
+| Method | When it fires |
+|---|---|
+| `init()` | Once in `setup()` — sets speaker volume |
+| `playFeedSound()` | Inside `confirmAction()` when FEED is selected |
+| `playPlaySound()` | Inside `confirmAction()` when PLAY is selected |
+| `playSleepSound()` | Inside `confirmAction()` when SLEEP is selected |
+| `playBatheSound()` | Inside `confirmAction()` when BATHE is selected |
+| `playHealSound()` | Inside `confirmAction()` when HEAL is selected |
+| `playDeathSound()` | Once in `loop()` when `isDead()` becomes true (static flag prevents replaying) |
+| `playResetSound()` | In `loop()` when Button A is pressed on the death screen |
+| `playHungerAlertSound()` | In `loop()` via millis() timer — at most once every 15 s when `hungry >= 80` |
+| `playSicknessAlertSound()` | In `loop()` via millis() timer — at most once every 15 s when `sick >= 80` |
+
+**Step 1 — Fill in `lib/Speaker/speaker_manager.h`:**
+
+Declare `SpeakerManager` with `init()` and one named method per event. Keep the names descriptive so a student reading the call site immediately understands what sound will play.
+
+**Step 2 — Fill in `lib/Speaker/speaker_manager.cpp`:**
+
+Implement each method using `M5.Speaker.tone(frequency, duration)`. Each method plays 2–4 notes chosen to match the mood of the event. See `USEFUL_NOTES.md` for a full explanation of how frequencies map to musical notes.
+
+**Step 3 — Update `lib/Actions/action_menu.h`:**
+
+Add `#include "../Speaker/speaker_manager.h"` and update the `confirmAction()` signature to accept a `SpeakerManager&` parameter.
+
+**Step 4 — Update `lib/Actions/action_menu.cpp`:**
+
+In `confirmAction()`, add a `switch` on `selectedAction.type` after `executePetAction()`. Call the matching sound method for each action type.
+
+**Step 5 — Update `src/main.cpp`:**
+
+- Add `#include "../lib/Speaker/speaker_manager.h"` and a `SpeakerManager speaker;` global.
+- Call `speaker.init()` in `setup()` after `M5.begin()`.
+- Add a `static bool deathSoundPlayed` flag inside the `isDead()` block to play the death melody once and the reset fanfare on revival.
+- Add two millis()-debounced alert blocks after `timers.update()` — one for hunger, one for sickness.
+- Update the `confirmAction()` call to pass `speaker` as the third argument.
+
+**Files touched:** `lib/Speaker/speaker_manager.h`, `lib/Speaker/speaker_manager.cpp`, `lib/Actions/action_menu.h`, `lib/Actions/action_menu.cpp`, `src/main.cpp`.

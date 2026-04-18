@@ -20,7 +20,7 @@
 - [x] Navigation Logic (Buttons B & C to cycle; Button A to confirm)
 - [x] Menu UI (Visual indicators for selected actions)
 - [x] Motion Play (Using MPU6886 accelerometer for "Play" mode interactions)
-- [ ] Sound Feedback (Buzzer melodies for Level Up, Hunger, etc.)
+- [x] Sound Feedback (Buzzer melodies for Level Up, Hunger, etc.)
 - [ ] Voice Memos (Microphone recording/playback for short sound bites)
 
 ## Phase 4: Environmental & Advanced Features

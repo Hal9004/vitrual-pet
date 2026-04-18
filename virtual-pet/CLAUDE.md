@@ -48,7 +48,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Buzzer Sound Feedback (Task 8) — use `M5.Speaker.tone()` to play melodies for key pet events (level up, hunger alert, etc.). See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** Evolution Logic (Task 9) — add growth stages to the pet based on care quality and time. Requires the state machine from Task 4 and a new age counter. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 
