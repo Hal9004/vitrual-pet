@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "pet.h"
 
 // Constructor - Initialize pet with neutral values
@@ -49,7 +48,6 @@ void Pet::play() {
     energised = energised - 20;     // Use energy
     hungry = hungry + 15;           // Playing makes them hungry
     constrainValues();
-    Serial.println("DEBUG: play() triggered — happy=" + String(happy) + " energised=" + String(energised));
 }
 
 void Pet::bathe() {
