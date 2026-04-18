@@ -6,6 +6,7 @@
 #include "../lib/Actions/action_menu.h"
 #include "../lib/Timer/time_manager.h"
 #include "../lib/Imu/imu_manager.h"
+#include "../lib/Speaker/speaker_manager.h"
 
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
@@ -15,6 +16,7 @@ ButtonHandler buttons;   // Reads and tracks button presses.
 ActionMenu menu;         // Manages the list of actions the player can choose.
 TimerManager timers;     // Handles all automatic stat changes over time.
 ImuManager imu;          // Reads accelerometer data and detects shake gestures.
+SpeakerManager speaker;  // Plays buzzer melodies for pet events and alerts.
 
 void setup() {
   // Initialize M5Stick C Plus2
@@ -23,6 +25,9 @@ void setup() {
 
   // Initialize display
   display.init();
+
+  // Initialize speaker — sets volume so buzzer melodies play at a comfortable level.
+  speaker.init();
 
   // Show initialization message
   display.showMessage("Virtual Pet initialized!");
@@ -43,8 +48,18 @@ void loop() {
   // If the pet is dead, only check for the restart button then exit early.
   // The early return skips timers and menu navigation while the pet is in the dead state.
   if (myPet.isDead()) {
+    // Play the death melody exactly once — the static flag prevents it from replaying every frame.
+    static bool deathSoundPlayed = false;
+    if (deathSoundPlayed == false) {
+      speaker.playDeathSound();
+      deathSoundPlayed = true;
+    }
+
+    // Button A restarts the game. Play the reset fanfare so the player knows a new life has begun.
     if (buttons.wasButtonAPressed()) {
       myPet.reset();
+      speaker.playResetSound();
+      deathSoundPlayed = false;  // Clear the flag so the melody can play again on the next death.
     }
     return;
   }
@@ -59,9 +74,39 @@ void loop() {
   // Run the state machine — checks the current state and handles any behaviour tied to it.
   myPet.updateState();
 
-  // Confirm action with Button A
+  // Play a hunger alert when the pet is dangerously hungry.
+  // The millis() timer ensures the two-beep warning sounds at most once every 15 seconds
+  // rather than on every frame — the same non-blocking pattern used in TimerManager.
+  static unsigned long lastHungerAlertTime = 0;
+  unsigned long hungerAlertInterval = 15000;
+  int hungerAlertThreshold = 80;
+
+  if (myPet.getHungry() >= hungerAlertThreshold) {
+    if (millis() - lastHungerAlertTime >= hungerAlertInterval) {
+      speaker.playHungerAlertSound();
+      lastHungerAlertTime = millis();
+    }
+  }
+
+  // Play a sickness alert when the pet is dangerously sick.
+  // Uses the same millis() debounce pattern as the hunger alert above.
+  // The lower-pitched beep sounds distinct from the hunger alert so the player
+  // can tell them apart without checking the screen.
+  static unsigned long lastSicknessAlertTime = 0;
+  unsigned long sicknessAlertInterval = 15000;
+  int sicknessAlertThreshold = 80;
+
+  if (myPet.getSick() >= sicknessAlertThreshold) {
+    if (millis() - lastSicknessAlertTime >= sicknessAlertInterval) {
+      speaker.playSicknessAlertSound();
+      lastSicknessAlertTime = millis();
+    }
+  }
+
+  // Confirm action with Button A — executes the selected menu action, plays its sound,
+  // and shows a brief feedback message on screen.
   if (buttons.wasButtonAPressed()) {
-    menu.confirmAction(myPet, display);
+    menu.confirmAction(myPet, display, speaker);
   }
 
   // If the device was shaken, trigger the play action directly.
