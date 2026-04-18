@@ -17,6 +17,7 @@ TimerManager timers;     // Handles all automatic stat changes over time.
 void setup() {
   // Initialize M5Stick C Plus2
   M5.begin();
+  // Serial.begin(115200);   // Start serial for debugging (optional)
 
   // Initialize display
   display.init();
