@@ -19,7 +19,7 @@
 ## Phase 3: Interaction & Menu System
 - [x] Navigation Logic (Buttons B & C to cycle; Button A to confirm)
 - [x] Menu UI (Visual indicators for selected actions)
-- [ ] Motion Play (Using MPU6886 accelerometer for "Play" mode interactions)
+- [x] Motion Play (Using MPU6886 accelerometer for "Play" mode interactions)
 - [ ] Sound Feedback (Buzzer melodies for Level Up, Hunger, etc.)
 - [ ] Voice Memos (Microphone recording/playback for short sound bites)
 

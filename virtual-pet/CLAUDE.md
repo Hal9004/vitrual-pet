@@ -37,6 +37,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Display` | `lib/Display/animation_manager.h/.cpp` | Sprite/bitmap animation — not yet implemented |
 | `Button` | `lib/Button/button_handler.h/.cpp` | Edge-detection for buttons A, B, C. Call `update()` once per loop |
 | `Actions` | `lib/Actions/action_menu.h/.cpp` | The 5-action menu (Feed/Play/Sleep/Bathe/Heal), cycling and confirmation |
+| `Imu` | `lib/Imu/imu_manager.h/.cpp` | MPU6886 accelerometer — detects shake gestures. Call `update()` once per loop, query `wasShaken()` |
 | `Timer` | `lib/Timer/time_manager.h/.cpp` | All automatic stat changes over time (hunger increase, happiness decay). Add new decay rules here |
 | `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts — not yet implemented |
 | `Microphone` | `lib/Microphone/microphone_manager.h/.cpp` | Voice memo record/playback — not yet implemented |
@@ -47,7 +48,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** MPU6886 Motion Play (Task 6) — use `M5.Imu.getAccel()` to detect shake gestures and trigger the Play action. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** MPU6886 Shake to Wake (Task 7) — use the ImuManager shake detection to wake the device from a low-power sleep state. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 
