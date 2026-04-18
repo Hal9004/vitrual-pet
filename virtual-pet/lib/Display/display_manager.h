@@ -29,6 +29,7 @@ private:
     int lastHunger;
     int lastEnergy;
     int lastMoodIndex;
+    int lastMenuActionIndex;  // Tracks selected menu item so the indicator redraws on change
 
 public:
     // Constructor

@@ -2,13 +2,14 @@
 #include "../Actions/action_menu.h"
 
 // Constructor
-DisplayManager::DisplayManager() 
+DisplayManager::DisplayManager()
     : currentState(DisplayState::STATUS_VIEW),
       lastStatusUpdate(0),
       lastHappiness(0),
       lastHunger(0),
       lastEnergy(0),
-      lastMoodIndex(0) {
+      lastMoodIndex(0),
+      lastMenuActionIndex(-1) {
     // Constructor - initialization handled in init()
 }
 
@@ -104,6 +105,16 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int mo
         lastHunger = hunger;
         lastEnergy = energy;
         lastMoodIndex = moodIndex;
+        lastMenuActionIndex = menu.getCurrentActionIndex();
+    }
+
+    // --- Menu indicator fast update ---
+    // The full status redraw only runs every 5 seconds, but the menu indicator
+    // must update immediately when the player presses B or C to cycle actions.
+    // drawMenuIndicator() only touches the bottom strip so it won't affect the rest of the screen.
+    if (menu.getCurrentActionIndex() != lastMenuActionIndex) {
+        drawMenuIndicator(menu, 5, 220);
+        lastMenuActionIndex = menu.getCurrentActionIndex();
     }
 }
 
