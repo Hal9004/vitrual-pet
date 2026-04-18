@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "pet.h"
 
 // Constructor - Initialize pet with neutral values
@@ -48,6 +49,7 @@ void Pet::play() {
     energised = energised - 20;     // Use energy
     hungry = hungry + 15;           // Playing makes them hungry
     constrainValues();
+    Serial.println("DEBUG: play() triggered — happy=" + String(happy) + " energised=" + String(energised));
 }
 
 void Pet::bathe() {
@@ -174,16 +176,16 @@ int Pet::getDominantMood() const {
 
 // Constrain all values between 0-100
 void Pet::constrainValues() {
-    auto constrain = [](int& value) {
+    auto constrainStat = [](int& value) {
         if (value < 0) value = 0;
         if (value > 100) value = 100;
     };
-    
-    constrain(hungry);
-    constrain(tired);
-    constrain(happy);
-    constrain(sick);
-    constrain(sad);
-    constrain(cleanliness);
-    constrain(energised);
+
+    constrainStat(hungry);
+    constrainStat(tired);
+    constrainStat(happy);
+    constrainStat(sick);
+    constrainStat(sad);
+    constrainStat(cleanliness);
+    constrainStat(energised);
 }
