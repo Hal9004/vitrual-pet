@@ -61,6 +61,36 @@ void Pet::heal() {
     constrainValues();
 }
 
+// isDead()
+// Checks whether any critical stat has reached a fatal level.
+// Hunger at 100 means the pet has starved. Energy or happiness at 0 means
+// the pet has given up. Any one of these ends the game.
+bool Pet::isDead() const {
+    if (hungry >= 100) {
+        return true;
+    }
+    if (energised <= 0) {
+        return true;
+    }
+    if (happy <= 0) {
+        return true;
+    }
+    return false;
+}
+
+// reset()
+// Restores all stats to the same starting values used in the constructor.
+// Called when the player chooses to restart after the pet has died.
+void Pet::reset() {
+    hungry     = 30;
+    tired      = 20;
+    happy      = 70;
+    sick       = 0;
+    sad        = 10;
+    cleanliness = 60;
+    energised  = 80;
+}
+
 // Get dominant mood (returns which condition is highest)
 int Pet::getDominantMood() const {
     int conditions[] = {hungry, tired, happy, sick, sad, cleanliness, energised};

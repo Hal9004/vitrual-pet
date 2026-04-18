@@ -44,6 +44,12 @@ public:
     // Get the pet's dominant mood state
     int getDominantMood() const;  // Returns index of highest condition value
 
+    // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
+    bool isDead() const;
+
+    // Restores all stats to their starting values so the game can begin again
+    void reset();
+
     // Clamp values between 0-100
     void constrainValues();
 
