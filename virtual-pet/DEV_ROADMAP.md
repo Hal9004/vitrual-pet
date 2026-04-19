@@ -50,7 +50,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | MPU6886 "Shake to Wake" (low-power wake) | 🚫 Removed | Hardware investigation confirmed the MPU6886 INT pin is not routed to an ESP32 GPIO on the M5StickCPlus2 — interrupt-driven wake is not possible on this board |
 | RTC (Real Time Clock for overnight logic) | ❌ Missing | `lib/Timer/time_manager.cpp` exists (decay timers implemented) but RTC/BM8563 integration not started |
-| EEPROM/Preferences (save pet on power-off) | ❌ Missing | `lib/Storage/storage_manager.cpp` — empty |
+| NVS Persistence via `Preferences` (save pet on power-off) | ✅ Done | `lib/Storage/storage_manager.h/.cpp` — saves/loads all pet stats via Arduino `Preferences` (NVS). Wired into `setup()` (load) and Save action (write) in `src/main.cpp`. Note: this was originally labelled "EEPROM" but the ESP32 has no real EEPROM hardware — NVS is the correct native mechanism. |
 | Evolution Logic (growth stages based on care/time) | ❌ Missing | No growth stage tracking in `Pet` class |
 
 ### Phase 5: Connectivity & Polish
@@ -90,10 +90,10 @@ LEVEL 4 — DATA + PLANNING
   9. State Machine Cleanup             ✅ Done (STATE_DEAD + alert timers moved from main into updateState)
   9a. Evolution Logic                  (deferred — age counter + growth stages, requires task 9 refactor)
   9b. Sadness Logic                    (deferred — sad rises when happy is low, needs sad sprite from task 12)
- 10. EEPROM / Preferences persistence  ← ★ NEXT TASK (new: Preferences library, key/value storage)
+ 10. NVS persistence via `Preferences`  ✅ Done (note: ESP32 has no real EEPROM — NVS is the native mechanism)
 
 LEVEL 5 — ASSET PIPELINE
- 11. Screen Real Estate layout zones   (refactor from task 5 into reusable structs)
+ 11. Screen Real Estate layout zones   ← ★ NEXT TASK (refactor from task 5 into reusable structs)
  12. Asset Pipeline (image → C array)  (new: Python/online converter tools)
  13. Basic Sprite Rendering            (requires: asset pipeline from task 12)
 

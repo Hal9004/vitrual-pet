@@ -26,7 +26,7 @@
 
 ## Phase 4: Environmental & Advanced Features
 - [ ] RTC (Real Time Clock) for overnight logic
-- [ ] EEPROM/Preferences (Saving pet state on power off)
+- [x] NVS Persistence via `Preferences` (Saving pet state on power off) — Note: the checklist originally said "EEPROM" but the ESP32 has no real EEPROM. We used NVS (Non-Volatile Storage) directly via the Arduino `Preferences` library, which is the correct ESP32-native approach.
 - [ ] Evolution Logic (Growth stages based on care/time) — deferred, lower priority than EEPROM
 
 ## Phase 5: Connectivity & Polish

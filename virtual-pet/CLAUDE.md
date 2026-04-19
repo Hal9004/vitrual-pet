@@ -41,14 +41,14 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Timer` | `lib/Timer/time_manager.h/.cpp` | All automatic stat changes over time (hunger increase, happiness decay). Add new decay rules here |
 | `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts — not yet implemented |
 | `Microphone` | `lib/Microphone/microphone_manager.h/.cpp` | Voice memo record/playback — not yet implemented |
-| `Storage` | `lib/Storage/storage_manager.h/.cpp` | EEPROM/Preferences persistence — not yet implemented |
+| `Storage` | `lib/Storage/storage_manager.h/.cpp` | NVS persistence via Arduino `Preferences` — saves and loads all pet stats |
 
 ## Current Progress
 
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** EEPROM / Preferences persistence (Task 10) — save pet stats to NVS so they survive a power-off. Uses the Arduino `Preferences` library. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** Screen Real Estate layout zones (Task 11) — refactor the hardcoded pixel layout from Task 5 into reusable structs. See `DEV_ROADMAP.md` for details.
 
 ## Hardware Gotchas
 
