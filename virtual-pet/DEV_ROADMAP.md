@@ -85,8 +85,9 @@ LEVEL 3 — NEW HARDWARE API (library already in project)
   8. Buzzer Sound Feedback             ✅ Done
 
 LEVEL 4 — DATA + PLANNING
-  9. Evolution Logic                   ← ★ NEXT TASK (requires: state machine from task 4 + age counter)
- 10. EEPROM / Preferences persistence  (new: Preferences library, key/value storage)
+  9. State Machine Cleanup             ✅ Done (STATE_DEAD + alert timers moved from main into updateState)
+  9a. Evolution Logic                  (deferred — age counter + growth stages, requires task 9 refactor)
+ 10. EEPROM / Preferences persistence  ← ★ NEXT TASK (new: Preferences library, key/value storage)
 
 LEVEL 5 — ASSET PIPELINE
  11. Screen Real Estate layout zones   (refactor from task 5 into reusable structs)

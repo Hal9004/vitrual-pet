@@ -26,7 +26,7 @@
 ## Phase 4: Environmental & Advanced Features
 - [ ] RTC (Real Time Clock) for overnight logic
 - [ ] EEPROM/Preferences (Saving pet state on power off)
-- [ ] Evolution Logic (Growth stages based on care/time)
+- [ ] Evolution Logic (Growth stages based on care/time) — deferred, lower priority than EEPROM
 
 ## Phase 5: Connectivity & Polish
 - [ ] Wireless Communication (BLE or WiFi for inter-device interaction)
