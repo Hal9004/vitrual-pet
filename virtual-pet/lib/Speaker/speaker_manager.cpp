@@ -130,3 +130,15 @@ void SpeakerManager::playSicknessAlertSound() {
     delay(120);
     M5.Speaker.stop();
 }
+
+// playSaveSound()
+// Two ascending notes — C5 then E5 — give a soft, confident "data saved" chime.
+// Intentionally shorter and quieter-feeling than the care action melodies so it
+// does not interrupt the game feel — it is a background confirmation, not a celebration.
+void SpeakerManager::playSaveSound() {
+    M5.Speaker.tone(523, 80);   // C5
+    delay(100);
+    M5.Speaker.tone(659, 150);  // E5
+    delay(180);
+    M5.Speaker.stop();
+}

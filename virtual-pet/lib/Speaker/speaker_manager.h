@@ -36,6 +36,9 @@ public:
 
     // Plays a two-beep warning at a lower pitch when the pet's sickness is dangerously high.
     void playSicknessAlertSound();
+
+    // Plays a short two-note ascending chime to confirm that the pet's stats have been saved.
+    void playSaveSound();
 };
 
 #endif
