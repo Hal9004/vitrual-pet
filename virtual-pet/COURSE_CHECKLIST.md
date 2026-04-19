@@ -15,6 +15,7 @@
 - [x] Death/Reset Condition (Handling 0 stats)
 - [x] Cleanliness Decay Logic (Timer-based decrement)
 - [x] Sickness Accumulation Logic (Rises when cleanliness is low)
+- [ ] Sadness Logic — revisit when sprites are implemented. Idea: `sad` rises automatically when `happy` falls below a threshold, triggering a dedicated sad sprite. The stat and getter/setter already exist in `Pet` — needs a timer rule in `TimerManager` and a matching sprite in the asset pipeline.
 
 ## Phase 3: Interaction & Menu System
 - [x] Navigation Logic (Buttons B & C to cycle; Button A to confirm)
@@ -32,3 +33,9 @@
 - [ ] Wireless Communication (BLE or WiFi for inter-device interaction)
 - [ ] Remote Dashboard (Web/App stat checking via WiFi)
 - [ ] Final UI Polish (Clean code comments, descriptive variable names)
+
+## Phase 6: Student Template Creation
+- [ ] Review completed codebase against the lesson plan
+- [ ] Break each module into a skeleton template — preserve function signatures, comments, and example implementations where helpful, but leave the core logic for students to write themselves
+- [ ] Verify each template compiles and provides enough scaffolding for a student to complete it without being lost
+- [ ] Produce one template per complexity level (Levels 1–7 from the roadmap) so teachers can assign tasks appropriate to each student's skill

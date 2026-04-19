@@ -31,6 +31,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Death/Reset Condition (handle 0 stats) | ✅ Done | `lib/Pet/pet.h` → `isDead()` / `reset()`. Death screen routed through `display_manager.cpp` → `renderDisplay()` |
 | Cleanliness Decay Logic (timer-based decrement) | ✅ Done | `lib/Timer/time_manager.cpp` → `applyCleanlinessDecay()`. Drops by 1 every 10 seconds |
 | Sickness Accumulation Logic (rises when cleanliness is low) | ✅ Done | `lib/Timer/time_manager.cpp` → `applySicknessAccumulation()`. Rises by 1 every 12 seconds when `cleanliness` is below 30 |
+| Sadness Logic (rises when happiness is low) | ⏸ Deferred | `sad` stat, getter, setter, default constant already exist in `Pet`. Needs: a `TimerManager` rule to raise `sad` when `happy` falls below a threshold, and a sad sprite to display it. Revisit after the asset pipeline (Task 12) is complete |
 | Cleanliness / Sickness Display | ✅ Done | Both bars shown in `display_manager.cpp` → `showPetStatus()`. Layout tightened to fit all five stats |
 
 ### Phase 3: Interaction & Menu System
@@ -59,6 +60,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
 | Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
 | Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Remaining: bitmap sprites and animation |
+| SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
 ---
 
@@ -87,6 +89,7 @@ LEVEL 3 — NEW HARDWARE API (library already in project)
 LEVEL 4 — DATA + PLANNING
   9. State Machine Cleanup             ✅ Done (STATE_DEAD + alert timers moved from main into updateState)
   9a. Evolution Logic                  (deferred — age counter + growth stages, requires task 9 refactor)
+  9b. Sadness Logic                    (deferred — sad rises when happy is low, needs sad sprite from task 12)
  10. EEPROM / Preferences persistence  ← ★ NEXT TASK (new: Preferences library, key/value storage)
 
 LEVEL 5 — ASSET PIPELINE
@@ -101,6 +104,22 @@ LEVEL 6 — COMPLEX HARDWARE
 LEVEL 7 — NETWORKING
  16. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
  17. Remote Dashboard                  (requires: task 16 + simple HTTP server)
+
+PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
+ 18. Codebase review against lesson plan
+     — Walk every module against the course checklist and confirm the reference
+       implementation is clean, documented, and complete.
+ 19. Create skeleton templates per module
+     — Strip core logic from each .cpp file, leaving function signatures, comments,
+       and example implementations where needed to give students enough scaffolding.
+       Students write their own logic inside the provided structure.
+ 20. Validate templates compile and are teachable
+     — Each skeleton should compile without errors and give a student of the target
+       skill level enough context to complete it without being lost.
+ 21. Organise templates by complexity level
+     — One template set per Level (1–7) so teachers can assign tasks matched to
+       each student's experience. Beginner students get Level 1–2 skeletons;
+       advanced students get Level 4–7.
 ```
 
 ---
