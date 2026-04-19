@@ -2,11 +2,12 @@
 
 ActionMenu::ActionMenu() : currentActionIndex(0) {
     // Initialize action array with all available pet actions
-    actions[0] = {ActionType::FEED, "Feed", "Give food to pet"};
-    actions[1] = {ActionType::PLAY, "Play", "Play with pet"};
+    actions[0] = {ActionType::FEED,  "Feed",  "Give food to pet"};
+    actions[1] = {ActionType::PLAY,  "Play",  "Play with pet"};
     actions[2] = {ActionType::SLEEP, "Sleep", "Let pet rest"};
     actions[3] = {ActionType::BATHE, "Bathe", "Clean the pet"};
-    actions[4] = {ActionType::HEAL, "Heal", "Treat pet illness"};
+    actions[4] = {ActionType::HEAL,  "Heal",  "Treat pet illness"};
+    actions[5] = {ActionType::SAVE,  "Save",  "Save pet progress"};
 }
 
 void ActionMenu::update(const ButtonHandler& buttons) {
@@ -55,28 +56,36 @@ void ActionMenu::executePetAction(Pet& pet, ActionType actionType) {
     }
 }
 
-void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker) {
+void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage) {
     Action selectedAction = getSelectedAction();
 
-    // Execute the pet action — updates the pet's stats and sets the new state.
-    executePetAction(pet, selectedAction.type);
-
-    // Play the sound that matches the action so the player gets audio confirmation.
+    // Each case executes the action and plays its matching sound.
+    // Save is included here alongside the care actions so all action handling
+    // lives in one place and every case follows the same visible pattern.
     switch (selectedAction.type) {
         case ActionType::FEED:
+            executePetAction(pet, selectedAction.type);
             speaker.playFeedSound();
             break;
         case ActionType::PLAY:
+            executePetAction(pet, selectedAction.type);
             speaker.playPlaySound();
             break;
         case ActionType::SLEEP:
+            executePetAction(pet, selectedAction.type);
             speaker.playSleepSound();
             break;
         case ActionType::BATHE:
+            executePetAction(pet, selectedAction.type);
             speaker.playBatheSound();
             break;
         case ActionType::HEAL:
+            executePetAction(pet, selectedAction.type);
             speaker.playHealSound();
+            break;
+        case ActionType::SAVE:
+            storage.save(pet);
+            speaker.playSaveSound();
             break;
     }
 

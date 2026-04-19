@@ -5,6 +5,7 @@
 #include "../Display/display_manager.h"
 #include "../Button/button_handler.h"
 #include "../Speaker/speaker_manager.h"
+#include "../Storage/storage_manager.h"
 
 /**
  * ActionMenu
@@ -35,7 +36,8 @@ enum class ActionType {
     PLAY,
     SLEEP,
     BATHE,
-    HEAL
+    HEAL,
+    SAVE
 };
 
 struct Action {
@@ -46,7 +48,7 @@ struct Action {
 
 class ActionMenu {
 private:
-    static const int NUM_ACTIONS = 5;
+    static const int NUM_ACTIONS = 6;
     Action actions[NUM_ACTIONS];
     int currentActionIndex;
 
@@ -76,10 +78,11 @@ public:
      */
     int getCurrentActionIndex() const;
 
-    // confirmAction(Pet&, DisplayManager&, SpeakerManager&)
+    // confirmAction(Pet&, DisplayManager&, SpeakerManager&, StorageManager&)
     // Executes the currently selected pet action, plays the matching sound,
     // and shows feedback on the display. Call this when the user presses Button A.
-    void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker);
+    // StorageManager is needed here because the Save action writes stats to NVS directly.
+    void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage);
 
     /**
      * displayCurrentMenu(DisplayManager&)
