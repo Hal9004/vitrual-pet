@@ -47,6 +47,16 @@ private:
     static const unsigned long SICKNESS_ALERT_INTERVAL = 15000;
 
 public:
+    // Starting values for a brand-new pet — used by the constructor and by
+    // StorageManager::load() so both share a single source of truth.
+    static const int DEFAULT_HUNGRY      = 30;
+    static const int DEFAULT_TIRED       = 20;
+    static const int DEFAULT_HAPPY       = 70;
+    static const int DEFAULT_SICK        = 0;
+    static const int DEFAULT_SAD         = 10;
+    static const int DEFAULT_CLEANLINESS = 80;
+    static const int DEFAULT_ENERGISED   = 80;
+
     // Constructor
     Pet();
 

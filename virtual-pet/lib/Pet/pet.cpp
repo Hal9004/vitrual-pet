@@ -3,8 +3,9 @@
 
 // Constructor - Initialize pet with neutral values
 Pet::Pet()
-    : hungry(30), tired(20), happy(70), sick(90), sad(10),
-      cleanliness(3), energised(80), currentState(STATE_IDLE),
+    : hungry(DEFAULT_HUNGRY), tired(DEFAULT_TIRED), happy(DEFAULT_HAPPY),
+      sick(DEFAULT_SICK), sad(DEFAULT_SAD), cleanliness(DEFAULT_CLEANLINESS),
+      energised(DEFAULT_ENERGISED), currentState(STATE_IDLE),
       deathSoundReady(false),
       hungerAlertReady(false), sicknessAlertReady(false),
       lastHungerAlertTime(0), lastSicknessAlertTime(0) {
