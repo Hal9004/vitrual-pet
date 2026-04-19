@@ -7,27 +7,34 @@
 #include "../lib/Timer/time_manager.h"
 #include "../lib/Imu/imu_manager.h"
 #include "../lib/Speaker/speaker_manager.h"
+#include "../lib/Storage/storage_manager.h"
 
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
-Pet myPet;               // Holds all of the pet's stats and care actions.
-DisplayManager display;  // Draws everything to the screen.
-ButtonHandler buttons;   // Reads and tracks button presses.
-ActionMenu menu;         // Manages the list of actions the player can choose.
-TimerManager timers;     // Handles all automatic stat changes over time.
-ImuManager imu;          // Reads accelerometer data and detects shake gestures.
-SpeakerManager speaker;  // Plays buzzer melodies for pet events and alerts.
+Pet myPet;                // Holds all of the pet's stats and care actions.
+DisplayManager display;   // Draws everything to the screen.
+ButtonHandler buttons;    // Reads and tracks button presses.
+ActionMenu menu;          // Manages the list of actions the player can choose.
+TimerManager timers;      // Handles all automatic stat changes over time.
+ImuManager imu;           // Reads accelerometer data and detects shake gestures.
+SpeakerManager speaker;   // Plays buzzer melodies for pet events and alerts.
+StorageManager storage;   // Saves and loads pet stats to NVS flash storage.
 
 void setup() {
   // Initialize M5Stick C Plus2
   M5.begin();
+  #ifdef DEBUG
   Serial.begin(115200);   // Start serial for debugging (optional)
-
+  #endif
   // Initialize display
   display.init();
 
   // Initialize speaker — sets volume so buzzer melodies play at a comfortable level.
   speaker.init();
+
+  // Restore the pet's stats from NVS flash storage.
+  // If no save data exists yet (first boot), load() falls back to healthy default values.
+  storage.load(myPet);
 
   // Show initialization message
   display.showMessage("Virtual Pet initialized!");
@@ -58,9 +65,11 @@ void loop() {
       speaker.playDeathSound();
     }
 
-    // Button A restarts the game. Play the reset fanfare so the player knows a new life has begun.
+    // Button A restarts the game. Clear saved data so the dead state is not
+    // reloaded on the next boot, then play the reset fanfare.
     if (buttons.wasButtonAPressed()) {
       myPet.reset();
+      storage.clear();
       speaker.playResetSound();
     }
     return;
@@ -87,7 +96,7 @@ void loop() {
   // Confirm action with Button A — executes the selected menu action, plays its sound,
   // and shows a brief feedback message on screen.
   if (buttons.wasButtonAPressed()) {
-    menu.confirmAction(myPet, display, speaker);
+    menu.confirmAction(myPet, display, speaker, storage);
   }
 
   // If the device was shaken, trigger the play action directly.
