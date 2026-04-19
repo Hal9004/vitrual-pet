@@ -1,9 +1,13 @@
+#include <Arduino.h>
 #include "pet.h"
 
 // Constructor - Initialize pet with neutral values
 Pet::Pet()
-    : hungry(30), tired(20), happy(70), sick(0), sad(10),
-      cleanliness(60), energised(80), currentState(STATE_IDLE) {
+    : hungry(30), tired(20), happy(70), sick(90), sad(10),
+      cleanliness(3), energised(80), currentState(STATE_IDLE),
+      deathSoundReady(false),
+      hungerAlertReady(false), sicknessAlertReady(false),
+      lastHungerAlertTime(0), lastSicknessAlertTime(0) {
 }
 
 // Getters
@@ -83,6 +87,34 @@ void Pet::setState(PetState newState) {
 // Runs once per loop. Checks the current state and applies any
 // behaviour that belongs to it. Add new states here as the game grows.
 void Pet::updateState() {
+    // Death overrides every other state — if any critical stat is fatal, stop here.
+    // The deathSoundReady flag is only set on the first frame of death (when transitioning
+    // from a living state) so the sound plays exactly once per death.
+    if (isDead()) {
+        if (currentState != STATE_DEAD) {
+            deathSoundReady = true;
+        }
+        setState(STATE_DEAD);
+        return;
+    }
+
+    // Check whether a hunger alert is due — same millis() pattern as TimerManager.
+    // Sets the flag so main.cpp can play the sound without Pet knowing about SpeakerManager.
+    if (hungry >= HUNGER_ALERT_THRESHOLD) {
+        if (millis() - lastHungerAlertTime >= HUNGER_ALERT_INTERVAL) {
+            hungerAlertReady    = true;
+            lastHungerAlertTime = millis();
+        }
+    }
+
+    // Check whether a sickness alert is due — same pattern as the hunger alert above.
+    if (sick >= SICKNESS_ALERT_THRESHOLD) {
+        if (millis() - lastSicknessAlertTime >= SICKNESS_ALERT_INTERVAL) {
+            sicknessAlertReady    = true;
+            lastSicknessAlertTime = millis();
+        }
+    }
+
     switch (currentState) {
         case STATE_IDLE:
             // If the sick stat is dangerously high, transition to sick automatically
@@ -121,8 +153,12 @@ void Pet::updateState() {
             break;
 
         case STATE_EVOLVING:
-            // Placeholder — evolution logic added in task 9
+            // Placeholder — evolution logic added in task 9a
             setState(STATE_IDLE);
+            break;
+
+        case STATE_DEAD:
+            // Nothing to do here — main.cpp handles the death screen and restart button.
             break;
     }
 }
@@ -148,13 +184,53 @@ bool Pet::isDead() const {
 // Restores all stats to the same starting values used in the constructor.
 // Called when the player chooses to restart after the pet has died.
 void Pet::reset() {
-    hungry     = 30;
-    tired      = 20;
-    happy      = 70;
-    sick       = 0;
-    sad        = 10;
+    hungry      = 30;
+    tired       = 20;
+    happy       = 70;
+    sick        = 0;
+    sad         = 10;
     cleanliness = 60;
-    energised  = 80;
+    energised   = 80;
+    currentState = STATE_IDLE;  // Clear death state so the next updateState() starts fresh
+
+    // Clear alert state so no leftover flags carry over into the new life.
+    deathSoundReady     = false;
+    hungerAlertReady    = false;
+    sicknessAlertReady  = false;
+    lastHungerAlertTime  = 0;
+    lastSicknessAlertTime = 0;
+}
+
+// checkDeathAlert()
+// Returns true once on the first frame the pet enters STATE_DEAD, then resets the flag.
+// This ensures the death melody plays exactly once per death, not on every frame.
+bool Pet::checkDeathAlert() {
+    if (deathSoundReady == true) {
+        deathSoundReady = false;
+        return true;
+    }
+    return false;
+}
+
+// checkHungerAlert()
+// Returns true once when the hunger alert has fired, then resets the flag to false.
+// This "read and clear" pattern means the caller only gets one notification per alert event.
+bool Pet::checkHungerAlert() {
+    if (hungerAlertReady == true) {
+        hungerAlertReady = false;
+        return true;
+    }
+    return false;
+}
+
+// checkSicknessAlert()
+// Same read-and-clear pattern as checkHungerAlert() but for the sickness stat.
+bool Pet::checkSicknessAlert() {
+    if (sicknessAlertReady == true) {
+        sicknessAlertReady = false;
+        return true;
+    }
+    return false;
 }
 
 // Get dominant mood (returns which condition is highest)

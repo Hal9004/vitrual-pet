@@ -41,25 +41,27 @@ void loop() {
   buttons.update(); // Detect which buttons were pressed this frame
   imu.update();     // Read fresh accelerometer data and update shake detection
 
-  // Render the display first — passing isDead() lets DisplayManager decide what to show.
+  // Render the display first — passing the current state lets DisplayManager decide what to show.
   // This must run every frame regardless of pet state so the screen is never skipped.
-  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(), menu, myPet.isDead());
+  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(), menu, myPet.getState() == STATE_DEAD);
+
+  // Run the state machine before anything else — it sets STATE_DEAD when stats are fatal,
+  // so the dead check below always sees an up-to-date state.
+  myPet.updateState();
 
   // If the pet is dead, only check for the restart button then exit early.
   // The early return skips timers and menu navigation while the pet is in the dead state.
-  if (myPet.isDead()) {
-    // Play the death melody exactly once — the static flag prevents it from replaying every frame.
-    static bool deathSoundPlayed = false;
-    if (deathSoundPlayed == false) {
+  if (myPet.getState() == STATE_DEAD) {
+    // The state machine sets deathSoundReady on the first frame of death.
+    // checkDeathAlert() returns true once and then resets the flag — same pattern as the alerts.
+    if (myPet.checkDeathAlert()) {
       speaker.playDeathSound();
-      deathSoundPlayed = true;
     }
 
     // Button A restarts the game. Play the reset fanfare so the player knows a new life has begun.
     if (buttons.wasButtonAPressed()) {
       myPet.reset();
       speaker.playResetSound();
-      deathSoundPlayed = false;  // Clear the flag so the melody can play again on the next death.
     }
     return;
   }
@@ -71,36 +73,15 @@ void loop() {
   // The rules for what changes and how fast live in TimerManager, not here.
   timers.update(myPet);
 
-  // Run the state machine — checks the current state and handles any behaviour tied to it.
-  myPet.updateState();
-
-  // Play a hunger alert when the pet is dangerously hungry.
-  // The millis() timer ensures the two-beep warning sounds at most once every 15 seconds
-  // rather than on every frame — the same non-blocking pattern used in TimerManager.
-  static unsigned long lastHungerAlertTime = 0;
-  unsigned long hungerAlertInterval = 15000;
-  int hungerAlertThreshold = 80;
-
-  if (myPet.getHungry() >= hungerAlertThreshold) {
-    if (millis() - lastHungerAlertTime >= hungerAlertInterval) {
-      speaker.playHungerAlertSound();
-      lastHungerAlertTime = millis();
-    }
+  // The state machine sets alert flags when hunger or sickness cross their thresholds.
+  // checkHungerAlert() and checkSicknessAlert() return true once per alert event, then reset.
+  // Keeping the speaker call here means Pet does not need to know about SpeakerManager.
+  if (myPet.checkHungerAlert()) {
+    speaker.playHungerAlertSound();
   }
 
-  // Play a sickness alert when the pet is dangerously sick.
-  // Uses the same millis() debounce pattern as the hunger alert above.
-  // The lower-pitched beep sounds distinct from the hunger alert so the player
-  // can tell them apart without checking the screen.
-  static unsigned long lastSicknessAlertTime = 0;
-  unsigned long sicknessAlertInterval = 15000;
-  int sicknessAlertThreshold = 80;
-
-  if (myPet.getSick() >= sicknessAlertThreshold) {
-    if (millis() - lastSicknessAlertTime >= sicknessAlertInterval) {
-      speaker.playSicknessAlertSound();
-      lastSicknessAlertTime = millis();
-    }
+  if (myPet.checkSicknessAlert()) {
+    speaker.playSicknessAlertSound();
   }
 
   // Confirm action with Button A — executes the selected menu action, plays its sound,

@@ -11,7 +11,8 @@ enum PetState {
     STATE_SICK,      // Entered automatically when sick stat is high — pet is unwell
     STATE_HEALING,   // Triggered by heal() — pet is receiving treatment
     STATE_BATHING,   // Triggered by bathe() — pet is being cleaned
-    STATE_EVOLVING   // Reserved for future evolution logic (task 9)
+    STATE_EVOLVING,  // Reserved for future evolution logic (task 9a)
+    STATE_DEAD       // Entered when any critical stat reaches a fatal level
 };
 
 class Pet {
@@ -26,6 +27,24 @@ private:
     int energised;    // 0 = no energy, 100 = full energy
 
     PetState currentState;  // Which behaviour the pet is currently in
+
+    // Alert flags — set by updateState() when a warning threshold is crossed.
+    // main.cpp reads these via checkDeathAlert() / checkHungerAlert() / checkSicknessAlert() and plays the sound.
+    bool deathSoundReady;
+    bool hungerAlertReady;
+    bool sicknessAlertReady;
+
+    // Timestamps used to rate-limit the alerts — same millis() pattern as TimerManager.
+    unsigned long lastHungerAlertTime;
+    unsigned long lastSicknessAlertTime;
+
+    // How high a stat must be before an alert fires.
+    static const int HUNGER_ALERT_THRESHOLD   = 80;
+    static const int SICKNESS_ALERT_THRESHOLD = 80;
+
+    // How many milliseconds must pass between consecutive alerts.
+    static const unsigned long HUNGER_ALERT_INTERVAL   = 15000;
+    static const unsigned long SICKNESS_ALERT_INTERVAL = 15000;
 
 public:
     // Constructor
@@ -61,6 +80,17 @@ public:
 
     // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
     bool isDead() const;
+
+    // Returns true once on the first frame of death, then resets the flag.
+    // Call this each loop and play the death sound when it returns true.
+    bool checkDeathAlert();
+
+    // Returns true once when a hunger alert is ready, then resets the flag.
+    // Call this each loop and play the alert sound when it returns true.
+    bool checkHungerAlert();
+
+    // Returns true once when a sickness alert is ready, then resets the flag.
+    bool checkSicknessAlert();
 
     // Returns the current behavioural state of the pet
     PetState getState() const;
