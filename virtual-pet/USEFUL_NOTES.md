@@ -112,6 +112,174 @@ Every decay and accumulation timer in `lib/Timer/time_manager.cpp` uses exactly 
 
 ---
 
+## How to Completely Reset an ESP32 Device
+
+Reflashing the firmware does **not** wipe NVS or any other data partition — only the firmware image is overwritten. If you need a guaranteed clean slate, you have two options.
+
+### Option 1 — Erase via PlatformIO (inside a project)
+
+Run this command from inside any PlatformIO project directory:
+
+```bash
+pio run --target erase
+```
+
+This wipes the entire flash chip — firmware, NVS, filesystem, everything. The next upload will start completely fresh. This works in any PlatformIO project without any extra setup.
+
+### Option 2 — Erase via esptool.py (outside a project)
+
+`esptool.py` is the underlying tool PlatformIO uses, and it is installed automatically as part of the ESP32 platform. You can call it directly without a PlatformIO project:
+
+```bash
+esptool.py --port /dev/tty.usbserial-XXXX erase_flash
+```
+
+Replace `/dev/tty.usbserial-XXXX` with the port your device is connected to. On macOS you can find it by running:
+
+```bash
+ls /dev/tty.usb*
+```
+
+This is useful when sharing a reset procedure with someone who has the ESP32 toolchain installed but is not using PlatformIO, or when working on a device outside of any specific project.
+
+### What each option erases
+
+| What | `pio run --target erase` | `esptool.py erase_flash` |
+|---|---|---|
+| Firmware (`app0` / `app1`) | ✅ | ✅ |
+| NVS (Preferences data) | ✅ | ✅ |
+| Filesystem (SPIFFS / LittleFS) | ✅ | ✅ |
+| Partition table | ✅ | ✅ |
+
+Both commands erase everything. After either one, you must re-upload your firmware before the device will run again.
+
+---
+
+## What `const` Means at the End of a Function Declaration
+
+You will notice that some functions in the class headers end with the word `const`:
+
+```cpp
+PetState getState() const;
+int      getHungry() const;
+bool     isDead()    const;
+```
+
+This `const` is a **promise to the compiler** that the function will not modify any member variables of the object. Functions marked this way are called **const member functions**.
+
+### Why it matters — intent and enforcement
+
+`getState()` only reads `currentState` and returns it. It changes nothing. Marking it `const` communicates that clearly to anyone reading the code, and the compiler enforces the promise. If you accidentally wrote `currentState = STATE_IDLE` inside a `const` function, the compiler would refuse to build and tell you exactly why.
+
+Scanning a class header becomes much easier once you know this rule:
+- Functions with `const` at the end are **read-only** — safe to call with no side effects.
+- Functions without it **may change the object's state** — setters and action methods like `feed()` and `play()`.
+
+### Why it matters — const references
+
+When a function receives an object as `const Pet&`, it is promising not to modify that pet. The compiler then only allows `const` member functions to be called on it. `StorageManager::save()` is a real example of this in the project:
+
+```cpp
+// The const Pet& parameter means: "I promise not to modify this pet."
+void StorageManager::save(const Pet& pet) {
+    prefs.putInt("hungry", pet.getHungry());  // allowed — getHungry() is const
+    pet.setHungry(50);                        // compiler error — setHungry() is not const
+}
+```
+
+The `const` on the parameter and the `const` on each getter work together. The compiler can verify that `save()` truly does not modify the pet — every function it calls on `pet` has made the same promise.
+
+### The general rule
+
+Mark a member function `const` whenever it only **reads** from the object and never changes it. In practice this means all getters should be `const`, and action methods that change stats should not be.
+
+---
+
+## How the Scope Resolution Operator Works (`::`)
+
+`::` is called the **scope resolution operator**. It means "look inside this class (or namespace) for this name."
+
+### Static members vs instance members
+
+When a member is declared `static` in a class, it belongs to the **class itself** — not to any individual object created from that class. There is only one copy of it, shared everywhere.
+
+```cpp
+class Pet {
+public:
+    static const int DEFAULT_HUNGRY = 30;  // belongs to Pet the class
+    int getHungry() const;                 // belongs to each Pet object
+};
+```
+
+The way you access each type of member reflects this difference:
+
+```cpp
+// Instance member — accessed via a dot on a specific object
+pet.getHungry()        // pet is an object; getHungry() belongs to that object
+
+// Static member — accessed via :: on the class name, no object needed
+Pet::DEFAULT_HUNGRY    // no object required; it belongs to the class itself
+```
+
+### Why :: is needed outside the class
+
+Inside `pet.cpp`, the compiler already knows it is working inside the `Pet` class context, so `DEFAULT_HUNGRY` on its own is enough. But in a different file like `storage_manager.cpp`, the compiler has no idea where `DEFAULT_HUNGRY` comes from unless you tell it:
+
+```cpp
+// Compiler does not know which class to look in — fails
+prefs.getInt("hungry", DEFAULT_HUNGRY);
+
+// Compiler knows to look inside Pet — works
+prefs.getInt("hungry", Pet::DEFAULT_HUNGRY);
+```
+
+### You have already seen :: in this project
+
+The same operator appears in other places you have already written:
+
+```cpp
+ActionType::FEED    // FEED is a value inside the ActionType enum class
+STATE_IDLE          // plain enum values (no class keyword) do not need ::,
+                    // but enum class values do — that is why ActionType needs it
+```
+
+Think of `::` as saying *"open this container and find the name inside it."* The container can be a class, an enum class, or a namespace — `::` works the same way in all three cases.
+
+### Defining class functions outside the class body
+
+In this project, every class is split across two files: a header (`.h`) that declares what the class has, and a source file (`.cpp`) that defines what each function actually does. When you write a function body in the `.cpp` file, you use `::` to tell the compiler which class that function belongs to.
+
+```cpp
+// In pet.h — the declaration (what exists)
+class Pet {
+public:
+    void feed();
+};
+
+// In pet.cpp — the definition (what it does)
+void Pet::feed() {
+    hungry = hungry - 20;
+    happy  = happy  + 15;
+    constrainValues();
+}
+```
+
+`Pet::feed()` means "this is the implementation of the `feed` function that belongs to the `Pet` class." Without the `Pet::` prefix, the compiler would treat it as a standalone free function with no connection to the class at all.
+
+Once you are inside the function body — between the `{` and `}` — the compiler knows you are in `Pet` context. That is why you can write `hungry` and `constrainValues()` directly without any prefix. The `Pet::` on the function name is the door; everything inside is already in the room.
+
+You can see this pattern used consistently throughout the project:
+
+```cpp
+void StorageManager::save(const Pet& pet) { ... }
+void TimerManager::update(Pet& pet)       { ... }
+void ActionMenu::confirmAction(...)       { ... }
+```
+
+Every one of those `ClassName::functionName` lines is the same thing: "here is the body for a function I declared inside this class."
+
+---
+
 ## How the State Machine Works
 
 ### What is a "state"?
