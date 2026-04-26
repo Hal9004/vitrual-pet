@@ -93,7 +93,10 @@ LEVEL 4 — DATA + PLANNING
  10. NVS persistence via `Preferences`  ✅ Done (note: ESP32 has no real EEPROM — NVS is the native mechanism)
 
 LEVEL 5 — ASSET PIPELINE
- 11. Screen Real Estate layout zones   ← ★ NEXT TASK (refactor from task 5 into reusable structs)
+ 11. Screen Real Estate layout zones   ✅ Done
+11a. Multi-screen framework            (new: ScreenState enum + screen-switching in DisplayManager — prerequisite for 11b, 11c)
+11b. Stats detail screen               (new: uses current zone layout — pet face always visible; shows all five stat bars; requires 11a)
+11c. Pet interaction screens           (new: per-action screen shown during Feed/Play/Sleep/Bathe/Heal; uses current zone layout — pet face always visible; only the stats directly affected by that action are shown; requires 11a)
  12. Asset Pipeline (image → C array)  (new: Python/online converter tools)
  13. Basic Sprite Rendering            (requires: asset pipeline from task 12)
 
@@ -498,6 +501,62 @@ drawMenuIndicator(menu, MENU_INDICATOR_X, MENU_INDICATOR_Y);
 ```
 
 **Files touched:** `lib/Display/display_manager.h` and `lib/Display/display_manager.cpp`.
+
+---
+
+### Task 11 — Screen Real Estate Layout Zones ✅ Done
+
+**Why this task?**
+
+Task 5 was a good first step — it replaced raw numbers with named constants. But nineteen separate constants in a flat list still don't tell a student *which part of the screen* each number belongs to. `HAPPY_LABEL_Y` and `MENU_INDICATOR_X` sit next to each other in the header with no visible relationship to the physical regions they describe.
+
+This task groups those constants into five named **zone structs**, one per logical region of the screen. A student reading the header now sees the screen divided into five clearly labelled pieces before they read a single draw call.
+
+**New concept introduced: plain structs and `constexpr`**
+
+A `struct` is a bundle of related values with named fields. You have already seen one in the project — `struct Action` in `lib/Actions/action_menu.h` bundles `type`, `name`, and `description` together. `ScreenZone` and `StatBarZone` follow exactly the same idea, but with only integers.
+
+`static constexpr` is used instead of `static const` because `static const` only works inline in a class for integer types. For struct types, C++ needs `constexpr` to evaluate the value at compile time. The end result is identical — zero runtime cost, just a different keyword.
+
+**The five zones and what lives in each**
+
+```
+┌─────────────────────────────┐  Y=0
+│        TITLE_ZONE           │  Y=5  — pet name, centred, yellow size-2
+├─────────────────────────────┤  Y=26
+│        STATS_ZONE           │  5 stat label+bar pairs, stacked 22px apart
+│   Happy  ░░░░░░░░░░░░░░     │  Y=26–36
+│   Hunger ░░░░░░░░░░░░░░     │  Y=48–58
+│   Energy ░░░░░░░░░░░░░░     │  Y=70–80
+│   Clean  ░░░░░░░░░░░░░░     │  Y=92–102
+│   Sick   ░░░░░░░░░░░░░░     │  Y=114–124
+├─────────────────────────────┤  Y=134
+│      PET_FACE_ZONE          │  circle centred at PET_FACE_ZONE.y + PET_FACE_RADIUS = 152
+│           O                 │
+│         (   )               │
+│           -                 │
+├─────────────────────────────┤  Y=180
+│        MOOD_ZONE            │  dominant mood text, centred, size-2
+├─────────────────────────────┤  Y=220
+│        MENU_ZONE            │  Action: <name>  (cyan box, 130×20)
+└─────────────────────────────┘  Y=240
+```
+
+**How visual information flows into each zone**
+
+Every frame, `renderDisplay()` in `display_manager.cpp` orchestrates the screen in this order:
+
+1. `showPetStatus()` — draws the pet name into `TITLE_ZONE`, then draws all five stat bars using `STATS_ZONE.x` for the left edge, `STATS_ZONE.width` for bar width, and each `*_BAR_ZONE.labelY` / `.barY` for vertical positions.
+2. `showPetMood()` — draws the mood text at `MOOD_ZONE.y`, then calls `drawPetFace()` which centres the circle at `PET_FACE_ZONE.y + PET_FACE_RADIUS`.
+3. `drawMenuIndicator()` — draws the bottom strip using `MENU_ZONE.x`, `.y`, `.width`, and `.height`.
+
+Each function only touches its own zone. None of them know about the others' coordinates. If you want to move the entire stats section down by 10 pixels, you change `STATS_ZONE.y` in the header and every bar label and bar position moves together automatically.
+
+**The pet name**
+
+The title bar now shows the pet's name instead of the hardcoded string "Virtual Pet". The name "Pixel" is stored in the `Pet` class as a `const char*` member, initialised in the constructor. `getPetName()` returns it, and `main.cpp` passes it to `renderDisplay()`, which forwards it to `showPetStatus()`. The display knows nothing about how the name is stored — it just draws whatever string it receives.
+
+**Files touched:** `lib/Display/screen_layout.h` (new), `lib/Display/display_manager.h`, `lib/Display/display_manager.cpp`, `lib/Pet/pet.h`, `lib/Pet/pet.cpp`, `src/main.cpp`.
 
 ---
 
