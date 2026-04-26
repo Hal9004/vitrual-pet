@@ -59,7 +59,7 @@ bool DisplayManager::shouldUpdateStatusDisplay() {
 // Unified display render - renders pet status AND menu indicator together at same refresh rate.
 // Also handles the death screen. Comparing currentState before drawing prevents redrawing
 // the same screen every frame, which is what causes LCD flicker.
-void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead) {
+void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead, const char* petName) {
     // --- Death state ---
     // If the pet just died, draw the death screen once and stop.
     // The currentState check means we only draw on the first frame of death, not every frame.
@@ -83,9 +83,9 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     // Only redraw every STATUS_UPDATE_INTERVAL milliseconds to avoid flicker.
     if (currentState == DisplayState::STATUS_VIEW && shouldUpdateStatusDisplay()) {
         clearScreen();
-        showPetStatus(happiness, hunger, energy, cleanliness, sick);
+        showPetStatus(happiness, hunger, energy, cleanliness, sick, petName);
         showPetMood(moodIndex);
-        drawMenuIndicator(menu, MENU_INDICATOR_X, MENU_INDICATOR_Y);
+        drawMenuIndicator(menu, MENU_ZONE.x, MENU_ZONE.y);
 
         lastHappiness = happiness;
         lastHunger = hunger;
@@ -99,7 +99,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     // must update immediately when the player presses B or C to cycle actions.
     // drawMenuIndicator() only touches the bottom strip so it won't affect the rest of the screen.
     if (menu.getCurrentActionIndex() != lastMenuActionIndex) {
-        drawMenuIndicator(menu, MENU_INDICATOR_X, MENU_INDICATOR_Y);
+        drawMenuIndicator(menu, MENU_ZONE.x, MENU_ZONE.y);
         lastMenuActionIndex = menu.getCurrentActionIndex();
     }
 }
@@ -109,10 +109,10 @@ void DisplayManager::drawMenuIndicator(const ActionMenu& menu, int x, int y) {
     Action selectedAction = menu.getSelectedAction();
     
     // Clear only the indicator area before redrawing
-    fillRect(x, y, MENU_INDICATOR_WIDTH, MENU_INDICATOR_HEIGHT, TFT_BLACK);
+    fillRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_BLACK);
 
     // Draw small box around the indication area
-    M5.Lcd.drawRect(x, y, MENU_INDICATOR_WIDTH, MENU_INDICATOR_HEIGHT, TFT_CYAN);
+    M5.Lcd.drawRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
     
     // Show selected action name in small text
     printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
@@ -150,39 +150,39 @@ void DisplayManager::printCenteredText(const char* text, int y, uint32_t color, 
 }
 
 // Show pet status information (does not clear screen - must be called by renderFrame)
-// Layout fits 5 stat bars above the pet face at y=152.
-void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick) {
-    // Title
-    printCenteredText("Virtual Pet", 5, TFT_YELLOW, 2);
+// Layout fits 5 stat bars above the pet face. All positions come from zone structs.
+void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName) {
+    // Title — the pet's name centred at the top of TITLE_ZONE
+    printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
 
-    // Stat bars — each block is: label at y, bar at y+10, next block starts at y+22
+    // Stat bars — each block is: label at labelY, bar at barY, next block starts 22px lower
     M5.Lcd.setTextSize(1);
     M5.Lcd.setTextColor(TFT_WHITE);
 
     // Happiness
-    M5.Lcd.setCursor(STAT_LEFT_MARGIN, HAPPY_LABEL_Y);
+    M5.Lcd.setCursor(STATS_ZONE.x, HAPPY_BAR_ZONE.labelY);
     M5.Lcd.printf("Happy: %d", happiness);
-    drawStatusBar(happiness, 100, STAT_LEFT_MARGIN, HAPPY_BAR_Y, STAT_BAR_WIDTH, TFT_GREEN);
+    drawStatusBar(happiness, 100, STATS_ZONE.x, HAPPY_BAR_ZONE.barY, STATS_ZONE.width, TFT_GREEN);
 
     // Hunger
-    M5.Lcd.setCursor(STAT_LEFT_MARGIN, HUNGER_LABEL_Y);
+    M5.Lcd.setCursor(STATS_ZONE.x, HUNGER_BAR_ZONE.labelY);
     M5.Lcd.printf("Hunger: %d", hunger);
-    drawStatusBar(hunger, 100, STAT_LEFT_MARGIN, HUNGER_BAR_Y, STAT_BAR_WIDTH, TFT_RED);
+    drawStatusBar(hunger, 100, STATS_ZONE.x, HUNGER_BAR_ZONE.barY, STATS_ZONE.width, TFT_RED);
 
     // Energy
-    M5.Lcd.setCursor(STAT_LEFT_MARGIN, ENERGY_LABEL_Y);
+    M5.Lcd.setCursor(STATS_ZONE.x, ENERGY_BAR_ZONE.labelY);
     M5.Lcd.printf("Energy: %d", energy);
-    drawStatusBar(energy, 100, STAT_LEFT_MARGIN, ENERGY_BAR_Y, STAT_BAR_WIDTH, TFT_BLUE);
+    drawStatusBar(energy, 100, STATS_ZONE.x, ENERGY_BAR_ZONE.barY, STATS_ZONE.width, TFT_BLUE);
 
     // Cleanliness
-    M5.Lcd.setCursor(STAT_LEFT_MARGIN, CLEAN_LABEL_Y);
+    M5.Lcd.setCursor(STATS_ZONE.x, CLEAN_BAR_ZONE.labelY);
     M5.Lcd.printf("Clean: %d", cleanliness);
-    drawStatusBar(cleanliness, 100, STAT_LEFT_MARGIN, CLEAN_BAR_Y, STAT_BAR_WIDTH, TFT_CYAN);
+    drawStatusBar(cleanliness, 100, STATS_ZONE.x, CLEAN_BAR_ZONE.barY, STATS_ZONE.width, TFT_CYAN);
 
-    // Sick (higher is worse — bar colour turns red to signal danger)
-    M5.Lcd.setCursor(STAT_LEFT_MARGIN, SICK_LABEL_Y);
+    // Sick (higher is worse — bar colour turns purple to signal danger)
+    M5.Lcd.setCursor(STATS_ZONE.x, SICK_BAR_ZONE.labelY);
     M5.Lcd.printf("Sick: %d", sick);
-    drawStatusBar(sick, 100, STAT_LEFT_MARGIN, SICK_BAR_Y, STAT_BAR_WIDTH, TFT_PURPLE);
+    drawStatusBar(sick, 100, STATS_ZONE.x, SICK_BAR_ZONE.barY, STATS_ZONE.width, TFT_PURPLE);
 }
 
 // Show current pet mood (does not clear screen - called by renderFrame after showPetStatus)
@@ -202,7 +202,7 @@ void DisplayManager::showPetMood(int moodIndex) {
     }
 
     // Show mood below the pet face
-    printCenteredText(moodText, MOOD_TEXT_Y, moodColor, 2);
+    printCenteredText(moodText, MOOD_ZONE.y, moodColor, 2);
 
     // Draw simple pet face based on mood
     drawPetFace(moodIndex);
@@ -221,12 +221,12 @@ void DisplayManager::showActionFeedback(const char* action) {
 // Draw a status bar
 void DisplayManager::drawStatusBar(int value, int maxValue, int x, int y, int width, uint32_t color) {
     // Background bar
-    M5.Lcd.drawRect(x, y, width, 10, TFT_WHITE);
+    M5.Lcd.drawRect(x, y, width, STAT_BAR_HEIGHT, TFT_WHITE);
 
     // Filled portion
     int fillWidth = (value * width) / maxValue;
     if (fillWidth > 0) {
-        M5.Lcd.fillRect(x, y, fillWidth, 10, color);
+        M5.Lcd.fillRect(x, y, fillWidth, STAT_BAR_HEIGHT, color);
     }
 }
 
@@ -249,10 +249,10 @@ void DisplayManager::showDeathScreen() {
 }
 
 // Draw a simple pet face based on mood
-// Face is centered at y=152 with radius 18 to fit below the five stat bars.
+// Face is centered horizontally; vertical centre is the top of PET_FACE_ZONE plus one radius.
 void DisplayManager::drawPetFace(int moodIndex) {
     int centerX = SCREEN_WIDTH / 2;
-    int faceY = PET_FACE_Y;
+    int faceY = PET_FACE_ZONE.y + PET_FACE_RADIUS;
     int faceRadius = PET_FACE_RADIUS;
 
     // Face circle

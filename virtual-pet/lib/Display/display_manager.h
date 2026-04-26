@@ -2,6 +2,7 @@
 #define DISPLAY_MANAGER_H
 
 #include <M5StickCPlus2.h>
+#include "screen_layout.h"
 
 // Forward declaration
 class ActionMenu;
@@ -19,34 +20,25 @@ private:
     static const int SCREEN_WIDTH  = 135;
     static const int SCREEN_HEIGHT = 240;
 
-    // Shared left margin and width used by every stat bar and label
-    static const int STAT_LEFT_MARGIN = 5;
-    static const int STAT_BAR_WIDTH   = 125;
+    // Five named zones — each describes one logical region of the 135x240 display.
+    // constexpr is used instead of const because C++ requires it to initialise
+    // a struct value inline inside a class (const only works inline for integers).
+    static constexpr ScreenZone TITLE_ZONE    = {  0,   5, 135,  19 };
+    static constexpr ScreenZone STATS_ZONE    = {  5,  26, 125,  98 };
+    static constexpr ScreenZone PET_FACE_ZONE = {  0, 134, 135,  36 };
+    static constexpr ScreenZone MOOD_ZONE     = {  0, 180, 135,  18 };
+    static constexpr ScreenZone MENU_ZONE     = {  5, 220, 130,  20 };
 
-    // Y position of each stat label, and the bar drawn 10 px below it
-    static const int HAPPY_LABEL_Y  = 26;
-    static const int HAPPY_BAR_Y    = 36;
-    static const int HUNGER_LABEL_Y = 48;
-    static const int HUNGER_BAR_Y   = 58;
-    static const int ENERGY_LABEL_Y = 70;
-    static const int ENERGY_BAR_Y   = 80;
-    static const int CLEAN_LABEL_Y  = 92;
-    static const int CLEAN_BAR_Y    = 102;
-    static const int SICK_LABEL_Y   = 114;
-    static const int SICK_BAR_Y     = 124;
+    // Per-stat bar layouts — label and bar Y positions within STATS_ZONE.
+    static constexpr StatBarZone HAPPY_BAR_ZONE  = {  26,  36 };
+    static constexpr StatBarZone HUNGER_BAR_ZONE = {  48,  58 };
+    static constexpr StatBarZone ENERGY_BAR_ZONE = {  70,  80 };
+    static constexpr StatBarZone CLEAN_BAR_ZONE  = {  92, 102 };
+    static constexpr StatBarZone SICK_BAR_ZONE   = { 114, 124 };
 
-    // Pet face drawn below the five stat bars
-    static const int PET_FACE_Y      = 152;
-    static const int PET_FACE_RADIUS = 18;
-
-    // Mood text printed just below the pet face
-    static const int MOOD_TEXT_Y = 180;
-
-    // Menu indicator strip pinned to the bottom of the screen
-    static const int MENU_INDICATOR_X      = 5;
-    static const int MENU_INDICATOR_Y      = 220;
-    static const int MENU_INDICATOR_WIDTH  = 130;
-    static const int MENU_INDICATOR_HEIGHT = 20;
+    // Scalar constants that describe geometry, not position.
+    static const int PET_FACE_RADIUS = 18;  // radius of the face circle in pixels
+    static const int STAT_BAR_HEIGHT = 10;  // height of every progress bar in pixels
     
     // Display state management
     DisplayState currentState;
@@ -84,10 +76,10 @@ public:
     
     // Unified display render - handles status view, menu indicator, and death screen.
     // Call this once per loop. petIsDead controls which screen is shown.
-    void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead);
+    void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, bool petIsDead, const char* petName);
 
     // Pet-specific display functions
-    void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick);
+    void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
     void showPetMood(int moodIndex);
     void showMessage(const char* message);
     void showActionFeedback(const char* action);
