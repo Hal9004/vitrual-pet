@@ -4,6 +4,133 @@ This file explains the "why" behind concepts that appear in the code but are not
 
 ---
 
+## Why the Code is Split Into Separate Modules
+
+### The problem with putting everything in one file
+
+Imagine the entire virtual pet — display, buttons, sounds, timers, pet logic, storage — written as one giant `main.cpp`. It would be thousands of lines long. To fix a bug in the buzzer, you would have to search through display code and timer code to find it. To add a new action, you would have to understand the whole file before touching any of it. Every change would risk breaking something unrelated.
+
+This is a real problem that professional engineers hit constantly. The solution is **modularisation**: split the code into separate files, where each file has one clearly defined job and does not reach into other files' business.
+
+### The Single Responsibility Principle
+
+Each `lib/` module in this project follows a simple rule:
+
+> **One module. One job. One reason to change.**
+
+This is called the **Single Responsibility Principle** — one of the most important ideas in software design.
+
+| Module | Its one job |
+|---|---|
+| `Pet` | Store and update pet stats — hunger, happiness, energy, and so on |
+| `DisplayManager` | Draw things to the screen — nothing else |
+| `ButtonHandler` | Detect when buttons are pressed — nothing else |
+| `ActionMenu` | Track which action is selected and confirm it — nothing else |
+| `TimerManager` | Apply automatic stat changes over time — nothing else |
+| `ImuManager` | Detect shake gestures from the accelerometer — nothing else |
+| `SpeakerManager` | Play sounds and melodies — nothing else |
+| `StorageManager` | Save and load pet stats to flash memory — nothing else |
+| `NavigationManager` | Track which screen is active and handle top-level navigation — nothing else |
+
+When a module has one job, you know exactly where to look when something goes wrong. Buzzer broken? Open `speaker_manager.cpp`. Pet not saving? Open `storage_manager.cpp`. You never have to read unrelated code to fix a focused problem.
+
+### How the modules link together
+
+None of the modules talk to each other directly. They each do their job, and `src/main.cpp` is the **orchestrator** — it holds one instance of each module and passes them to each other as needed.
+
+```
+                        src/main.cpp
+                       (orchestrator)
+                            │
+         ┌──────────────────┼──────────────────┐
+         │                  │                  │
+         ▼                  ▼                  ▼
+   ButtonHandler      NavigationManager    TimerManager
+   (reads buttons)    (tracks screen)     (decay timers)
+         │                  │                  │
+         │            ┌─────┘                  │
+         │            ▼                        │
+         │       ActionMenu              ┌─────┘
+         │       (cycles actions)        │
+         │            │                  ▼
+         │            └──────────►      Pet
+         │                        (stats + state)
+         │                              │
+         ▼                              ▼
+   ImuManager                    DisplayManager
+   (shake gesture)                (draws screen)
+         │                              │
+         └──────────────────────────────┘
+                       │
+                       ▼
+                 SpeakerManager
+                 (plays sounds)
+                       │
+                       ▼
+                 StorageManager
+                 (saves to flash)
+```
+
+When `main.cpp` needs `ButtonHandler` to tell `ActionMenu` about a button press, it passes the `ButtonHandler` object into `ActionMenu::update()` as a parameter. The modules never hold permanent references to each other — they only borrow what they need for the duration of one function call. This keeps the dependencies loose and easy to follow.
+
+### What is Object-Oriented Programming?
+
+Each module is a **class** — a blueprint that describes:
+- What data it holds (its **member variables**)
+- What it can do (its **member functions**, also called methods)
+
+When `main.cpp` creates a `Pet` object, it is like using that blueprint to build a real pet. You can have multiple objects from the same class — if you wanted two pets, you would create two `Pet` objects from the same `Pet` class.
+
+```cpp
+// The class is the blueprint
+class Pet {
+    int hungry;       // data it holds
+    void feed();      // things it can do
+};
+
+// The object is the real thing built from the blueprint
+Pet myPet;           // one pet
+Pet rivalPet;        // another pet — same blueprint, separate data
+```
+
+The key idea is **encapsulation**: the data inside a class is hidden from the outside world. Other code cannot reach in and change `Pet::hungry` directly — it has to use the methods the `Pet` class provides (`getHungry()`, `setHungry()`). This means the `Pet` class is always in control of its own data and can enforce rules like "hunger can never go below 0 or above 100."
+
+### What is Inheritance — and why this project does not use it
+
+Inheritance is a way to build a new class by extending an existing one. The new class **inherits** all the data and behaviour of the original, and can add or override things on top.
+
+```cpp
+// A general Animal class
+class Animal {
+public:
+    int hungry;
+    void eat() { hungry = hungry - 10; }
+};
+
+// Dog inherits everything from Animal, and adds its own behaviour
+class Dog : public Animal {
+public:
+    void bark() { /* play bark sound */ }
+};
+
+// Dog objects can eat() (inherited) AND bark() (their own)
+Dog myDog;
+myDog.eat();   // inherited from Animal
+myDog.bark();  // Dog's own method
+```
+
+Inheritance is useful when you have several things that are mostly the same but differ in specific ways — for example, `Cat`, `Dog`, and `Bird` all sharing an `Animal` base class.
+
+**This project intentionally avoids inheritance.** All nine modules are completely independent — a `DisplayManager` is not a kind of `Pet`, and a `SpeakerManager` is not a kind of `TimerManager`. Forcing inheritance where there is no real "is-a" relationship makes code harder to read and harder to change. Using separate, unrelated classes and connecting them through `main.cpp` (called **composition**) is the right approach here, and is actually preferred in most professional embedded C++ code for exactly this reason.
+
+A useful rule of thumb:
+- Use **inheritance** when one thing genuinely *is a kind of* another thing (a `Dog` is an `Animal`).
+- Use **composition** (separate classes connected through `main.cpp`) when things *work together* but are not the same kind of thing.
+
+In this project, everything is composition. You will encounter inheritance in future projects — now you know what to look for and why it exists.
+
+---
+
 ## How Musical Notes Work (`M5.Speaker.tone`)
 
 ### Sound is vibration
@@ -324,3 +451,71 @@ Eating happens instantly in this project — `feed()` adjusts stats right away �
 You could write `if (isFeedingNow) { ... }`. For one action this works. But as soon as you have six states, you have six separate boolean variables that can accidentally all be `true` at once. The state machine using an `enum` guarantees exactly one state is active at a time — the compiler enforces it. It also makes the code much easier to read: `getState() == STATE_SLEEPING` is clearer than `isSleeping && !isEating && !isPlaying`.
 
 The state list lives in `lib/Pet/pet.h` as the `PetState` enum. Reading through it gives you a complete picture of everything the pet can do.
+
+---
+
+## Why `static const` Structs Need a Definition in the `.cpp` File
+
+### The short version
+
+`static const int` members are special — the compiler treats them as compile-time numbers and substitutes them directly into the machine code. `static const` members of any other type (like a `struct`) have to exist in memory as real objects, so they need a definition in a `.cpp` file or the linker will complain.
+
+### What "declaration" vs "definition" means
+
+Every piece of code in C++ exists in two parts:
+
+- A **declaration** (in the `.h` file) is a *promise* — it tells the compiler "this thing exists and here is what it looks like."
+- A **definition** (in the `.cpp` file) is where the thing is *actually created* — memory is allocated, values are assigned.
+
+For most class members, the constructor handles this automatically. But `static` members belong to the class itself, not to any object, so the constructor never runs for them. You have to provide the definition manually.
+
+### Why `static const int` gets away without a `.cpp` definition
+
+When you write this in a header:
+
+```cpp
+static const int SCREEN_WIDTH = 135;
+```
+
+The compiler treats `135` as a compile-time constant — like a smarter `#define`. Wherever `SCREEN_WIDTH` appears in your code, the compiler substitutes `135` directly into the machine code at compile time. It never needs to find a memory address for it, because it never puts it in memory at all.
+
+This is called **constant folding**, and it is why `static const int` is a special case that does not need a `.cpp` definition.
+
+### Why `static const ScreenZone` is different
+
+```cpp
+static const ScreenZone ZONE_PET_FACE = { 0, 20, 135, 185 };
+```
+
+`ScreenZone` is a struct — it has four separate `int` fields. The compiler cannot substitute it as a single number. It has to exist somewhere in memory as a real object with an address, so that code can read `.x`, `.y`, `.width`, and `.height` from it.
+
+If you only declare it in the header and never define it in a `.cpp` file, the compiler will not warn you — it trusts your promise. But when the linker tries to build the final program, it searches all the compiled files looking for "where is `DisplayManager::ZONE_PET_FACE` actually stored?" and finds nothing. That produces a **linker error** — a subtly different kind of failure from a normal compile error.
+
+### The fix — one line in the `.cpp` file
+
+```cpp
+// In display_manager.cpp
+const ScreenZone DisplayManager::ZONE_PET_FACE = { 0, 20, 135, 185 };
+```
+
+This is the definition. It tells the linker: "here is where `ZONE_PET_FACE` actually lives in memory, and here are its values." The `DisplayManager::` prefix (the scope resolution operator, explained in an earlier section) tells the compiler this belongs to the `DisplayManager` class — the same pattern used for every function body in the project.
+
+### The analogy
+
+Think of the header file as a restaurant menu and the `.cpp` file as the kitchen.
+
+A `static const int` is like a price printed directly on the menu — it is just a number, right there on the page, no kitchen required.
+
+A `static const ScreenZone` is like a dish listed on the menu — the menu describes it, but someone in the kitchen has to actually prepare it before a customer can have it. The `.cpp` definition is the kitchen preparing the dish.
+
+### When you will see this pattern
+
+Any time you add a `static const` class member that is not a plain integer or boolean, you will need a matching definition in the `.cpp` file. This applies to structs, strings, arrays, and any other non-trivial type. The pattern is always the same:
+
+```cpp
+// Header — the promise
+static const YourType MEMBER_NAME;
+
+// .cpp — the definition
+const YourType ClassName::MEMBER_NAME = { ... };
+```
