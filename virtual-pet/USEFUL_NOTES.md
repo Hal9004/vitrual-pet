@@ -519,3 +519,67 @@ static const YourType MEMBER_NAME;
 // .cpp — the definition
 const YourType ClassName::MEMBER_NAME = { ... };
 ```
+
+### The shortcut — `constexpr`
+
+There is a smarter way to write struct constants that skips the extra `.cpp` line entirely. Just swap `static const` for `static constexpr`:
+
+```cpp
+// This works on its own in the header — no .cpp line needed
+static constexpr ScreenZone TITLE_ZONE = { 0, 5, 135, 19 };
+```
+
+`constexpr` is short for "constant expression". It is your way of telling the compiler: **"I promise this value will never change — ever."**
+
+When the compiler sees that promise, it works out the value while it is building your program, before the program ever runs on the device. It then bakes the answer directly into the code.
+
+After the compiler finishes, a second tool called the **linker** runs. The linker's job is to take all the separate compiled pieces and join them into one final program. Without `constexpr`, the linker would go searching for your struct in memory and fail — because you never put it in a `.cpp` file. With `constexpr`, the value was already baked in during the build step, so the linker never needs to search for it.
+
+This is what the zone constants in `display_manager.h` use. Whenever you add a struct constant to a class, use `constexpr` and you will not need the extra `.cpp` line at all.
+
+---
+
+## Why Header Files Start With `#ifndef`
+
+Open any `.h` file in this project and you will see the same three lines at the very top and bottom:
+
+```cpp
+#ifndef DISPLAY_MANAGER_H
+#define DISPLAY_MANAGER_H
+
+// ... all the actual code ...
+
+#endif
+```
+
+These three lines are called an **include guard**. Here is why they exist.
+
+### The problem — including a file twice
+
+When your program is built, the compiler reads each `.cpp` file one at a time. In `main.cpp` you write `#include "pet.h"`. That tells the compiler: "copy everything in `pet.h` into this file right now."
+
+But what if two different files both include `pet.h`? What if `main.cpp` includes `pet.h` and also includes `action_menu.h`, and `action_menu.h` also includes `pet.h`? The compiler would end up seeing the `Pet` class definition twice in the same file. In C++, defining the same thing twice is an error — the compiler will refuse to build and print a confusing message.
+
+### How include guards fix it
+
+`#ifndef` means **"if not defined"**. The three lines together say:
+
+1. `#ifndef DISPLAY_MANAGER_H` — "have I seen the name `DISPLAY_MANAGER_H` before?"
+2. `#define DISPLAY_MANAGER_H` — "if not, remember this name now"
+3. `#endif` — "skip everything between these lines if the name was already known"
+
+The first time the compiler reads `display_manager.h`, it has never seen `DISPLAY_MANAGER_H`, so it reads all the code inside and remembers the name. If anything tries to include the same file a second time, the compiler sees the name is already defined and skips the whole file. The class only gets defined once, no matter how many times the file is included.
+
+### The name in the guard
+
+The name used in the guard — `DISPLAY_MANAGER_H` — is just a convention. It matches the filename in ALL CAPS with the `.` replaced by `_`. As long as the name is unique across your whole project, it works. That is why every header uses a different name:
+
+```cpp
+#ifndef PET_H            // pet.h
+#ifndef DISPLAY_MANAGER_H  // display_manager.h
+#ifndef ACTION_MENU_H    // action_menu.h
+```
+
+### The short version
+
+Every `.h` file needs an include guard. Without one, including the same header twice causes a build error. The `#ifndef` / `#define` / `#endif` pattern is the standard way to prevent that. You will see it at the top and bottom of every header file you ever write.
