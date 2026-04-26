@@ -28,6 +28,8 @@ private:
 
     PetState currentState;  // Which behaviour the pet is currently in
 
+    const char* petName;  // Display name shown in the title zone; default is "Pixel"
+
     // Alert flags — set by updateState() when a warning threshold is crossed.
     // main.cpp reads these via checkDeathAlert() / checkHungerAlert() / checkSicknessAlert() and plays the sound.
     bool deathSoundReady;
@@ -101,6 +103,9 @@ public:
 
     // Returns true once when a sickness alert is ready, then resets the flag.
     bool checkSicknessAlert();
+
+    // Returns the pet's display name for use in the title zone
+    const char* getPetName() const;
 
     // Returns the current behavioural state of the pet
     PetState getState() const;

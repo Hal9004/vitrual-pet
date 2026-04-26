@@ -9,6 +9,13 @@ Pet::Pet()
       deathSoundReady(false),
       hungerAlertReady(false), sicknessAlertReady(false),
       lastHungerAlertTime(0), lastSicknessAlertTime(0) {
+    petName = "Pixel";
+}
+
+// getPetName()
+// Returns the pet's display name so the title zone can show it on screen.
+const char* Pet::getPetName() const {
+    return petName;
 }
 
 // Getters
