@@ -50,7 +50,7 @@ void loop() {
 
   // Render the display first — passing the current state lets DisplayManager decide what to show.
   // This must run every frame regardless of pet state so the screen is never skipped.
-  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(), menu, myPet.getState() == STATE_DEAD);
+  display.renderDisplay(myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(), myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(), menu, myPet.getState() == STATE_DEAD, myPet.getPetName());
 
   // Run the state machine before anything else — it sets STATE_DEAD when stats are fatal,
   // so the dead check below always sees an up-to-date state.
