@@ -583,3 +583,280 @@ The name used in the guard — `DISPLAY_MANAGER_H` — is just a convention. It 
 ### The short version
 
 Every `.h` file needs an include guard. Without one, including the same header twice causes a build error. The `#ifndef` / `#define` / `#endif` pattern is the standard way to prevent that. You will see it at the top and bottom of every header file you ever write.
+
+---
+
+## How Multi-Screen Apps Are Structured
+
+### What is a "screen" in embedded code?
+
+In a web app or phone app, a "screen" is usually a whole new page loaded from a server. On a tiny device like the M5StickC Plus 2, there is no server and no pages — there is just one 135×240 pixel display that you draw on directly.
+
+A "screen" in embedded code is just a **set of decisions about what to draw**. The Stats screen draws five stat bars and a pet face. The Interact screen draws a pet face, one stat bar, and an action menu. The Main screen draws a pet face and a tab bar. The hardware never changes — only what gets painted on it does.
+
+### The `ScreenState` enum
+
+The simplest way to track which screen is active is with an enum:
+
+```cpp
+enum ScreenState {
+    SCREEN_MAIN,
+    SCREEN_STATS,
+    SCREEN_INTERACT
+};
+```
+
+An enum is just a named list of options. Using an enum instead of a plain integer (0, 1, 2) makes the code readable: `SCREEN_STATS` tells you exactly what it means, while `1` means nothing on its own.
+
+`ScreenState` lives in `lib/Display/screen_layout.h` because it is a display concept — it describes what the screen is showing. Any file that needs to know the current screen can include this header.
+
+### How the three screens are structured
+
+| Screen | What it shows | How you leave it |
+|---|---|---|
+| `SCREEN_MAIN` | Pet face, mood, nav bar (Stats / Interact) | Press B → Interact, Press C → Stats |
+| `SCREEN_STATS` | All five stat bars + pet face + mood | Press any button → back to Main |
+| `SCREEN_INTERACT` | Pet face, mood, one contextual stat bar, action menu | Confirm "Back" action → Main |
+
+---
+
+## How Screen Layouts Are Designed
+
+### Thinking in zones
+
+Before writing a single line of drawing code, it helps to divide the screen into named **zones** — rectangular regions, each with one job. This is the same idea a graphic designer uses when laying out a page: title area, content area, navigation area.
+
+For this project, the Stats screen zones look like this:
+
+```
+┌─────────────────┐  y: 0
+│   TITLE_ZONE    │     5 – 24    pet name
+│   STATS_ZONE    │    26 – 133   five stat bars
+│  PET_FACE_ZONE  │   134 – 169   pet face
+│   MOOD_ZONE     │   180 – 198   mood text
+│   MENU_ZONE     │   220 – 240   action / hint
+└─────────────────┘  y: 240
+```
+
+Each zone is stored as a `ScreenZone` struct — four numbers that describe its top-left corner and its size:
+
+```cpp
+static constexpr ScreenZone TITLE_ZONE = { 0, 5, 135, 19 };
+//                                         x  y  w    h
+```
+
+Using `constexpr` (explained in the earlier section) means these values are baked in at compile time and do not need a `.cpp` definition.
+
+### Why define layout as data, not code
+
+Without zone structs, drawing code looks like this:
+
+```cpp
+M5.Lcd.setCursor(5, 26);   // where is 26? no idea without comments
+M5.Lcd.setCursor(5, 48);   // and 48?
+M5.Lcd.setCursor(5, 70);   // and 70?
+```
+
+These **magic numbers** have no meaning to a reader. Change the layout and you have to hunt for every hardcoded pixel value across the whole file.
+
+With zone structs:
+
+```cpp
+M5.Lcd.setCursor(STATS_ZONE.x, HAPPY_BAR_ZONE.labelY);
+M5.Lcd.setCursor(STATS_ZONE.x, HUNGER_BAR_ZONE.labelY);
+M5.Lcd.setCursor(STATS_ZONE.x, ENERGY_BAR_ZONE.labelY);
+```
+
+Now the intent is visible. If you want to move all the stat bars down by 10 pixels, you change one constant — not six scattered lines.
+
+### Each screen can have its own zones
+
+The Stats screen and the Interact screen need the pet face in different positions — the Interact screen has no stat bars above the face, so the face can sit higher up and be drawn larger.
+
+Rather than one shared `PET_FACE_ZONE`, each screen defines its own face centre and radius:
+
+```cpp
+// Stats screen — face sits below the stat bars
+static constexpr ScreenZone PET_FACE_ZONE = { 0, 134, 135, 36 };
+
+// Interact screen — face gets more vertical room
+static constexpr int INTERACT_FACE_CENTER_Y = 90;
+static constexpr int INTERACT_FACE_RADIUS   = 26;
+```
+
+This is not duplication — it is each screen owning its own layout. The Stats face and the Interact face are deliberately different sizes.
+
+---
+
+## Why DisplayManager Does Not Decide What to Draw
+
+### The old approach
+
+Before Task 11a, `DisplayManager` tracked its own internal `DisplayState` enum:
+
+```cpp
+enum class DisplayState {
+    STATUS_VIEW,
+    MENU_INDICATOR,
+    DEAD
+};
+```
+
+This meant `DisplayManager` was making two decisions at once: *what to draw* and *how to draw it*. That is two jobs — a violation of the Single Responsibility Principle.
+
+Worse, `STATUS_VIEW` and `MENU_INDICATOR` were not really different screens — they were both the same stats layout, just with or without the action indicator drawn over the top. As the number of real screens grew, this approach would have needed a new `DisplayState` value for every combination of layout and overlay.
+
+### The new approach — the caller decides, DisplayManager executes
+
+Now `renderDisplay()` receives a `ScreenState` from the caller:
+
+```cpp
+void DisplayManager::renderDisplay(..., ScreenState screenState) {
+    switch (screenState) {
+        case SCREEN_MAIN:     renderMainScreen(...);     break;
+        case SCREEN_STATS:    renderStatsScreen(...);    break;
+        case SCREEN_INTERACT: renderInteractScreen(...); break;
+    }
+}
+```
+
+`DisplayManager` no longer guesses what the player is looking at. `NavigationManager` tracks that, and passes the answer in. `DisplayManager` just draws.
+
+This separation — **one module decides, another executes** — is a pattern called **separation of concerns**. Each module concerns itself with exactly one question:
+
+- *What screen is the player on?* → `NavigationManager`'s job
+- *How do I draw that screen?* → `DisplayManager`'s job
+
+---
+
+## How NavigationManager Keeps `loop()` Clean
+
+### The problem without it
+
+Without `NavigationManager`, all the screen-switching logic would live inside `loop()` as a large `switch` statement. Every time a new screen was added, `loop()` would grow longer. After three or four screens, `loop()` would be difficult to read and easy to break — it would be doing too many jobs at once.
+
+### The solution — delegate to a module
+
+`NavigationManager` owns one piece of state: which screen the player is currently on. Its `update()` method reads button input and switches screens when needed. `loop()` becomes two lines:
+
+```cpp
+navManager.update(buttons, menu);
+
+if (navManager.shouldConfirmAction()) {
+    menu.confirmAction(myPet, display, speaker, storage);
+}
+```
+
+The switch statement still exists — it just lives inside `NavigationManager::update()` where it belongs, rather than mixed into the main game loop.
+
+### One handler per screen
+
+Inside `NavigationManager`, each screen gets its own private handler method:
+
+```cpp
+void handleMainScreenInput(const ButtonHandler& buttons);
+void handleStatsScreenInput(const ButtonHandler& buttons);
+void handleInteractScreenInput(const ButtonHandler& buttons, const ActionMenu& menu);
+```
+
+Each handler only reads the buttons that are relevant on that screen. `handleStatsScreenInput()` has no idea what `handleInteractScreenInput()` does. If you need to understand what the buttons do on the Stats screen, you open that one method and read four lines. Nothing else to search through.
+
+When a new screen is added in the future, you add one new handler method and one new `case` in `update()`. Everything else stays the same.
+
+---
+
+## The One-Shot Flag Pattern
+
+### The problem
+
+When the player presses Button A to feed the pet, `confirmAction()` should fire **once**. But `loop()` runs hundreds of times per second. If you stored "A was pressed" as a boolean and never cleared it, `confirmAction()` would fire on every single frame until the player released the button — feeding the pet hundreds of times in one press.
+
+### The solution — reset at the top of every frame
+
+`NavigationManager` tracks this with a `confirmActionRequested` flag. The key is where it gets reset:
+
+```cpp
+void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& menu) {
+    confirmActionRequested = false;  // reset FIRST, before checking anything
+
+    switch (currentScreen) {
+        ...
+    }
+}
+```
+
+By resetting `confirmActionRequested` to `false` at the very start of `update()`, the flag can only ever be `true` for **one loop iteration** — the single frame where the player's button press was detected. On the next frame, `update()` resets it back to `false` before anything else runs.
+
+This is called a **one-shot flag**: it fires once and immediately resets itself. You will see this pattern used in `ButtonHandler` (`wasButtonAPressed()` returns `true` only once per press), in `Pet` (`checkDeathAlert()` returns `true` only on the first frame of death), and now in `NavigationManager`. It is one of the most useful patterns in game loop programming.
+
+---
+
+## Partial Screen Redraws — Why Not Draw Everything Every Frame?
+
+### The problem with redrawing everything
+
+The M5StickC Plus 2 LCD is driven over SPI — a serial connection that sends pixel data one bit at a time. A full 135×240 screen clear takes a noticeable fraction of a second. If you called `clearScreen()` every frame, the display would flash black 60 times per second. This is called **screen flicker**, and it makes the device feel broken.
+
+### The solution — only redraw what changed
+
+`DisplayManager` uses two techniques to avoid this.
+
+**1. Full redraw throttle**
+
+A full redraw — clearing the screen and drawing everything from scratch — only happens when the screen changes or every 5 seconds:
+
+```cpp
+bool screenChanged   = (lastRenderedScreen != SCREEN_INTERACT);
+bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
+
+if (screenChanged || intervalElapsed) {
+    clearScreen();
+    // ... draw everything ...
+}
+```
+
+Between full redraws, the screen just holds whatever was drawn last. Stat values change slowly enough that a 5-second stale display is fine.
+
+**2. Fast path for elements that change quickly**
+
+Some things change immediately — like the action menu selection when the player presses B or C. For these, only the small area that changed is redrawn. On the Interact screen:
+
+```cpp
+if (menu.getCurrentActionIndex() != lastMenuActionIndex) {
+    drawContextualStatBar(...);   // redraw only the stat bar strip
+    drawMenuIndicator(...);       // redraw only the menu zone
+    lastMenuActionIndex = menu.getCurrentActionIndex();
+}
+```
+
+This erases and redraws only the bottom ~40 pixels of the screen. The pet face and mood text above are untouched and never flicker.
+
+The general rule: **redraw the whole screen rarely; redraw small regions immediately**. Track what changed using `last...` variables, and only draw when the value differs from what is already on screen.
+
+---
+
+## Button Guards — Only Respond When Visible
+
+### The hidden side-effect problem
+
+`menu.update(buttons)` reads Button B and Button C to cycle through the action list. But Button B and C are also used on the Main screen to switch between screens.
+
+If `menu.update(buttons)` ran on every frame regardless of which screen was active, pressing B on the Main screen would do two things at once:
+1. Switch to the Interact screen (handled by `NavigationManager`)
+2. Silently advance the action selection in the menu (handled by `menu.update()`)
+
+The player would arrive at the Interact screen with a different action already selected — and have no idea why.
+
+### The fix — check the screen before passing input
+
+In `loop()`, `menu.update()` is wrapped in a guard:
+
+```cpp
+if (navManager.getCurrentScreen() == SCREEN_INTERACT) {
+    menu.update(buttons);
+}
+```
+
+The action menu only reads buttons when it is actually visible. On any other screen, the menu ignores input entirely.
+
+This is a general rule for multi-screen apps: **UI elements should only respond to input when they are on screen**. An invisible menu, dialog, or button that silently responds to input is a bug waiting to happen. Always guard input handling with a screen check.
