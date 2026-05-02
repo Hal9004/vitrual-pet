@@ -5,6 +5,9 @@
 - [ ] Asset Pipeline (Converting images/gifs to C++ arrays/sprites)
 - [ ] Basic Sprite Rendering (Drawing the pet to the screen)
 - [x] Screen Real Estate Management (Layout for stats vs. pet area)
+- [x] Multi-Screen Framework — three screens (Main, Stats, Interact) with `ScreenState` enum and `NavigationManager`. B → Interact, C → Stats from the Main screen.
+- [x] Stats Detail Screen — `SCREEN_STATS` shows all five stat bars + pet face + mood, identical to the original layout.
+- [x] Pet Interaction Screens — `SCREEN_INTERACT` shows pet face + contextual stat bar (the stat the selected action affects) + action menu at the bottom.
 
 ## Phase 2: Core Logic & State Machine
 - [x] State Machine Architecture (IDLE, EATING, SLEEPING, EVOLVING)

@@ -17,7 +17,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Hardware Initialization (M5.begin, LCD, Serial) | ✅ Done | `src/main.cpp` → `setup()`, `lib/Display/display_manager.cpp` → `init()` |
 | Asset Pipeline (images/gifs → C++ arrays) | ❌ Missing | `lib/Display/animation_manager.cpp` — file is empty |
 | Basic Sprite Rendering (draw pet to screen) | ⚠️ Partial | Only primitive circles/lines in `display_manager.cpp:211`. No bitmap sprites yet |
-| Screen Real Estate Management (stats zone vs. pet zone) | ⚠️ Partial | Layout is hardcoded with magic pixel numbers in `showPetStatus()` and `drawPetFace()`. No zone constants or layout manager |
+| Screen Real Estate Management (stats zone vs. pet zone) | ✅ Done | `lib/Display/screen_layout.h` → `ScreenZone` / `StatBarZone` / `ScreenState` / `RelevantStat`. Zone constants in `display_manager.h`. Three-screen framework (Main, Stats, Interact) in `display_manager.cpp` → `renderMainScreen()` / `renderStatsScreen()` / `renderInteractScreen()`. Navigation in `lib/Navigation/navigation_manager.h/.cpp` |
 
 ### Phase 2: Core Logic & State Machine
 
@@ -94,9 +94,9 @@ LEVEL 4 — DATA + PLANNING
 
 LEVEL 5 — ASSET PIPELINE
  11. Screen Real Estate layout zones   ✅ Done
-11a. Multi-screen framework            (new: ScreenState enum + screen-switching in DisplayManager — prerequisite for 11b, 11c)
-11b. Stats detail screen               (new: uses current zone layout — pet face always visible; shows all five stat bars; requires 11a)
-11c. Pet interaction screens           (new: per-action screen shown during Feed/Play/Sleep/Bathe/Heal; uses current zone layout — pet face always visible; only the stats directly affected by that action are shown; requires 11a)
+11a. Multi-screen framework            ✅ Done (ScreenState enum, NavigationManager, three render methods in DisplayManager, contextual stat bar on Interact screen)
+11b. Stats detail screen               ✅ Done (included in 11a — SCREEN_STATS reuses the original zone layout exactly)
+11c. Pet interaction screens           ✅ Done (included in 11a — SCREEN_INTERACT shows pet face + contextual stat bar + action menu)
  12. Asset Pipeline (image → C array)  (new: Python/online converter tools)
  13. Basic Sprite Rendering            (requires: asset pipeline from task 12)
 
@@ -109,17 +109,34 @@ LEVEL 7 — NETWORKING
  17. Remote Dashboard                  (requires: task 16 + simple HTTP server)
 
 PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
- 18. Codebase review against lesson plan
+
+⚠️  SIMPLIFICATION PASS REQUIRED BEFORE ANY TEMPLATES ARE CREATED
+     This codebase will be used as a teaching template for young children.
+     Before templates are extracted, every module must be walked through and
+     simplified with the following questions in mind:
+       — Can this logic be written in fewer, clearer steps?
+       — Are all variable and function names fully descriptive?
+       — Does every function have a one-sentence comment explaining what it does AND why?
+       — Are there any clever tricks, ternaries, or compact patterns a beginner would not understand?
+       — Would a student with no prior C++ experience be able to read this and follow along?
+     Simplicity is more important than elegance. If in doubt, expand it.
+
+ 18. Simplification pass — walk every module and simplify for teaching
+     — Review all .h and .cpp files against the pedagogical rules in CLAUDE.md.
+       Expand any compact or clever code into readable step-by-step form.
+       Ensure every function has a comment. Remove any patterns that would
+       confuse a beginner without prior C++ experience.
+ 19. Codebase review against lesson plan
      — Walk every module against the course checklist and confirm the reference
        implementation is clean, documented, and complete.
- 19. Create skeleton templates per module
+ 20. Create skeleton templates per module
      — Strip core logic from each .cpp file, leaving function signatures, comments,
        and example implementations where needed to give students enough scaffolding.
        Students write their own logic inside the provided structure.
- 20. Validate templates compile and are teachable
+ 21. Validate templates compile and are teachable
      — Each skeleton should compile without errors and give a student of the target
        skill level enough context to complete it without being lost.
- 21. Organise templates by complexity level
+ 22. Organise templates by complexity level
      — One template set per Level (1–7) so teachers can assign tasks matched to
        each student's experience. Beginner students get Level 1–2 skeletons;
        advanced students get Level 4–7.
