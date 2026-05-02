@@ -12,7 +12,6 @@
 class NavigationManager {
 private:
     ScreenState currentScreen;
-    int mainNavIndex;             // 0 = Stats tab highlighted, 1 = Interact tab highlighted
     bool confirmActionRequested;  // True for one loop iteration when A is pressed on Interact
 
     // One input handler per screen.
@@ -32,10 +31,6 @@ public:
 
     // getCurrentScreen() — returns the screen the player is currently viewing.
     ScreenState getCurrentScreen() const;
-
-    // getMainNavIndex() — returns which tab is highlighted on the Main screen.
-    // 0 = Stats, 1 = Interact.
-    int getMainNavIndex() const;
 
     // shouldConfirmAction() — returns true if the player pressed A on the Interact
     // screen and the selected action is NOT Back. loop() reads this once and calls

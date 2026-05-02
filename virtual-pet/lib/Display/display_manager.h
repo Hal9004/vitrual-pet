@@ -63,21 +63,20 @@ private:
     // State tracked between frames to detect when something changed
     ScreenState  lastRenderedScreen;   // Detects screen transitions — forces a full redraw
     unsigned long lastFullRedrawTime;  // Timestamp of the last full redraw
-    int  lastMenuActionIndex;          // Detects action selection changes on Interact screen
-    int  lastMainNavIndex;             // Detects tab highlight changes on Main screen
-    bool petWasDeadLastFrame;          // Used to force a redraw immediately after revival
+    int  lastMenuActionIndex;  // Detects action selection changes on Interact screen
+    bool petWasDeadLastFrame;  // Used to force a redraw immediately after revival
 
     // -----------------------------------------------------------------------
     // Private render methods — one per screen.
     // Each owns the layout and redraw logic for its screen only.
     // -----------------------------------------------------------------------
-    void renderMainScreen(int moodIndex, const char* petName, int mainNavIndex);
+    void renderMainScreen(int moodIndex, const char* petName);
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
     void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, const char* petName);
 
     // Draws the two-tab nav bar at the bottom of the Main screen.
     // The highlighted tab (mainNavIndex) gets a filled background.
-    void drawMainNavBar(int mainNavIndex);
+    void drawMainNavBar();
 
     // Draws a single stat bar for the action currently selected on the Interact screen.
     // The bar label, value, and colour are determined by relevantStat.
@@ -108,7 +107,7 @@ public:
     // petIsDead bypasses the normal screen routing and shows the death screen.
     void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
                        int moodIndex, const ActionMenu& menu, bool petIsDead,
-                       const char* petName, ScreenState screenState, int mainNavIndex);
+                       const char* petName, ScreenState screenState);
 
     // Pet display helpers — used internally and by the three private render methods
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);

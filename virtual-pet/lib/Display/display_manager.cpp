@@ -5,7 +5,6 @@ DisplayManager::DisplayManager()
     : lastRenderedScreen(SCREEN_MAIN),
       lastFullRedrawTime(0),
       lastMenuActionIndex(-1),
-      lastMainNavIndex(-1),
       petWasDeadLastFrame(false) {
 }
 
@@ -31,7 +30,7 @@ void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t colo
 void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness,
                                    int sick, int moodIndex, const ActionMenu& menu,
                                    bool petIsDead, const char* petName,
-                                   ScreenState screenState, int mainNavIndex) {
+                                   ScreenState screenState) {
     // --- Death state ---
     // Draw the death screen once when the pet first dies, then hold it.
     // The petWasDeadLastFrame flag prevents redrawing the death screen every frame.
@@ -54,7 +53,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     // --- Normal alive render: dispatch to the correct screen ---
     switch (screenState) {
         case SCREEN_MAIN:
-            renderMainScreen(moodIndex, petName, mainNavIndex);
+            renderMainScreen(moodIndex, petName);
             break;
         case SCREEN_STATS:
             renderStatsScreen(happiness, hunger, energy, cleanliness, sick, moodIndex, petName);
@@ -70,7 +69,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 // Shows the pet face filling the centre of the screen, with a two-tab nav
 // bar at the bottom so the player can enter Stats or Interact.
 // -----------------------------------------------------------------------
-void DisplayManager::renderMainScreen(int moodIndex, const char* petName, int mainNavIndex) {
+void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
     bool screenChanged   = (lastRenderedScreen != SCREEN_MAIN);
     bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
 
@@ -79,47 +78,27 @@ void DisplayManager::renderMainScreen(int moodIndex, const char* petName, int ma
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
         drawPetFace(moodIndex, MAIN_FACE_CENTER_Y, MAIN_FACE_RADIUS);
         showPetMoodText(moodIndex, MAIN_MOOD_Y);
-        drawMainNavBar(mainNavIndex);
+        drawMainNavBar();
 
-        lastMainNavIndex    = mainNavIndex;
-        lastFullRedrawTime  = millis();
-        lastRenderedScreen  = SCREEN_MAIN;
-        return;
-    }
-
-    // Fast path: if the player pressed B or C to change tab highlight,
-    // redraw only the nav bar strip rather than clearing the whole screen.
-    if (mainNavIndex != lastMainNavIndex) {
-        drawMainNavBar(mainNavIndex);
-        lastMainNavIndex = mainNavIndex;
+        lastFullRedrawTime = millis();
+        lastRenderedScreen = SCREEN_MAIN;
     }
 }
 
 // Draws the two-tab bar at the bottom of the Main screen.
-// The selected tab gets a filled cyan background; the other gets just an outline.
-void DisplayManager::drawMainNavBar(int mainNavIndex) {
+// Both tabs are always drawn the same way — no highlight state needed.
+// B switches to Interact; C switches to Stats (handled in NavigationManager).
+void DisplayManager::drawMainNavBar() {
     int tabWidth = MAIN_NAV_ZONE.width / 2;
 
     // Left tab — Stats
-    if (mainNavIndex == 0) {
-        M5.Lcd.fillRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
-        printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_BLACK, 1);
-    } else {
-        M5.Lcd.fillRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_BLACK);
-        M5.Lcd.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
-        printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
-    }
+    M5.Lcd.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
+    printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
 
     // Right tab — Interact
     int rightX = MAIN_NAV_ZONE.x + tabWidth;
-    if (mainNavIndex == 1) {
-        M5.Lcd.fillRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
-        printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_BLACK, 1);
-    } else {
-        M5.Lcd.fillRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_BLACK);
-        M5.Lcd.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
-        printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
-    }
+    M5.Lcd.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
+    printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
 }
 
 // -----------------------------------------------------------------------

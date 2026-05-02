@@ -110,6 +110,6 @@ void loop() {
         myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
         myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
         menu, petIsDead, myPet.getPetName(),
-        navManager.getCurrentScreen(), navManager.getMainNavIndex()
+        navManager.getCurrentScreen()
     );
 }

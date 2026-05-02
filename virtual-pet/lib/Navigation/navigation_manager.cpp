@@ -3,9 +3,8 @@
 
 NavigationManager::NavigationManager()
     : currentScreen(SCREEN_MAIN),
-      mainNavIndex(0),
       confirmActionRequested(false) {
-    // Start on the Main screen with the Stats tab highlighted by default.
+    // Start on the Main screen.
 }
 
 void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& menu) {
@@ -29,26 +28,18 @@ void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& m
 }
 
 void NavigationManager::handleMainScreenInput(const ButtonHandler& buttons) {
-    // B and C both toggle between the two tabs (Stats / Interact).
-    // With only two options, pressing either direction flips the selection —
-    // there is no meaningful difference between "next" and "previous" here.
-    if (buttons.wasButtonBPressed() || buttons.wasButtonCPressed()) {
-        mainNavIndex = (mainNavIndex == 0) ? 1 : 0;
+    // B goes directly to Stats. C goes directly to Interact.
+    // No intermediate selection step — one press, one action.
+    if (buttons.wasButtonBPressed()) {
+        currentScreen = SCREEN_INTERACT;
     }
-
-    // A enters whichever tab is currently highlighted.
-    if (buttons.wasButtonAPressed()) {
-        if (mainNavIndex == 0) {
-            currentScreen = SCREEN_STATS;
-        } else {
-            currentScreen = SCREEN_INTERACT;
-        }
+    if (buttons.wasButtonCPressed()) {
+        currentScreen = SCREEN_STATS;
     }
 }
 
 void NavigationManager::handleStatsScreenInput(const ButtonHandler& buttons) {
-    // Stats is a read-only screen — there is nothing to select or confirm.
-    // Any button press returns the player to the Main screen.
+    // Stats is a read-only screen — any button press returns to Main.
     if (buttons.wasButtonBPressed() || buttons.wasButtonCPressed() || buttons.wasButtonAPressed()) {
         currentScreen = SCREEN_MAIN;
     }
@@ -69,10 +60,6 @@ void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, 
 
 ScreenState NavigationManager::getCurrentScreen() const {
     return currentScreen;
-}
-
-int NavigationManager::getMainNavIndex() const {
-    return mainNavIndex;
 }
 
 bool NavigationManager::shouldConfirmAction() const {
