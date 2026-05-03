@@ -13,15 +13,15 @@ in `USEFUL_NOTES.md`.
 
 ```
 1. Draw your sprite in Piskel       (piskelapp.com, 32×32 canvas)
-            ↓
-2. Export as a C file from Piskel   (Export → C file → Download)
-            ↓
-3. Rename and move the file         (→ assets/sprites/raw/pet_idle.c)
-            ↓
+            |
+2. Export as a C file from Piskel   (Export -> C file -> Download)
+            |
+3. Rename and move the file         (-> assets/sprites/raw/pet_idle.c)
+            |
 4. Run the converter tool           (tools/piskel_converter/piskel_converter)
-            ↓
-5. The .h file appears              (→ lib/Display/sprites/pet_idle.h)
-            ↓
+            |
+5. The .h file appears              (-> lib/Display/sprites/pet_idle.h)
+            |
 6. #include it in the display code  (Task 13)
 ```
 
@@ -60,10 +60,10 @@ in every state. The details change freely: eyes, mouth, arms, sleeping pose.
 ```
      IDLE                EATING              PLAYING
 . . . . . . . .      . . . . . . . .      . . . . . . . .
-. . . ■ ■ ■ . .      . . . ■ ■ ■ . .      . . ■ . . ■ . .   ← arms raised
-. . . ■ o ■ . .      . . . ■ - ■ . .      . . . ■ ■ ■ . .   ← body same region
-. . . ■ ■ ■ . .      . . . ■ ■ \ . .      . . . ■ o ■ . .
-. . . . | . . .      . . . . | . . .      . . . ■ ■ ■ . .
+. . . # # # . .      . . . # # # . .      . . # . . # . .   <-- arms raised
+. . . # o # . .      . . . # - # . .      . . . # # # . .   <-- body same region
+. . . # # # . .      . . . # # \ . .      . . . # o # . .
+. . . . | . . .      . . . . | . . .      . . . # # # . .
 . . . . . . . .      . . . . . . . .      . . . . | . . .
 . . . . . . . .      . . . . . . . .      . . . . . . . .
 ```
@@ -73,10 +73,10 @@ On screen, the transitions look like this. The pet stays in place:
 ```
          IDLE        EATING      PLAYING
 
-Screen:  [■■■]  →   [■■■]  →   [■ ■]
-         [■o■]       [■-■]       [■■■]
-         [■■■]       [■■\]       [■o■]
-          | |         | |        [■■■]
+Screen:  [###]  ->   [###]  ->   [# #]
+         [#o#]       [#-#]       [###]
+         [###]       [##\]       [#o#]
+          | |         | |        [###]
                                    |
          No jump. The pet stays in the same screen position every time.
 ```
@@ -88,9 +88,9 @@ The EATING sprite was drawn with the pet body shifted to the right.
 ```
      IDLE                EATING (body shifted — wrong)
 . . . . . . . .      . . . . . . . .
-. . . ■ ■ ■ . .      . . . . . ■ ■ ■   ← same pet, wrong canvas position
-. . . ■ o ■ . .      . . . . . ■ - ■
-. . . ■ ■ ■ . .      . . . . . ■ ■ \
+. . . # # # . .      . . . . . # # #   <-- same pet, wrong canvas position
+. . . # o # . .      . . . . . # - #
+. . . # # # . .      . . . . . # # \
 . . . . | . . .      . . . . . . | . .
 . . . . . . . .      . . . . . . . . .
 . . . . . . . .      . . . . . . . . .
@@ -101,9 +101,9 @@ On screen, the transition looks like this. The pet snaps sideways:
 ```
          IDLE        EATING
 
-Screen:  [■■■]           [■■■]
-         [■o■]   →           [■-■]   ← jumped right! the code is fine, the art is wrong.
-         [■■■]           [■■\]
+Screen:  [###]           [###]
+         [#o#]   ->           [#-#]   <-- jumped right! the code is fine, the art is wrong.
+         [###]           [##\]
           |                   |
 ```
 
@@ -115,10 +115,10 @@ The body still fills roughly the same central region of the canvas.
 ```
      IDLE                SLEEPING (rotated, but centred)
 . . . . . . . .      . . . . . . . .
-. . . ■ ■ ■ . .      . . . . . . . .
-. . . ■ o ■ . .      . . ■ ■ ■ ■ ■ .   ← rotated body, same central region
-. . . ■ ■ ■ . .      . . ■ - . . ■ .
-. . . . | . . .      . . ■ ■ ■ ■ ■ .
+. . . # # # . .      . . . . . . . .
+. . . # o # . .      . . # # # # # .   <-- rotated body, same central region
+. . . # # # . .      . . # - . . # .
+. . . . | . . .      . . # # # # # .
 . . . . . . . .      . . . z . . . .
 . . . . . . . .      . . . . . . . .
 ```
@@ -143,15 +143,15 @@ This matters when you design your sprite:
 ```
 What you draw in Piskel:      What appears on the black screen:
 
-. . . . . . . .               ■ ■ ■ ■ ■ ■ ■ ■   ← black (transparent = background)
-. . ■ ■ ■ ■ . .               ■ ■ G G G G ■ ■   ← green body
-. . ■ . . ■ . .               ■ ■ G ■ ■ G ■ ■   ← black hole (transparent inside)
-. . ■ . . ■ . .               ■ ■ G ■ ■ G ■ ■   ← black hole (transparent inside)
-. . ■ ■ ■ ■ . .               ■ ■ G G G G ■ ■   ← green body
-. . . . . . . .               ■ ■ ■ ■ ■ ■ ■ ■   ← black (transparent = background)
+. . . . . . . .               # # # # # # # #   <-- black (transparent = background)
+. . # # # # . .               # # G G G G # #   <-- green body
+. . # . . # . .               # # G # # G # #   <-- black hole (transparent inside)
+. . # . . # . .               # # G # # G # #   <-- black hole (transparent inside)
+. . # # # # . .               # # G G G G # #   <-- green body
+. . . . . . . .               # # # # # # # #   <-- black (transparent = background)
 
-  . = transparent               ■ = black (background showing through)
-  ■ = painted green             G = green pixel
+  . = transparent               # = black (background showing through)
+  # = painted green             G = green pixel
 ```
 
 Transparent pixels *inside* the pet body will appear as black holes. Decide deliberately
