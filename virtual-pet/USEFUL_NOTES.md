@@ -835,6 +835,169 @@ The general rule: **redraw the whole screen rarely; redraw small regions immedia
 
 ---
 
+## How Sprite Images Are Stored and Drawn
+
+Before reading this section, make sure you have read `SPRITE_GUIDE.md`. That guide
+covers how to create and convert sprites step by step. This section explains the
+*why* behind the technical choices — why images cannot just be loaded from a file,
+what RGB565 and ARGB8888 actually mean, and why the `PROGMEM` keyword matters.
+
+### Why not just load a PNG or JPEG?
+
+On a laptop or phone, loading an image is simple: the OS reads the file, a decoder
+library unpacks it into pixels, and the display driver draws them. The M5StickC Plus 2
+has none of those layers. There is no OS, no filesystem by default, and no image decoder
+in memory. The only storage available during a normal program run is the code itself —
+sitting in flash memory — and a small amount of RAM.
+
+The solution is to convert the image into a raw array of pixel values *before* the
+program is compiled, and bake that array directly into the firmware. When the program
+runs, the pixel data is already sitting in flash, ready to draw without any decoding step.
+That is what the `piskel_converter` tool does.
+
+### Two colour formats: ARGB8888 and RGB565
+
+Every digital colour is made up of red, green, and blue channels mixed together.
+The difference between formats is how many bits are used to describe each channel,
+and whether an alpha (transparency) channel is included.
+
+**ARGB8888 — what Piskel exports**
+
+Piskel stores each pixel as a 32-bit number: 8 bits for alpha, 8 for red, 8 for green,
+8 for blue. That gives 256 possible values per channel — fine colour detail, but 4 bytes
+per pixel.
+
+```
+One pixel in ARGB8888 — 32 bits (4 bytes):
+
+Bit: 31      24 23      16 15       8 7        0
+     ┌─────────┬──────────┬──────────┬──────────┐
+     │  Alpha  │   Red    │  Green   │   Blue   │
+     │  8 bits │  8 bits  │  8 bits  │  8 bits  │
+     └─────────┴──────────┴──────────┴──────────┘
+
+Example: 0xFF5C996E
+  Alpha = 0xFF = 255 → fully opaque
+  Red   = 0x5C = 92
+  Green = 0x99 = 153
+  Blue  = 0x6E = 110
+  Result: a sage green colour
+```
+
+**RGB565 — what the M5StickC Plus 2 LCD needs**
+
+The LCD controller uses a 16-bit format: 5 bits for red, 6 bits for green (green gets
+an extra bit because human eyes are most sensitive to it), and 5 bits for blue.
+No alpha channel — the LCD has no concept of transparency in hardware.
+That is 2 bytes per pixel instead of 4, which halves the memory cost.
+
+```
+One pixel in RGB565 — 16 bits (2 bytes):
+
+Bit: 15    11 10     5 4      0
+     ┌───────┬────────┬────────┐
+     │  Red  │ Green  │  Blue  │
+     │ 5 bits│ 6 bits │ 5 bits │
+     └───────┴────────┴────────┘
+
+Example: 0x5CCD
+  Red   = 0b01011 = 11
+  Green = 0b100110 = 38
+  Blue  = 0b01101 = 13
+  Result: the same sage green, using half the memory
+```
+
+### How the converter translates between the two formats
+
+The conversion happens in three steps for each pixel:
+
+```
+Step 1 — Check alpha.
+  If alpha == 0, the pixel is transparent.
+  Write the colour key (0xF81F) and stop.
+
+Step 2 — Extract the colour channels from the 32-bit ARGB value.
+  Red   = (pixel >> 16) & 0xFF   → 8-bit value, 0–255
+  Green = (pixel >>  8) & 0xFF   → 8-bit value, 0–255
+  Blue  = (pixel >>  0) & 0xFF   → 8-bit value, 0–255
+
+Step 3 — Shrink each channel to fit the RGB565 bit widths.
+  Red5   = Red   >> 3   (keep top 5 bits, discard bottom 3)
+  Green6 = Green >> 2   (keep top 6 bits, discard bottom 2)
+  Blue5  = Blue  >> 3   (keep top 5 bits, discard bottom 3)
+
+Step 4 — Pack the three channels into one 16-bit value.
+  rgb565 = (Red5 << 11) | (Green6 << 5) | Blue5
+
+Example with 0xFF5C996E:
+  Red   = 0x5C = 92  → 92  >> 3 = 11  → 0b01011
+  Green = 0x99 = 153 → 153 >> 2 = 38  → 0b100110
+  Blue  = 0x6E = 110 → 110 >> 3 = 13  → 0b01101
+
+  Pack: (11 << 11) | (38 << 5) | 13 = 0x5CCD ✓
+```
+
+You can see this exact logic in `tools/piskel_converter/main.cpp` inside the
+`convertArgbToRgb565()` function.
+
+### The transparent colour key
+
+The LCD has no hardware transparency. When the drawing code calls `pushImage()`, it
+draws every pixel it is given — there is no automatic "skip this pixel" behaviour.
+
+To get transparency, the converter replaces every pixel with alpha == 0 with a special
+**colour key** value: magenta (`0xF81F`). The drawing call then receives that value as
+the "transparent" argument and skips any pixel that matches it.
+
+```
+Why magenta?
+
+  Magenta (0xF81F) in RGB565:
+    Red   = 0b11111 = 31  (maximum)
+    Green = 0b000000 = 0  (none)
+    Blue  = 0b11111 = 31  (maximum)
+
+  It is the most visually distinct colour from anything likely to appear in a
+  pet sprite. Using black (0x0000) as the key would make any genuinely black
+  pixel in the sprite also transparent — undesirable. Magenta is the convention.
+```
+
+If a magenta pixel ever appears in your finished sprite where you did not intend
+transparency, check your source artwork — you may have an unintentionally transparent
+pixel that the converter has replaced with the key colour.
+
+### PROGMEM — storing sprite data in flash, not RAM
+
+The ESP32-PICO-V3-02 has two kinds of memory:
+
+```
+Flash memory:  4 MB   — large, read-only, stores your firmware and sprite arrays
+RAM:         ~200 KB  — small, read-write, used by running code, the display
+                        buffer, the stack, and any variables your program creates
+```
+
+A single 32×32 sprite at 2 bytes per pixel = 2,048 bytes. Seven states of sprites =
+~14 KB. That is manageable in either location, but if you add animation frames later
+(Task 13), the size grows quickly. Storing sprite arrays in flash by default is the
+safe habit to build now.
+
+The `PROGMEM` keyword (from `<pgmspace.h>`) marks an array for flash storage:
+
+```cpp
+// Without PROGMEM — may end up in RAM
+static const uint16_t sprite_pet_idle[1][1024] = { ... };
+
+// With PROGMEM — guaranteed to live in flash
+static const uint16_t PROGMEM sprite_pet_idle[1][1024] = { ... };
+```
+
+On the ESP32, flash memory is memory-mapped — the CPU can read it using normal array
+syntax, the same as RAM. You do not need any special function calls to access the data.
+`PROGMEM` is included as a clear signal of intent: this data is read-only and should
+not be copied into RAM.
+
+---
+
 ## Button Guards — Only Respond When Visible
 
 ### The hidden side-effect problem
