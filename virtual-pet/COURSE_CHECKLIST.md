@@ -2,7 +2,7 @@
 
 ## Phase 1: Foundations & UI
 - [x] Hardware Initialization (M5.begin, LCD, Serial)
-- [ ] Asset Pipeline (Converting images/gifs to C++ arrays/sprites)
+- [x] Asset Pipeline (Converting images/gifs to C++ arrays/sprites) — C++ piskel_converter tool, SPRITE_GUIDE.md student walkthrough, SPRITE_TEST flag in main.cpp. RGB565 values are pre-byte-swapped to match the M5StickC Plus 2 LCD's big-endian SPI byte order (transparent key: 0x1FF8)
 - [ ] Basic Sprite Rendering (Drawing the pet to the screen)
 - [x] Screen Real Estate Management (Layout for stats vs. pet area)
 - [x] Multi-Screen Framework — three screens (Main, Stats, Interact) with `ScreenState` enum and `NavigationManager`. B → Interact, C → Stats from the Main screen.
