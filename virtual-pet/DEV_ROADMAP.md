@@ -99,6 +99,21 @@ LEVEL 5 — ASSET PIPELINE
 11c. Pet interaction screens           ✅ Done (included in 11a — SCREEN_INTERACT shows pet face + contextual stat bar + action menu)
  12. Asset Pipeline (image → C array)  ✅ Done (C++ piskel_converter tool, SPRITE_GUIDE.md, SPRITE_TEST flag in main.cpp, byte-swap fix for M5StickC Plus 2 SPI byte order)
  13. Basic Sprite Rendering            (requires: asset pipeline from task 12)
+13a. Initial Simplification Pass       (gate before Level 6 — streamline existing code before any new features)
+
+⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
+     The codebase has accumulated empty stub modules, unused public methods,
+     and at least one dead function overload over the course of Levels 1–5.
+     Before starting any Level 6 feature work, walk every module with the
+     following questions in mind:
+       — Is this file / method / overload actually used anywhere?
+       — Are there overloaded functions whose signatures never match a caller?
+       — Are any member variables, enum values, or struct fields dead?
+       — Can any block of logic be re-written in fewer, clearer steps WITHOUT
+         violating the pedagogical rules in CLAUDE.md?
+     This is a smaller, narrower pass than Task 18. The goal here is only to
+     remove junk and tighten what already exists — NOT to rewrite for teaching.
+     New features (RTC, voice memos, networking) wait until this pass is done.
 
 LEVEL 6 — COMPLEX HARDWARE
  14. RTC overnight logic               (new: I2C, BM8563 library, Unix timestamp math)
@@ -625,3 +640,57 @@ In `confirmAction()`, add a `switch` on `selectedAction.type` after `executePetA
 - Update the `confirmAction()` call to pass `speaker` as the third argument.
 
 **Files touched:** `lib/Speaker/speaker_manager.h`, `lib/Speaker/speaker_manager.cpp`, `lib/Actions/action_menu.h`, `lib/Actions/action_menu.cpp`, `src/main.cpp`.
+
+---
+
+### Task 13a — Initial Simplification Pass
+
+**Why this task next?**
+
+After Task 13 lands, the Tamagotchi has every feature it needs to function as a complete teaching artefact — five care actions, three screens, sprites, sound, persistence, motion. Before adding RTC, voice memos, or networking on top, pause and remove the junk that accumulated while those features were being built. A teaching codebase only works if every file a student opens is meaningful. Empty stubs, unused methods, and dead overloads make the project feel cluttered and lead students to study code that does nothing.
+
+This pass is **smaller and narrower** than the pre-template simplification at Task 18. Task 18 is a deep rewrite for pedagogy. Task 13a only removes junk and tightens what already exists.
+
+**Concrete starting points (from the dead-code audit run on 2026-05-09):**
+
+Line numbers below are accurate as of the audit. Re-grep before deleting in case Task 13 shifts them.
+
+- `lib/Interactions/` — four 0-byte files: `action_manager.h`, `action_manager.cpp`, `intput_handler.h` (note typo), `input_handler.cpp`. Included nowhere. Delete the whole directory.
+- `lib/Display/animation_manager.h` and `animation_manager.cpp` — both 0 bytes, included nowhere. Delete.
+- `lib/Microphone/microphone_manager.h` and `microphone_manager.cpp` — both 0 bytes, included nowhere. Delete. (Task 15 will create the module fresh when voice memos are implemented.)
+- `ButtonHandler::isButtonAHeld() / isButtonBHeld() / isButtonCHeld()` — declared at `lib/Button/button_handler.h:57–59`, implemented in the .cpp, never called. Remove declarations and definitions.
+- `ImuManager::getAccelX() / getAccelY() / getAccelZ()` — declared at `lib/Imu/imu_manager.h:55–57`, never called. Only `wasShaken()` is used. Remove declarations and definitions.
+- `ActionMenu::displayCurrentMenu()` — declared at `lib/Actions/action_menu.h:86`, self-flagged "legacy, mostly unused" in its header comment, never called. Remove.
+- `ActionMenu::drawMenuIndicator()` — declared at `lib/Actions/action_menu.h:90`, never called. (`DisplayManager::drawMenuIndicator()` is the live implementation — keep that one.) Remove the ActionMenu version only.
+- `DisplayManager::printText(String, ...)` — declared at `lib/Display/display_manager.h:102`, defined at `display_manager.cpp:310–315`. All four call sites pass `const char*` (string literals or `Action::name` which is `const char*` per `action_menu.h:41`); the `String` overload is unreachable. Remove the overload — keep the `const char*` overload at `display_manager.h:101`.
+- Update the architecture map in `CLAUDE.md` to drop the `animation_manager` and `microphone_manager` rows now that those files are gone.
+
+**Beyond the audit findings — also look for:**
+
+- Other overloaded methods whose signatures may never bind. For each overload set in the project, check the static type of every argument at every call site.
+- Member variables written but never read. The `Pet::tired` field is one candidate — it is persisted via `StorageManager` but never consulted by game logic, mood calculation, or rendering. Decide: wire it into a timer rule, or remove it. (Note: `Pet::sad` is also currently inert but is intentionally reserved for the deferred Sadness Logic task — leave it alone.)
+- Enum values, struct fields, or constants that no `switch` / conditional / draw call ever references.
+- Logic duplicated verbatim between two modules.
+
+**What this pass is NOT:**
+
+- It is **not a rewrite**. Do not rename variables for taste, do not collapse readable blocks into clever one-liners, do not introduce new abstractions. The pedagogical rules in `CLAUDE.md` still apply — readability first.
+- It is **not the pre-template polish** (that is Task 18). Do not normalise comments or extract helpers for teaching here.
+- It is **not feature work**. Do not add new behaviour, even if it feels small.
+
+**Branch and commit strategy:**
+
+Create `refactor/initial-simplification-pass` from a clean `main` after Task 13 is merged. Make one logical commit per concern (per the atomic-commit rule in `CLAUDE.md`):
+
+1. `chore: remove empty lib/Interactions/ module`
+2. `chore: remove empty animation_manager and microphone_manager stubs`
+3. `refactor: remove unused ButtonHandler held-state methods`
+4. `refactor: remove unused ImuManager raw acceleration getters`
+5. `refactor: remove dead ActionMenu legacy methods`
+6. `refactor: remove dead DisplayManager::printText(String) overload`
+7. `docs: drop deleted modules from CLAUDE.md architecture map`
+8. (further commits as additional findings surface during the pass)
+
+After all commits, test on device — display, button input, IMU shake, sound, NVS save/load, all five care actions, and death/reset must behave exactly as before. The deletions should not change observable behaviour.
+
+**Files touched:** Varies — entire `lib/` tree is in scope. Expect to delete files in `lib/Interactions/`, `lib/Display/animation_manager.*`, `lib/Microphone/microphone_manager.*`, and remove dead methods from `lib/Button/button_handler.*`, `lib/Imu/imu_manager.*`, `lib/Actions/action_menu.*`, `lib/Display/display_manager.*`. Also update `CLAUDE.md`.
