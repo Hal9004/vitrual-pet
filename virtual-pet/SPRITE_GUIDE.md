@@ -295,3 +295,170 @@ so stay within the 8-frame limit for now.
 Do not draw animation sequences yet. One clear, well-centred drawing per state is the
 deliverable for this task. Multi-frame animation is Task 13. Getting the single frames
 right first makes the animation work much smoother when you get there.
+
+---
+
+## Part 5 — How Your Sprite Appears on Each Screen
+
+The pet appears on three different screens. Each screen reserves a different amount of
+space for the pet face, and the rendering code (Task 13) will scale the sprite to fill
+that space. Understanding the boundaries now helps you design a sprite that reads clearly
+on every screen.
+
+**Your sprite canvas is always 32x32 pixels.** The rendering code scales it up when it
+draws to the screen — you never change the sprite size, only the draw call.
+
+The scale factors shown below are the planned values for Task 13. They are based on the
+face centre coordinates already defined in `lib/Display/display_manager.h`.
+
+---
+
+### Screen 1 — MAIN (the home screen)
+
+The main screen shows a large version of the pet in the centre of the 135x240 display.
+There are no stat bars on this screen — it is intentionally uncluttered.
+
+```
+|<--------- 135 px -------->|
++---------------------------+  y = 0
+|                           |
+|    Pet name (centred)     |  TITLE_ZONE: y = 5, height = 19
+|                           |
++---------------------------+  y = 24
+|                           |
+|                           |
+|       +-----------+       |
+|       |           |       |
+|       | 80 x 80px |       |  planned Task 13 sprite: 32x32 at 2.5x scale
+|       |           |       |  face centre: y = 110  (MAIN_FACE_CENTER_Y)
+|       |  2.5x     |       |  top edge: y = 70   (110 - 40)
+|       |           |       |  bottom edge: y = 150  (110 + 40)
+|       +-----------+       |
+|                           |
++---------------------------+  y = 155
+|   Mood text (centred)     |  MAIN_MOOD_Y = 155
++---------------------------+  y ~171
+|                           |
+|       (free space)        |
+|                           |
++===========================+  y = 213
+|   [Stats]  |  [Interact]  |  MAIN_NAV_ZONE: y = 213, height = 22
++===========================+  y = 235
+|                           |  (5 px unused)
++---------------------------+  y = 240
+```
+
+**Key constraints on MAIN:**
+- Pet name title occupies y = 5 to y = 24 — pet must not overlap it
+- Mood text appears at y = 155 — the bottom edge of the sprite (y = 150) clears it by 5 px
+- Nav bar starts at y = 213 — well below the pet
+
+---
+
+### Screen 2 — STATS (the detailed stats screen)
+
+The stats screen fills the top half with five stat bars, then shows a small pet face
+below them. The pet zone here is only 36 pixels tall — the tightest space of any screen.
+
+```
+|<--------- 135 px -------->|
++---------------------------+  y = 0
+|                           |
+|    Pet name (centred)     |  TITLE_ZONE: y = 5, height = 19
+|                           |
++---------------------------+  y = 24
+|  Happy: 80                |  label at y = 26   (HAPPY_BAR_ZONE.labelY)
+|  [====================]   |  bar   at y = 36   (HAPPY_BAR_ZONE.barY), height = 10
+|  Hunger: 60               |  label at y = 48   (HUNGER_BAR_ZONE.labelY)
+|  [===============      ]  |  bar   at y = 58   (HUNGER_BAR_ZONE.barY), height = 10
+|  Energy: 75               |  label at y = 70   (ENERGY_BAR_ZONE.labelY)
+|  [==================   ]  |  bar   at y = 80   (ENERGY_BAR_ZONE.barY), height = 10
+|  Clean: 90                |  label at y = 92   (CLEAN_BAR_ZONE.labelY)
+|  [=====================]  |  bar   at y = 102  (CLEAN_BAR_ZONE.barY), height = 10
+|  Sick: 20                 |  label at y = 114  (SICK_BAR_ZONE.labelY)
+|  [====                 ]  |  bar   at y = 124  (SICK_BAR_ZONE.barY), height = 10
++===========================+  y = 134  (last bar ends here -- PET_FACE_ZONE begins)
+|                           |  PET_FACE_ZONE: y = 134, height = 36, width = 135
+|    face / sprite only     |  sprite drawn at 1x scale (no scaling)
+|    (centred, 32 x 32)     |  face centre: y = 152  (134 + 36 / 2)
+|                           |  top edge: y = 136, bottom edge: y = 168
++===========================+  y = 170  (134 + 36)
+|                           |
+|    Mood text (centred)    |  MOOD_ZONE: y = 180, height = 18
+|                           |
++---------------------------+  y = 198
+|                           |
+|                           |
++===========================+  y = 220
+|   [B/C: Back]             |  MENU_ZONE: y = 220, height = 20
++===========================+  y = 240
+```
+
+**Key constraints on STATS:**
+- The pet zone (PET_FACE_ZONE) is only 36 px tall — a 32x32 sprite fits with 4 px spare
+- Only the face / sprite is drawn in this zone — no name or state text
+- Drawing at anything larger than 1x will overflow the zone boundary
+- The last stat bar (Sick) ends at y = 134, exactly where the pet zone begins
+- Mood text (y = 180) and back button (y = 220) sit below the pet zone
+
+---
+
+### Screen 3 — INTERACT (the action menu screen)
+
+The interact screen shows a medium-sized pet at the top, with a contextual stat bar and
+the action menu indicator below it.
+
+```
+|<--------- 135 px -------->|
++---------------------------+  y = 0
+|                           |
+|    Pet name (centred)     |  TITLE_ZONE: y = 5, height = 19
+|                           |
++---------------------------+  y = 24
+|                           |
+|       +-----------+       |
+|       |           |       |
+|       | 64 x 64px |       |  planned Task 13 sprite: 32x32 at 2x scale
+|       |           |       |  face centre: y = 90  (INTERACT_FACE_CENTER_Y)
+|       |  2x       |       |  top edge: y = 58   (90 - 32)
+|       |           |       |  bottom edge: y = 122  (90 + 32)
+|       +-----------+       |
+|                           |
++---------------------------+  y = 128
+|   Mood text (centred)     |  INTERACT_MOOD_Y = 128
++---------------------------+  y ~144
+|                           |
++===========================+  y = 153
+|  Hungry: 72               |  INTERACT_STAT_ZONE: x = 5, y = 153, width = 125, height = 28
+|  [================    ]   |  label at y = 156, bar at y = 168
++===========================+  y = 181  (153 + 28)
+|                           |
+|                           |
+|                           |
++===========================+  y = 220
+|  Action: [Feed]           |  MENU_ZONE: y = 220, height = 20
++===========================+  y = 240
+```
+
+**Key constraints on INTERACT:**
+- Mood text is at y = 128 — the bottom edge of the sprite (y = 122) clears it by only 6 px
+- The contextual stat bar (y = 153) shows the stat affected by the selected action
+- The action menu indicator (y = 220) is at the very bottom — separate from the stat bar
+
+---
+
+### Summary table
+
+All values are taken directly from the constants in `lib/Display/display_manager.h`.
+The scale factor column is the planned value for Task 13 — it is not yet in the code.
+
+| Screen   | Pet size on screen | Scale | Face centre (y) | Zone boundaries          |
+|----------|--------------------|-------|-----------------|--------------------------|
+| MAIN     | 80 x 80 px         | 2.5x  | y = 110         | title above y=24, mood at y=155 |
+| STATS    | 32 x 32 px         | 1x    | y = 152         | zone y=134 to y=170 (36 px tall) |
+| INTERACT | 64 x 64 px         | 2x    | y = 90          | title above y=24, mood at y=128 |
+
+**The key takeaway:** your sprite canvas is always 32x32. The same drawing appears at
+three different sizes depending on which screen the player is on. Bold shapes and outlines
+that read clearly at 32x32 will look good at every scale. Fine detail drawn at 80x80 may
+disappear entirely when the same sprite is shown at 32x32 on the Stats screen.
