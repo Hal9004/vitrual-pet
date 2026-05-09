@@ -462,3 +462,76 @@ The scale factor column is the planned value for Task 13 — it is not yet in th
 three different sizes depending on which screen the player is on. Bold shapes and outlines
 that read clearly at 32x32 will look good at every scale. Fine detail drawn at 80x80 may
 disappear entirely when the same sprite is shown at 32x32 on the Stats screen.
+
+---
+
+### Sprite size and flash memory cost
+
+Every pixel in a sprite is stored as a 16-bit (2-byte) RGB565 value in flash memory.
+The total cost of a complete spritesheet is:
+
+```
+total bytes = width × height × frames_per_state × number_of_states × 2
+```
+
+The table below shows flash cost at each base canvas size from 32×32 up to 135×135
+(the maximum square that fits the 135 px screen width). The columns show how cost
+scales as you add more animation frames and pet states.
+
+| Base size | Per frame | 7 states × 1 frame | 7 states × 4 frames | 7 states × 8 frames | Budget |
+|-----------|-----------|--------------------|---------------------|---------------------|--------|
+| 32 × 32   |    2 KB   |    14 KB           |    56 KB            |   112 KB            | ✓      |
+| 48 × 48   |    4.5 KB |    31 KB           |   126 KB            |   252 KB            | ✓      |
+| 64 × 64   |    8 KB   |    56 KB           |   224 KB            |   448 KB            | ✓      |
+| 80 × 80   |   12.5 KB |    88 KB           |   350 KB            |   700 KB            | ⚠      |
+| 96 × 96   |   18 KB   |   126 KB           |   504 KB            | 1,008 KB            | ✗      |
+| 112 × 112 |   24.5 KB |   172 KB           |   686 KB            | 1,372 KB            | ✗      |
+| 128 × 128 |   32 KB   |   224 KB           |   896 KB            | 1,792 KB            | ✗      |
+| 135 × 135 |   35.6 KB |   249 KB           |   997 KB            | 1,993 KB            | ✗      |
+
+**Budget key:**
+- ✓ safe — 7 states × 8 frames fits well within the ~812 KB of free flash
+- ⚠ tight — 7 states × 8 frames uses ~700 KB; reduce frame count or state count to stay safe
+- ✗ over budget for 8 frames — keep to 4 frames per state max (96×96 at 4 frames = 504 KB ✓)
+
+**Flash budget explained:** The firmware partition on the M5StickC Plus 2 is ~1,260 KB.
+The compiled firmware binary currently uses ~448 KB, leaving approximately 812 KB for sprite data.
+These numbers will shift slightly as more code is added, so treat 700 KB of sprite data as
+the practical ceiling.
+
+**Formula reminder:** pixel count grows with the square of the side length — doubling the
+sprite from 32×32 to 64×64 quadruples the pixel count (1,024 → 4,096) and quadruples
+the flash cost. A jump from 64×64 to 128×128 costs 16× as much as the original 32×32.
+
+---
+
+### How sprite size interacts with each screen zone
+
+Not every size can be displayed at 1:1 (one pixel in the sprite = one pixel on screen) on
+every screen. The zones in `display_manager.h` set a hard physical limit per screen.
+
+| Base size | STATS (36 px zone) | INTERACT (76 px max) | MAIN (90 px max) |
+|-----------|--------------------|----------------------|------------------|
+| 32 × 32   | fits with 4 px spare | fits with 44 px spare | fits with 58 px spare |
+| 48 × 48   | clips (12 px over)   | fits with 28 px spare | fits with 42 px spare |
+| 64 × 64   | clips (28 px over)   | fits with 12 px spare | fits with 26 px spare |
+| 80 × 80   | clips (44 px over)   | clips (4 px over)    | fits with 10 px spare |
+| 96 × 96   | clips (60 px over)   | clips (20 px over)   | clips (6 px over)    |
+| 112 × 112 | clips (76 px over)   | clips (36 px over)   | clips (22 px over)   |
+| 128 × 128 | clips (92 px over)   | clips (52 px over)   | clips (38 px over)   |
+| 135 × 135 | clips (99 px over)   | clips (59 px over)   | clips (45 px over)   |
+
+"Clips" means the sprite is taller or wider than the available zone space. The pixels outside
+the zone boundary will either be drawn on top of adjacent UI elements, or the rendering code
+must intentionally restrict the draw area. Neither is ideal — oversized sprites need either
+a scaling step at render time (see `pushImageAffine()` in the M5GFX library) or a separate
+cropped version for that screen.
+
+**The STATS screen is the binding constraint.** Its pet zone is only 36 px tall regardless of
+how large the sprite is on other screens. Any base canvas larger than 36×36 will overflow
+the STATS zone at 1:1. The practical options are:
+1. Keep the base canvas at 32×32 (fits everywhere at 1:1, but is small on MAIN)
+2. Use a larger canvas and accept the clip on STATS — the centre of the sprite (the face) will
+   still be visible; only the edges are cut off
+3. Scale the sprite down at render time for the STATS screen — more complex code but the
+   full image is visible at reduced size
