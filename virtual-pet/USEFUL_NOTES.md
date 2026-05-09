@@ -194,7 +194,7 @@ Try changing the numbers in `lib/Speaker/speaker_manager.cpp` and flashing the d
 
 You will notice that the functions in `speaker_manager.cpp` use `delay()` between each note. The next section explains why `delay()` is normally forbidden inside `loop()`, so this might look like a contradiction. It is not — and understanding the difference is important.
 
-The sound functions only ever run inside `confirmAction()`, which is called when the user presses Button A to confirm a menu choice. At that moment, the device is **intentionally pausing** to show the user a feedback message on screen anyway — there is already a `delay(1000)` call there. Adding a short melody of a few hundred milliseconds inside that same deliberate pause does not make things worse. The user expects the game to briefly acknowledge their input.
+The sound functions only ever run inside `confirmAction()`, which is called when the user presses Button A to confirm a menu choice. At that moment, the device is **intentionally pausing** to show the user a feedback message on screen anyway — there is already a `delay(1000)` call there. Adding a short melody of a few hundred milliseconds inside that same deliberate pause does not make things worse. The user expects the device to briefly acknowledge their input.
 
 The rule is more precisely stated as: **do not use `delay()` for background, automatic events that should happen silently without interrupting the user**. The stat decay timers are a perfect example — if hunger increased every 5 seconds and the screen froze for a moment each time, the device would feel broken. The melodies are different: they are a direct, intentional response to something the user just did.
 
@@ -747,7 +747,7 @@ if (navManager.shouldConfirmAction()) {
 }
 ```
 
-The switch statement still exists — it just lives inside `NavigationManager::update()` where it belongs, rather than mixed into the main game loop.
+The switch statement still exists — it just lives inside `NavigationManager::update()` where it belongs, rather than mixed into the main program loop.
 
 ### One handler per screen
 
@@ -787,7 +787,7 @@ void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& m
 
 By resetting `confirmActionRequested` to `false` at the very start of `update()`, the flag can only ever be `true` for **one loop iteration** — the single frame where the player's button press was detected. On the next frame, `update()` resets it back to `false` before anything else runs.
 
-This is called a **one-shot flag**: it fires once and immediately resets itself. You will see this pattern used in `ButtonHandler` (`wasButtonAPressed()` returns `true` only once per press), in `Pet` (`checkDeathAlert()` returns `true` only on the first frame of death), and now in `NavigationManager`. It is one of the most useful patterns in game loop programming.
+This is called a **one-shot flag**: it fires once and immediately resets itself. You will see this pattern used in `ButtonHandler` (`wasButtonAPressed()` returns `true` only once per press), in `Pet` (`checkDeathAlert()` returns `true` only on the first frame of death), and now in `NavigationManager`. It is one of the most useful patterns for any program that responds to hardware inputs inside a polling loop.
 
 ---
 
