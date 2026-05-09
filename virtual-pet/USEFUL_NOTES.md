@@ -914,7 +914,7 @@ The conversion happens in three steps for each pixel:
 ```
 Step 1 — Check alpha.
   If alpha == 0, the pixel is transparent.
-  Write the colour key (0xF81F) and stop.
+  Write the colour key (0x1FF8) and stop.
 
 Step 2 — Extract the colour channels from the 32-bit ARGB value.
   Red   = (pixel >> 16) & 0xFF   → 8-bit value, 0–255
@@ -928,6 +928,10 @@ Step 3 — Shrink each channel to fit the RGB565 bit widths.
 
 Step 4 — Pack the three channels into one 16-bit value.
   rgb565 = (Red5 << 11) | (Green6 << 5) | Blue5
+
+Step 5 — Swap the two bytes before storing.
+  stored = (rgb565 >> 8) | (rgb565 << 8)
+  (Why this is necessary is explained in the byte-ordering section below.)
 
 Example with 0xFF5C996E:
   Red   = 0x5C = 92  → 92  >> 3 = 11  → 0b01011
@@ -946,8 +950,14 @@ The LCD has no hardware transparency. When the drawing code calls `pushImage()`,
 draws every pixel it is given — there is no automatic "skip this pixel" behaviour.
 
 To get transparency, the converter replaces every pixel with alpha == 0 with a special
-**colour key** value: magenta (`0xF81F`). The drawing call then receives that value as
-the "transparent" argument and skips any pixel that matches it.
+**colour key** value. The drawing call then receives that value as the "transparent"
+argument and skips any pixel that matches it.
+
+The logical transparent colour is **magenta** — `0xF81F` in RGB565. But because of the
+byte-ordering requirement explained in the next section, the value actually stored in
+the sprite array and passed to `pushImage()` is `0x1FF8` — the byte-swapped form of
+`0xF81F`. Both values refer to the same colour; they are just the same two bytes in
+opposite order.
 
 ```
 Why magenta?
@@ -995,6 +1005,64 @@ On the ESP32, flash memory is memory-mapped — the CPU can read it using normal
 syntax, the same as RAM. You do not need any special function calls to access the data.
 `PROGMEM` is included as a clear signal of intent: this data is read-only and should
 not be copied into RAM.
+
+### Why pixel values are stored byte-swapped
+
+When you first test a sprite, you may notice colours appear wrong — a green sprite
+shows as light pink, or a blue sprite shows as red. This is caused by a byte-ordering
+mismatch between the ESP32 and the LCD controller.
+
+**The problem: two different byte orders**
+
+A 16-bit RGB565 colour is two bytes. There is a question of which byte comes first:
+
+```
+Colour: 0x5CCD  (a sage green in RGB565)
+
+Big-endian order    — high byte first: [0x5C] [0xCD]
+Little-endian order — low byte first:  [0xCD] [0x5C]
+```
+
+- The **ESP32** stores data in **little-endian** order. When the CPU writes the
+  `uint16_t` value `0x5CCD` into memory, it stores byte `0xCD` at the lower address
+  and byte `0x5C` at the higher address.
+- The **SPI driver** sends bytes in address order — low address first. So it sends
+  `[0xCD, 0x5C]`.
+- The **LCD controller** is **big-endian**. It expects the high byte first and
+  interprets whatever arrives as `[first byte] [second byte]`. Receiving `[0xCD, 0x5C]`
+  it reads this as the colour `0xCD5C` — completely wrong.
+
+```
+Without byte-swap:
+
+  Stored in array:   0x5CCD   (sage green)
+  ESP32 memory:      [0xCD] [0x5C]    (little-endian)
+  SPI sends:         [0xCD] [0x5C]    (address order)
+  LCD receives:      0xCD5C
+  Displayed colour:  R=200, G=170, B=230  →  light lavender-pink  (wrong!)
+```
+
+**The fix: pre-swap the bytes in the converter**
+
+By storing the byte-swapped value (`0xCD5C`) in the array instead:
+
+```
+With byte-swap:
+
+  Logical colour:    0x5CCD   (sage green)
+  Stored in array:   0xCD5C   (bytes pre-swapped)
+  ESP32 memory:      [0x5C] [0xCD]    (little-endian storage of 0xCD5C)
+  SPI sends:         [0x5C] [0xCD]    (address order)
+  LCD receives:      0x5CCD           (big-endian interpretation)
+  Displayed colour:  sage green  (correct!)
+```
+
+The bytes arrive at the LCD in the right order because the pre-swap in the converter
+cancels out the reversal caused by little-endian storage. The `piskel_converter` tool
+does this automatically for every pixel, including the transparent colour key. You do
+not need to think about it when drawing sprites — but if you ever work with raw pixel
+data directly in firmware code, remember that `pushImage()` on this device expects
+pre-swapped (byte-swapped) RGB565 values.
 
 ---
 
