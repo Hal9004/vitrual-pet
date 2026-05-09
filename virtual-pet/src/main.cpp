@@ -10,6 +10,15 @@
 #include "../lib/Speaker/speaker_manager.h"
 #include "../lib/Storage/storage_manager.h"
 
+// -------------------------------------------------------------------------
+// SPRITE_TEST — quick render test for Task 12.
+// When this is defined, setup() draws one sprite to the screen and stops.
+// The entire game loop is bypassed — nothing else runs.
+// To return to normal operation, comment out or delete this #define.
+// -------------------------------------------------------------------------
+// #define SPRITE_TEST
+#include "../lib/Display/sprites/newpiskel2.h"
+
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
 Pet             myPet;    // Holds all of the pet's stats and care actions.
@@ -24,6 +33,24 @@ StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 
 void setup() {
     M5.begin();
+
+    #ifdef SPRITE_TEST
+    // Clear the screen to black so transparent pixels show the background colour.
+    M5.Lcd.fillScreen(TFT_BLACK);
+
+    // Calculate the top-left corner that centres the sprite on the screen.
+    int spriteX = (135 - SPRITE_NEWPISKEL2_WIDTH)  / 2;
+    int spriteY = (240 - SPRITE_NEWPISKEL2_HEIGHT) / 2;
+
+    // Draw the sprite. The last argument is the transparent colour key —
+    // any pixel matching 0xF81F (magenta) is skipped, letting black show through.
+    M5.Lcd.pushImage(spriteX, spriteY,
+                     SPRITE_NEWPISKEL2_WIDTH,
+                     SPRITE_NEWPISKEL2_HEIGHT,
+                     sprite_newpiskel2[0],
+                     SPRITE_TRANSPARENT_COLOR);
+    return; // Skip all normal initialisation.
+    #endif
 
     #ifdef DEBUG
     Serial.begin(115200);
@@ -41,6 +68,10 @@ void setup() {
 }
 
 void loop() {
+    #ifdef SPRITE_TEST
+    return; // Nothing to do — sprite is already drawn in setup().
+    #endif
+
     M5.update();      // Read the latest hardware state (buttons, IMU, etc.)
     buttons.update(); // Detect which buttons were pressed this frame
     imu.update();     // Read fresh accelerometer data and update shake detection
