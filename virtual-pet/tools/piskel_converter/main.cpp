@@ -24,9 +24,21 @@
 
 // The transparent colour key used by M5Canvas::pushImage().
 // Pixels with this value are skipped during drawing, letting the background
-// show through. Magenta (0xF81F) is the convention — it is an unlikely
-// colour to appear intentionally in a pet sprite.
-static const uint16_t TRANSPARENT_COLOR_KEY = 0xF81F;
+// show through. The logical colour is magenta (0xF81F), but the value stored
+// in the output array is 0x1FF8 — the byte-swapped form.
+//
+// Why byte-swap?
+//   The ESP32 is little-endian. A uint16_t stored in memory has its low byte
+//   at the lower address. The SPI driver sends bytes in address order, so the
+//   low byte goes first. The LCD controller is big-endian — it expects the
+//   high byte first. Without pre-swapping, every colour arrives at the display
+//   with its bytes reversed and the colour is wrong.
+//
+//   By storing the byte-swapped value, the bytes land on the SPI bus in the
+//   order the display needs, and colours appear correctly. The transparent
+//   colour key must also be stored in swapped form so pushImage() can compare
+//   it against the (swapped) pixel values in the array.
+static const uint16_t TRANSPARENT_COLOR_KEY = 0x1FF8;  // 0xF81F byte-swapped
 
 // Convert one 32-bit ARGB8888 pixel (Piskel format) into a 16-bit RGB565
 // pixel (M5StickC Plus 2 LCD format).
@@ -58,7 +70,13 @@ uint16_t convertArgbToRgb565(uint32_t argbPixel) {
 
     // Combine the three channels into one 16-bit value.
     // Red occupies bits 15–11, green bits 10–5, blue bits 4–0.
-    return (red5 << 11) | (green6 << 5) | blue5;
+    uint16_t rgb565 = (red5 << 11) | (green6 << 5) | blue5;
+
+    // Swap the two bytes before storing.
+    // The SPI bus sends bytes in memory order (low byte first on the ESP32).
+    // The LCD controller expects the high byte first. Pre-swapping here means
+    // the bytes arrive at the display in the correct order.
+    return (rgb565 >> 8) | (rgb565 << 8);
 }
 
 // Read the integer value from a Piskel #define line.
@@ -242,9 +260,11 @@ int main(int argc, char* argv[]) {
     outputFile << "//   Each uint16_t value encodes one pixel as: RRRRRGGGGGGBBBBB"          << std::endl;
     outputFile << "//   5 bits red | 6 bits green | 5 bits blue"                             << std::endl;
     outputFile << "//"                                                                        << std::endl;
-    outputFile << "// Transparent colour key: 0xF81F (magenta)."                             << std::endl;
+    outputFile << "// Transparent colour key: 0x1FF8 (byte-swapped magenta 0xF81F)."         << std::endl;
     outputFile << "//   Pixels with this value are skipped by the drawing code."             << std::endl;
     outputFile << "//   They let the screen background colour show through."                 << std::endl;
+    outputFile << "//   The value is pre-swapped to match the byte order of all other"       << std::endl;
+    outputFile << "//   pixels in this array (see byte-swap note in the converter tool)."    << std::endl;
     outputFile << "//"                                                                        << std::endl;
     outputFile << "// PROGMEM: marks this array for storage in ESP32 flash memory."          << std::endl;
     outputFile << "//   On ESP32, PROGMEM is equivalent to const — flash storage is"         << std::endl;
@@ -259,9 +279,11 @@ int main(int argc, char* argv[]) {
     outputFile << "#define SPRITE_" << upperIdentifier << "_HEIGHT       " << frameHeight     << std::endl;
     outputFile << ""                                                                          << std::endl;
     outputFile << "// Transparent colour key — pass this to pushImage() so it skips"         << std::endl;
-    outputFile << "// these pixels and lets the background show through."                    << std::endl;
+    outputFile << "// transparent pixels and lets the background show through."              << std::endl;
+    outputFile << "// This is 0xF81F (magenta) with its two bytes pre-swapped to 0x1FF8,"   << std::endl;
+    outputFile << "// matching the byte order of all other pixel values in this array."      << std::endl;
     outputFile << "#ifndef SPRITE_TRANSPARENT_COLOR"                                          << std::endl;
-    outputFile << "#define SPRITE_TRANSPARENT_COLOR 0xF81F"                                   << std::endl;
+    outputFile << "#define SPRITE_TRANSPARENT_COLOR 0x1FF8"                                   << std::endl;
     outputFile << "#endif"                                                                    << std::endl;
     outputFile << ""                                                                          << std::endl;
     outputFile << "static const uint16_t PROGMEM sprite_" << lowerIdentifier;
