@@ -28,6 +28,9 @@ Thumbs.db
 *.elf.map
 *.d
 
+# Compiled host-side tools (rebuilt locally from source)
+tools/piskel_converter/piskel_converter
+
 # IDE and editor files
 .idea/
 *.sublime-workspace

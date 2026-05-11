@@ -7,9 +7,16 @@
 //   Run:           ./piskel_converter <input.c> <output.h>
 //
 // Why is this tool needed?
-//   Piskel exports pixels in ARGB8888 format: 4 bytes per pixel (alpha, red,
-//   green, blue). The M5StickC Plus 2 LCD uses RGB565 format: 2 bytes per pixel
-//   (5 red bits, 6 green bits, 5 blue bits). This tool converts between the two.
+//   Piskel exports pixels in ABGR8888 format: 4 bytes per pixel laid out as
+//   alpha, blue, green, red (highest byte to lowest). The M5StickC Plus 2 LCD
+//   uses RGB565 format: 2 bytes per pixel (5 red bits, 6 green bits, 5 blue
+//   bits). This tool converts between the two.
+//
+//   Watch out: the format is ABGR, NOT ARGB. They look similar but the red and
+//   blue bytes are in opposite positions. Treating one as the other makes red
+//   pixels render as blue and blue pixels render as red. Green looks the same
+//   in both formats (it always sits in the middle byte), so this bug is easy
+//   to miss until you draw a sprite that contains red or blue.
 
 // Standard C++ library includes.
 // Each include unlocks a specific set of tools from the standard library.
@@ -40,14 +47,14 @@
 //   it against the (swapped) pixel values in the array.
 static const uint16_t TRANSPARENT_COLOR_KEY = 0x1FF8;  // 0xF81F byte-swapped
 
-// Convert one 32-bit ARGB8888 pixel (Piskel format) into a 16-bit RGB565
+// Convert one 32-bit ABGR8888 pixel (Piskel format) into a 16-bit RGB565
 // pixel (M5StickC Plus 2 LCD format).
 // Fully transparent pixels (alpha == 0) become the transparent colour key
 // instead of black, so the drawing code can skip them.
-uint16_t convertArgbToRgb565(uint32_t argbPixel) {
+uint16_t convertAbgrToRgb565(uint32_t abgrPixel) {
     // Extract the alpha channel from the most-significant byte.
     // A value of 0 means fully transparent; 255 means fully opaque.
-    uint8_t alpha = (argbPixel >> 24) & 0xFF;
+    uint8_t alpha = (abgrPixel >> 24) & 0xFF;
 
     if (alpha == 0) {
         // Transparent pixel — replace with the colour key so the renderer
@@ -56,10 +63,12 @@ uint16_t convertArgbToRgb565(uint32_t argbPixel) {
     }
 
     // Extract the red, green, and blue channels.
-    // Each channel is 8 bits (0–255) in ARGB8888.
-    uint8_t red   = (argbPixel >> 16) & 0xFF;
-    uint8_t green = (argbPixel >>  8) & 0xFF;
-    uint8_t blue  = (argbPixel >>  0) & 0xFF;
+    // Piskel lays the bytes out as alpha (highest), then blue, then green,
+    // then red (lowest). This is ABGR — note that blue and red are reversed
+    // compared to the more familiar ARGB layout.
+    uint8_t blue  = (abgrPixel >> 16) & 0xFF;
+    uint8_t green = (abgrPixel >>  8) & 0xFF;
+    uint8_t red   = (abgrPixel >>  0) & 0xFF;
 
     // Pack into RGB565: red gets 5 bits, green gets 6 bits, blue gets 5 bits.
     // Shifting right discards the least-significant bits — a small loss of
@@ -300,7 +309,7 @@ int main(int argc, char* argv[]) {
 
             for (int col = 0; col < frameWidth; col++) {
                 int pixelIndex = frameStartPixel + (row * frameWidth) + col;
-                uint16_t rgb565Pixel = convertArgbToRgb565(rawPixels[pixelIndex]);
+                uint16_t rgb565Pixel = convertAbgrToRgb565(rawPixels[pixelIndex]);
 
                 // Write the pixel as a 4-digit hex value with leading zeros.
                 outputFile << "0x"
