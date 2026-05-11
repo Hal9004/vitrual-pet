@@ -48,7 +48,9 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Sprite Animation (Task 13a) — extend the static sprite rendering from Task 13 to cycle through multi-frame Piskel exports using a `millis()` timer in `DisplayManager`. The asset pipeline and sprite array shape already support `FRAME_COUNT > 1`; the work is drawing the frames, frame-cycling the index at runtime, and handling flicker with M5Canvas if needed. The Initial Simplification Pass (formerly Task 13a, now Task 14) follows.
+**Next task on the queue:** Initial Simplification Pass (Task 14) — broken into two sub-tasks. **14a — Code Simplification Audit**: dead-code removal across `lib/`, identification of module-to-module coupling, and audit of overloads / dead member variables / dead enum values. **14b — Roadmap Simplification Audit**: walk Tasks 15–18 and right-size each one to a minimum teachable foundation that students can expand from (e.g. "basic microphone input" instead of full voice memos; "scan for nearby BLE devices" instead of full wireless communication). See `DEV_ROADMAP.md` for the concrete starting points.
+
+**Deferred:** Sprite Animation (Task 13a) — paused. Return to it after Level 6/7 features (Tasks 15–18) are in. Animation becomes the last Level 5 task before the pre-template simplification at Task 19.
 
 ## Hardware Gotchas
 

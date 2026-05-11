@@ -59,7 +59,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
 | Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
-| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Remaining: sprite animation (Task 13a) |
+| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation (Task 13a) is deferred — picked back up after Tasks 15–18. |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
 ---
@@ -99,8 +99,10 @@ LEVEL 5 — ASSET PIPELINE
 11c. Pet interaction screens           ✅ Done (included in 11a — SCREEN_INTERACT shows pet face + contextual stat bar + action menu)
  12. Asset Pipeline (image → C array)  ✅ Done (C++ piskel_converter tool, SPRITE_GUIDE.md, SPRITE_TEST flag in main.cpp, byte-swap fix for M5StickC Plus 2 SPI byte order)
  13. Basic Sprite Rendering            ✅ Done (drawPetSprite via pushImage; three sprite sizes; placeholder circle face removed. Also fixed a converter bug: Piskel exports ABGR8888, not ARGB8888 — the channel extraction had red and blue swapped)
-13a. Sprite Animation                  (multi-frame frame cycling using existing FRAME_COUNT dimension, millis() timer, optional M5Canvas double-buffer for flicker)
- 14. Initial Simplification Pass       (gate before Level 6 — streamline existing code before any new features)
+13a. Sprite Animation                  ⏸ Deferred — return after Level 6/7 features (Tasks 15–18). Multi-frame cycling using existing FRAME_COUNT dimension, millis() timer, optional M5Canvas double-buffer for flicker. Will run as the last Level 5 task before Task 19's pre-template simplification.
+ 14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
+14a. Code Simplification Audit         (next — dead-code removal across lib/, module-coupling map, dead-overload / dead-member-variable / dead-enum audit. Surfaces findings; minimal refactor.)
+14b. Roadmap Simplification Audit      (right-size Tasks 15–18 from "full reference feature" to "minimum teachable foundation students can expand". Output: amended task descriptions in this file. Examples to consider: basic mic input instead of voice memos; basic wireless scan instead of full BLE/WiFi communication; minimal static dashboard instead of full HTTP server.)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
      The codebase has accumulated empty stub modules, unused public methods,
@@ -644,13 +646,19 @@ In `confirmAction()`, add a `switch` on `selectedAction.type` after `executePetA
 
 ---
 
-### Task 13a — Sprite Animation
+### Task 13a — Sprite Animation ⏸ Deferred
 
-**Why this task next?**
+**Execution order note:**
+
+This task is paused. The original ordering was Task 13 → Task 13a → Task 14, but in practice Task 14 (the simplification pass) runs first, then Tasks 15–18 (the right-sized Level 6/7 features), and Task 13a is picked back up immediately before Task 19's pre-template simplification. The numbering is kept as 13a (rather than renumbering to ~18a) because animation is logically a continuation of the Level 5 sprite work, even though its execution slot has moved.
+
+When this task does run, the implementation guidance below remains accurate — the codebase will look slightly different (post-simplification) but `drawPetSprite()` and the sprite header shape will not have changed.
+
+**Why this task at all?**
 
 Task 13 landed static bitmap sprites — every screen shows a still image. The asset pipeline already supports multi-frame sprites: `tools/piskel_converter` reads however many frames Piskel exports and emits a `sprite_xxx[FRAME_COUNT][W*H]` array. Today every call site indexes frame `[0]` because that is all that has been drawn. The infrastructure for animation is therefore already in place — the work of Task 13a is to (a) draw multi-frame sprites in Piskel, (b) cycle through frames at runtime using `millis()` without blocking the rest of the loop, and (c) address the visible flicker that becomes apparent at animation frame rates.
 
-This is the natural pedagogical follow-on to Task 13. Students just learned `pushImage()` with one frame; here they learn frame-cycling and the non-blocking timer pattern that already powers stat decay. No new hardware, no new libraries.
+This is a natural pedagogical follow-on to Task 13 — students learned `pushImage()` with one frame; here they learn frame-cycling and the non-blocking timer pattern that already powers stat decay. No new hardware, no new libraries.
 
 **What the task delivers:**
 
@@ -679,13 +687,13 @@ This is the natural pedagogical follow-on to Task 13. Students just learned `pus
 
 **Branch and commit strategy:**
 
-Create `task/13a-sprite-animation` from a clean `main` after Task 13 is merged. Suggested commits:
+Create `task/13a-sprite-animation` from a clean `main` after Task 18 is merged (per the deferred execution order — see the note at the top of this section). Suggested commits:
 
 1. `chore: add multi-frame Piskel export and converted sprite header for idle state`
 2. `feat: cycle pet sprite through frames using a millis() timer`
 3. `docs: add animation guidance to SPRITE_GUIDE.md`
 4. (optional, only if flicker is visible) `feat: use M5Canvas double-buffer to prevent animation flicker`
-5. `docs: mark Task 13a done and advance next-task pointer to Task 14`
+5. `docs: mark Task 13a done and advance next-task pointer to Task 19`
 
 After all commits, test on device — the sprite must animate smoothly without affecting button responsiveness, IMU shake detection, sound playback, NVS save/load, or any other timed behaviour. The non-blocking timer is the test that matters: if pressing B during an animation feels laggy, the loop is being blocked somewhere it should not be.
 
@@ -693,15 +701,23 @@ After all commits, test on device — the sprite must animate smoothly without a
 
 ---
 
-### Task 14 — Initial Simplification Pass
+### Task 14 — Initial Simplification Pass (umbrella)
 
-**Why this task next?**
+After Task 13 lands, the Tamagotchi has the features it needs to function as a complete teaching artefact — five care actions, three screens, sprites, sound, persistence, motion. Sprite animation (Task 13a) is intentionally deferred until after Levels 6/7 so that the simplification pass can run against today's stable codebase rather than chasing a moving target. Before adding RTC, microphone, or networking features on top, pause and (a) remove the junk that accumulated in the code while Levels 1–5 were built, and (b) re-examine the rest of the roadmap and decide which upcoming tasks are over-scoped for a teaching codebase.
 
-After Tasks 13 and 13a land, the Tamagotchi has every feature it needs to function as a complete teaching artefact — five care actions, three screens, sprites, animation, sound, persistence, motion. Before adding RTC, voice memos, or networking on top, pause and remove the junk that accumulated while those features were being built. A teaching codebase only works if every file a student opens is meaningful. Empty stubs, unused methods, and dead overloads make the project feel cluttered and lead students to study code that does nothing.
+Task 14 is split into two sub-tasks. **Task 14a — Code Simplification Audit** removes dead code and maps module coupling. **Task 14b — Roadmap Simplification Audit** rewrites Tasks 15–18 to the minimum teachable foundation that students can expand from. Run them in order (14a, then 14b). Each is its own branch and its own merge.
 
-This pass is **smaller and narrower** than the pre-template simplification at Task 19. Task 19 is a deep rewrite for pedagogy. Task 14 only removes junk and tightens what already exists.
+Both passes are **smaller and narrower** than the pre-template simplification at Task 19. Task 19 is a deep rewrite for pedagogy that touches every line. Task 14 only removes junk, surfaces coupling, and right-sizes future scope.
 
-**Before starting this task — gather the prerequisite course context.**
+---
+
+### Task 14a — Code Simplification Audit
+
+**Why this sub-task:**
+
+Empty stubs, unused methods, and dead overloads make the project feel cluttered and lead students to study code that does nothing. This sub-task removes the junk that the dead-code audit has already identified, and walks the codebase for additional findings. Module coupling is **surfaced but not refactored** — that decision belongs to Task 19 once the prerequisite-course context tells us which couplings will actually trip students up.
+
+**Before starting this sub-task — gather the prerequisite course context.**
 
 Ask the user to share the two markdown files outlining the programming courses that students complete before this Tamagotchi course. Those files describe what concepts students already know — variable types, control flow, functions, basic OOP, etc. The simplification decisions in this pass should be informed by that gap: code that uses concepts students have already learned can stay readable as-is, while code that uses C++ idioms they have not encountered yet is the first candidate for expansion, a longer comment, or a renamed variable. Do not start the audit until those files are in the conversation.
 
@@ -735,7 +751,7 @@ Line numbers below are accurate as of the audit. Re-grep before deleting in case
 
 **Branch and commit strategy:**
 
-Create `refactor/initial-simplification-pass` from a clean `main` after Tasks 13 and 13a are merged. Make one logical commit per concern (per the atomic-commit rule in `CLAUDE.md`):
+Create `refactor/14a-code-simplification` from a clean `main` after Task 13 is merged. Make one logical commit per concern (per the atomic-commit rule in `CLAUDE.md`):
 
 1. `chore: remove empty lib/Interactions/ module`
 2. `chore: remove empty animation_manager and microphone_manager stubs`
@@ -749,3 +765,53 @@ Create `refactor/initial-simplification-pass` from a clean `main` after Tasks 13
 After all commits, test on device — display, button input, IMU shake, sound, NVS save/load, all five care actions, and death/reset must behave exactly as before. The deletions should not change observable behaviour.
 
 **Files touched:** Varies — entire `lib/` tree is in scope. Expect to delete files in `lib/Interactions/`, `lib/Display/animation_manager.*`, `lib/Microphone/microphone_manager.*`, and remove dead methods from `lib/Button/button_handler.*`, `lib/Imu/imu_manager.*`, `lib/Actions/action_menu.*`, `lib/Display/display_manager.*`. Also update `CLAUDE.md`.
+
+---
+
+### Task 14b — Roadmap Simplification Audit
+
+**Why this sub-task:**
+
+The remaining roadmap tasks (15–18) were written when this codebase was being thought of as a fully-featured reference implementation. As a teaching codebase the goal is different: each module should be a **teachable foundation that students can expand**, not a complete production feature. Several upcoming tasks are over-scoped for that purpose and should be slimmed down *before* they are started, so we do not invest in features students will rewrite anyway during the template stage.
+
+This sub-task is **roadmap maintenance, not implementation work.** No code in `lib/` or `src/` is touched. The deliverable is amended task descriptions in this file (and, where applicable, `COURSE_CHECKLIST.md`).
+
+**Before starting this sub-task:**
+
+Have the two prerequisite-course markdown files from Task 14a's kickoff still in the conversation. The scope decisions here depend on knowing what students will already be comfortable with and where they will need scaffolding.
+
+**Concrete starting points — candidate scope reductions:**
+
+These are pre-flagged for the audit. Use them as a starting point; the audit may surface others.
+
+- **Task 16 — currently "Microphone Voice Memos".** Probably over-scoped. Voice memo recording + playback needs DMA audio buffers, heap allocation gymnastics (see Hardware Gotcha 1), and a UI for browsing recordings. A more teachable foundation: detect a loud noise (clap, voice spike, whistle) via the microphone and have the pet react — wake up, look towards the noise, briefly increase happiness. Recording + playback becomes a stretch task students can add. Suggested renamed title: *"Microphone Input (Basic Reactions)"*.
+
+- **Task 17 — currently "Wireless Communication (BLE/WiFi)".** The current description ("WiFi.h, ESP-NOW or BLE library") names libraries but does not pick a concrete deliverable. A teachable foundation could be: connect to a known WiFi network from a config-defined SSID/password and print the assigned IP address to Serial, *or* scan for nearby BLE devices and display the count on the LCD. Two-device communication and protocol design become stretch tasks. Pick **one** of WiFi or BLE for the foundation, not both — the second can be a stretch task.
+
+- **Task 18 — currently "Remote Dashboard".** This task depends on whatever Task 17 actually becomes. If Task 17 only does WiFi connect, the foundation here could be: serve one static HTML page that shows the pet's current stats. Live updates via JSON APIs, polling intervals, and a mobile-friendly UI all become stretch tasks. If Task 17 picks BLE instead, this task might be dropped or merged into Task 17.
+
+**Beyond those three — also re-examine:**
+
+- Whether any current Phase 6 template task (19–23) needs its scope adjusted given the new shape of 15–18.
+- Whether any of the already-completed tasks have features that should be removed in the same simplification spirit. Be cautious — completed work is harder to remove than to scope down before it lands.
+- Whether `COURSE_CHECKLIST.md` items need their wording updated to match any renamed tasks.
+
+**What this sub-task is NOT:**
+
+- It is **not implementation work**. Nothing in `lib/` or `src/` changes.
+- It is **not a rename for taste**. Only retitle a task if its scope is materially changing.
+- It is **not the place to add new tasks**. If a stretch-task list emerges, it goes in an appendix at the bottom of this file, not into the main queue.
+
+**Branch and commit strategy:**
+
+Create `refactor/14b-roadmap-simplification` from a clean `main` after Task 14a is merged. One commit per task being right-sized, plus a final commit re-pointing the next-task pointer:
+
+1. `docs: scope down Task 16 from voice memos to basic microphone input`
+2. `docs: scope down Task 17 to single-protocol wireless foundation`
+3. `docs: scope down Task 18 to static stats page`
+4. (further commits as the audit surfaces additional findings)
+5. `docs: mark Task 14b done and advance next-task pointer to Task 15`
+
+After all commits, the roadmap should read end-to-end as a coherent teaching plan: every remaining task should be sized so a student-of-target-skill-level could complete it in a session, with explicit "stretch tasks" listed for advanced students who finish early.
+
+**Files touched:** `DEV_ROADMAP.md` (primarily), `COURSE_CHECKLIST.md` (if any wording shifts), `CLAUDE.md` (next-task pointer, possibly architecture map if any module's purpose is being redefined).
