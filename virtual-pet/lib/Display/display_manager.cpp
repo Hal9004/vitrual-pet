@@ -76,7 +76,7 @@ void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
     if (screenChanged || intervalElapsed) {
         clearScreen();
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetFace(moodIndex, MAIN_FACE_CENTER_Y, MAIN_FACE_RADIUS);
+        drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_64X64_TEST_WIDTH, SPRITE_64X64_TEST_HEIGHT, sprite_64x64_test[0]);
         showPetMoodText(moodIndex, MAIN_MOOD_Y);
         drawMainNavBar();
 
@@ -140,7 +140,7 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
     if (screenChanged || intervalElapsed) {
         clearScreen();
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetFace(moodIndex, INTERACT_FACE_CENTER_Y, INTERACT_FACE_RADIUS);
+        drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_48X48_TEST_WIDTH, SPRITE_48X48_TEST_HEIGHT, sprite_48x48_test[0]);
         showPetMoodText(moodIndex, INTERACT_MOOD_Y);
         drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, menu.getRelevantStat());
         drawMenuIndicator(menu, MENU_ZONE.x, MENU_ZONE.y);
@@ -211,7 +211,7 @@ void DisplayManager::drawMenuIndicator(const ActionMenu& menu, int x, int y) {
 }
 
 // showPetMoodText() — draws just the mood label at the given Y position.
-// Separated from drawPetFace() so the Main and Interact screens can place
+// Separated from drawPetSprite() so the Main and Interact screens can place
 // the text at different heights without calling the full showPetMood() path.
 void DisplayManager::showPetMoodText(int moodIndex, int textY) {
     const char* moodText;
@@ -234,7 +234,7 @@ void DisplayManager::showPetMoodText(int moodIndex, int textY) {
 // showPetMood() — convenience wrapper that draws both the face and the mood
 // text at the Stats screen positions. Used by renderStatsScreen().
 void DisplayManager::showPetMood(int moodIndex) {
-    drawPetFace(moodIndex, PET_FACE_ZONE.y + PET_FACE_ZONE.height / 2, 18);
+    drawPetSprite(moodIndex, PET_FACE_ZONE.y + PET_FACE_ZONE.height / 2, SPRITE_NEWPISKEL2_WIDTH, SPRITE_NEWPISKEL2_HEIGHT, sprite_newpiskel2[0]);
     showPetMoodText(moodIndex, MOOD_ZONE.y);
 }
 
@@ -268,32 +268,31 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
     drawStatusBar(sick, 100, STATS_ZONE.x, SICK_BAR_ZONE.barY, STATS_ZONE.width, TFT_PURPLE);
 }
 
-// drawPetFace() — draws a face circle, two eyes, and a mood-based mouth at
-// the given centre Y position and radius. Called with different values on
-// each screen so the face size and position can vary per layout.
-void DisplayManager::drawPetFace(int moodIndex, int faceCenterY, int faceRadius) {
-    int centerX = SCREEN_WIDTH / 2;
+// drawPetSprite() — draws the pet's face as a bitmap sprite.
+// The sprite is centred horizontally on the screen, and its vertical centre
+// is positioned at faceCenterY so each screen can choose where the face sits.
+//
+// Why pass the sprite data and dimensions in as parameters?
+// Each screen wants a different sprite size: Stats uses a tiny 32x32, Interact
+// uses 48x48, and Main uses 64x64. Passing the sprite data and its width/height
+// in lets this single function draw any sprite without needing a switch on
+// screen state. The caller decides which sprite to use.
+//
+// Why is moodIndex unused for now?
+// Eventually each mood (happy, sad, hungry, etc.) will have its own sprite.
+// Keeping moodIndex in the signature today means the call sites are already
+// the right shape when we add that lookup later — no second round of edits.
+//
+// Why SPRITE_TRANSPARENT_COLOR?
+// The sprite is a square block of pixels, but the pet's outline is not square.
+// Pixels matching SPRITE_TRANSPARENT_COLOR (0x1FF8) are skipped by pushImage(),
+// so the screen background shows through and the pet appears to "float"
+// instead of sitting inside a coloured rectangle.
+void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight, const uint16_t* spriteData) {
+    int spriteX = (SCREEN_WIDTH - spriteWidth) / 2;
+    int spriteY = faceCenterY - (spriteHeight / 2);
 
-    M5.Lcd.drawCircle(centerX, faceCenterY, faceRadius, TFT_WHITE);
-
-    M5.Lcd.fillCircle(centerX - 7, faceCenterY - 5, 2, TFT_WHITE);
-    M5.Lcd.fillCircle(centerX + 7, faceCenterY - 5, 2, TFT_WHITE);
-
-    switch (moodIndex) {
-        case 2: // Happy — smile curves upward
-            M5.Lcd.drawCircle(centerX, faceCenterY + 3, 6, TFT_WHITE);
-            M5.Lcd.fillCircle(centerX, faceCenterY + 3, 6, TFT_BLACK);
-            M5.Lcd.drawCircle(centerX, faceCenterY + 1, 6, TFT_WHITE);
-            break;
-        case 4: // Sad — frown curves downward
-            M5.Lcd.drawCircle(centerX, faceCenterY + 9, 6, TFT_WHITE);
-            M5.Lcd.fillCircle(centerX, faceCenterY + 9, 6, TFT_BLACK);
-            M5.Lcd.drawCircle(centerX, faceCenterY + 11, 6, TFT_WHITE);
-            break;
-        default: // Neutral — straight line
-            M5.Lcd.drawLine(centerX - 6, faceCenterY + 6, centerX + 6, faceCenterY + 6, TFT_WHITE);
-            break;
-    }
+    M5.Lcd.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
 }
 
 // -----------------------------------------------------------------------

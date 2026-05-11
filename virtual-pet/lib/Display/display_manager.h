@@ -3,6 +3,9 @@
 
 #include <M5StickCPlus2.h>
 #include "screen_layout.h"
+#include "sprites/newpiskel2.h"   // 32x32 sprite — used on the Stats screen
+#include "sprites/48x48_test.h"   // 48x48 sprite — used on the Interact screen
+#include "sprites/64x64_test.h"   // 64x64 sprite — used on the Main screen
 
 // Forward declaration — lets us reference ActionMenu in function signatures
 // without including action_menu.h here. The full include lives in the .cpp file.
@@ -37,7 +40,6 @@ private:
     // The bottom nav bar lets the player pick Stats or Interact.
     // -----------------------------------------------------------------------
     static constexpr int         MAIN_FACE_CENTER_Y = 110;
-    static constexpr int         MAIN_FACE_RADIUS   = 30;
     static constexpr int         MAIN_MOOD_Y        = 155;
     static constexpr ScreenZone  MAIN_NAV_ZONE      = {  5, 213, 125, 22 };
 
@@ -46,7 +48,6 @@ private:
     // bar in the middle, and the action menu indicator at the very bottom.
     // -----------------------------------------------------------------------
     static constexpr int         INTERACT_FACE_CENTER_Y = 90;
-    static constexpr int         INTERACT_FACE_RADIUS   = 26;
     static constexpr int         INTERACT_MOOD_Y        = 128;
     static constexpr int         INTERACT_STAT_LABEL_Y  = 156;
     static constexpr int         INTERACT_STAT_BAR_Y    = 168;
@@ -84,7 +85,7 @@ private:
     void drawContextualStatBar(int happiness, int hunger, int energy, int cleanliness, int sick, RelevantStat relevantStat);
 
     // Draws just the mood label text at the given Y position.
-    // Separated from drawPetFace() so each screen can position the text independently.
+    // Separated from drawPetSprite() so each screen can position the text independently.
     void showPetMoodText(int moodIndex, int textY);
 
 public:
@@ -123,9 +124,13 @@ public:
     // drawStatusBar() — draws a single labelled progress bar.
     void drawStatusBar(int value, int maxValue, int x, int y, int width, uint32_t color);
 
-    // drawPetFace() — draws the face circle, eyes, and mood-based mouth
-    // at the given centre Y position with the given radius.
-    void drawPetFace(int moodIndex, int faceCenterY, int faceRadius);
+    // drawPetSprite() — draws a bitmap sprite as the pet's face. The sprite is
+    // centred horizontally on the screen, with its vertical centre at faceCenterY.
+    // Each screen passes its own sprite dimensions and pixel data, so this single
+    // function works for the small Stats-screen sprite, the medium Interact-screen
+    // sprite, and the large Main-screen sprite without needing a per-screen branch.
+    // moodIndex is reserved for a future task that will pick a mood-specific sprite.
+    void drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight, const uint16_t* spriteData);
 };
 
 #endif
