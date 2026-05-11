@@ -48,7 +48,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Initial Simplification Pass (Task 13a) — remove the dead code that has accumulated across Levels 1–5 (empty stub modules, unused public methods, dead overloads) before any Level 6 feature work begins. See `DEV_ROADMAP.md` for the concrete starting points from the dead-code audit.
+**Next task on the queue:** Sprite Animation (Task 13a) — extend the static sprite rendering from Task 13 to cycle through multi-frame Piskel exports using a `millis()` timer in `DisplayManager`. The asset pipeline and sprite array shape already support `FRAME_COUNT > 1`; the work is drawing the frames, frame-cycling the index at runtime, and handling flicker with M5Canvas if needed. The Initial Simplification Pass (formerly Task 13a, now Task 14) follows.
 
 ## Hardware Gotchas
 

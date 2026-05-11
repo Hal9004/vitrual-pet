@@ -59,7 +59,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
 | Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
-| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Remaining: bitmap sprites and animation |
+| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Remaining: sprite animation (Task 13a) |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
 ---
@@ -99,7 +99,8 @@ LEVEL 5 — ASSET PIPELINE
 11c. Pet interaction screens           ✅ Done (included in 11a — SCREEN_INTERACT shows pet face + contextual stat bar + action menu)
  12. Asset Pipeline (image → C array)  ✅ Done (C++ piskel_converter tool, SPRITE_GUIDE.md, SPRITE_TEST flag in main.cpp, byte-swap fix for M5StickC Plus 2 SPI byte order)
  13. Basic Sprite Rendering            ✅ Done (drawPetSprite via pushImage; three sprite sizes; placeholder circle face removed. Also fixed a converter bug: Piskel exports ABGR8888, not ARGB8888 — the channel extraction had red and blue swapped)
-13a. Initial Simplification Pass       (gate before Level 6 — streamline existing code before any new features)
+13a. Sprite Animation                  (multi-frame frame cycling using existing FRAME_COUNT dimension, millis() timer, optional M5Canvas double-buffer for flicker)
+ 14. Initial Simplification Pass       (gate before Level 6 — streamline existing code before any new features)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
      The codebase has accumulated empty stub modules, unused public methods,
@@ -111,17 +112,17 @@ LEVEL 5 — ASSET PIPELINE
        — Are any member variables, enum values, or struct fields dead?
        — Can any block of logic be re-written in fewer, clearer steps WITHOUT
          violating the pedagogical rules in CLAUDE.md?
-     This is a smaller, narrower pass than Task 18. The goal here is only to
+     This is a smaller, narrower pass than Task 19. The goal here is only to
      remove junk and tighten what already exists — NOT to rewrite for teaching.
      New features (RTC, voice memos, networking) wait until this pass is done.
 
 LEVEL 6 — COMPLEX HARDWARE
- 14. RTC overnight logic               (new: I2C, BM8563 library, Unix timestamp math)
- 15. Microphone Voice Memos            (new: DMA audio buffers — see Hardware Gotchas)
+ 15. RTC overnight logic               (new: I2C, BM8563 library, Unix timestamp math)
+ 16. Microphone Voice Memos            (new: DMA audio buffers — see Hardware Gotchas)
 
 LEVEL 7 — NETWORKING
- 16. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
- 17. Remote Dashboard                  (requires: task 16 + simple HTTP server)
+ 17. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
+ 18. Remote Dashboard                  (requires: task 17 + simple HTTP server)
 
 PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
 
@@ -136,22 +137,22 @@ PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is com
        — Would a student with no prior C++ experience be able to read this and follow along?
      Simplicity is more important than elegance. If in doubt, expand it.
 
- 18. Simplification pass — walk every module and simplify for teaching
+ 19. Simplification pass — walk every module and simplify for teaching
      — Review all .h and .cpp files against the pedagogical rules in CLAUDE.md.
        Expand any compact or clever code into readable step-by-step form.
        Ensure every function has a comment. Remove any patterns that would
        confuse a beginner without prior C++ experience.
- 19. Codebase review against lesson plan
+ 20. Codebase review against lesson plan
      — Walk every module against the course checklist and confirm the reference
        implementation is clean, documented, and complete.
- 20. Create skeleton templates per module
+ 21. Create skeleton templates per module
      — Strip core logic from each .cpp file, leaving function signatures, comments,
        and example implementations where needed to give students enough scaffolding.
        Students write their own logic inside the provided structure.
- 21. Validate templates compile and are teachable
+ 22. Validate templates compile and are teachable
      — Each skeleton should compile without errors and give a student of the target
        skill level enough context to complete it without being lost.
- 22. Organise templates by complexity level
+ 23. Organise templates by complexity level
      — One template set per Level (1–7) so teachers can assign tasks matched to
        each student's experience. Beginner students get Level 1–2 skeletons;
        advanced students get Level 4–7.
@@ -643,21 +644,74 @@ In `confirmAction()`, add a `switch` on `selectedAction.type` after `executePetA
 
 ---
 
-### Task 13a — Initial Simplification Pass
+### Task 13a — Sprite Animation
 
 **Why this task next?**
 
-After Task 13 lands, the Tamagotchi has every feature it needs to function as a complete teaching artefact — five care actions, three screens, sprites, sound, persistence, motion. Before adding RTC, voice memos, or networking on top, pause and remove the junk that accumulated while those features were being built. A teaching codebase only works if every file a student opens is meaningful. Empty stubs, unused methods, and dead overloads make the project feel cluttered and lead students to study code that does nothing.
+Task 13 landed static bitmap sprites — every screen shows a still image. The asset pipeline already supports multi-frame sprites: `tools/piskel_converter` reads however many frames Piskel exports and emits a `sprite_xxx[FRAME_COUNT][W*H]` array. Today every call site indexes frame `[0]` because that is all that has been drawn. The infrastructure for animation is therefore already in place — the work of Task 13a is to (a) draw multi-frame sprites in Piskel, (b) cycle through frames at runtime using `millis()` without blocking the rest of the loop, and (c) address the visible flicker that becomes apparent at animation frame rates.
 
-This pass is **smaller and narrower** than the pre-template simplification at Task 18. Task 18 is a deep rewrite for pedagogy. Task 13a only removes junk and tightens what already exists.
+This is the natural pedagogical follow-on to Task 13. Students just learned `pushImage()` with one frame; here they learn frame-cycling and the non-blocking timer pattern that already powers stat decay. No new hardware, no new libraries.
+
+**What the task delivers:**
+
+1. **A multi-frame sprite for at least one pet state.** Start with idle — a gentle 2-frame bounce or blink is enough to prove the pipeline. Drawn in Piskel, exported, converted with the existing tool. Confirms the converter's `FRAME_COUNT > 1` path works on real art.
+2. **Frame-cycling logic in `DisplayManager`.** Add a `currentFrame` member, a `lastFrameAdvanceTime` member, and a `FRAME_DURATION_MS` constant (suggest 200 ms = 5 fps as a kid-friendly starting point). On each `drawPetSprite()` call, advance the frame index if enough time has elapsed since the last advance. Index the sprite as `spriteData[currentFrame]` instead of `spriteData[0]`. Reset `currentFrame` to 0 on screen transitions so animations restart cleanly.
+3. **Flicker mitigation (only if needed).** Hardware Gotcha 3 in Part 3 of this roadmap documents the `M5Canvas` double-buffer pattern. For small face areas (≤64×64) the simpler `pushImage()` approach may still look acceptable — benchmark first, only introduce the canvas if you can see tearing. A full-screen canvas costs ~63 KB of heap; a sprite-sized canvas costs proportionally less.
+
+**Concrete starting points:**
+
+- `lib/Display/display_manager.h` — add `unsigned long lastFrameAdvanceTime;` and `int currentFrame;` to the private state block. Add `static const unsigned long FRAME_DURATION_MS = 200;` near the other timing constants.
+- `lib/Display/display_manager.cpp` — extend `drawPetSprite()` to take a `frameCount` parameter so it knows how many frames the sprite has. Advance `currentFrame` using `(millis() - lastFrameAdvanceTime >= FRAME_DURATION_MS)` and wrap with `currentFrame % frameCount`. Reset `currentFrame` to 0 whenever `lastRenderedScreen` changes.
+- `lib/Display/sprites/` — drop in the new multi-frame `.h` file generated from a fresh Piskel export. The converter already produces the right shape; the only difference is `FRAME_COUNT > 1`.
+- `SPRITE_GUIDE.md` — add a new Part covering animation rules: anchor the silhouette so the pet does not appear to teleport between frames, two-pixel motion minimum so movement reads at 5 fps, ping-pong loops for clean idle animations, and the frame budget table already in Part 4.
+
+**Beyond the minimum — also consider:**
+
+- **Per-mood animation:** wire the existing `moodIndex` parameter (currently reserved but unused inside `drawPetSprite()`) to switch which animated sprite is drawn. Requires per-mood multi-frame art.
+- **Per-state animation:** same idea but driven by `Pet::getState()` (`STATE_EATING`, `STATE_SLEEPING`, etc.). A larger art workload.
+- **Variable frame rate per state:** idle = slow blink (2 fps), eating = bouncing (10 fps). Replace the single global `FRAME_DURATION_MS` with a per-state lookup.
+
+**What this task is NOT:**
+
+- It is **not the simplification pass** — that is Task 14. Do not delete unused code here, even if you notice some.
+- It is **not per-mood or per-state animation by default.** The minimum deliverable is one animated sprite shown on at least one screen. Multi-mood animation is optional polish.
+- It is **not sound-synced animation.** Buzzer playback is decoupled from sprite frames; the two are not coordinated in this task.
+
+**Branch and commit strategy:**
+
+Create `task/13a-sprite-animation` from a clean `main` after Task 13 is merged. Suggested commits:
+
+1. `chore: add multi-frame Piskel export and converted sprite header for idle state`
+2. `feat: cycle pet sprite through frames using a millis() timer`
+3. `docs: add animation guidance to SPRITE_GUIDE.md`
+4. (optional, only if flicker is visible) `feat: use M5Canvas double-buffer to prevent animation flicker`
+5. `docs: mark Task 13a done and advance next-task pointer to Task 14`
+
+After all commits, test on device — the sprite must animate smoothly without affecting button responsiveness, IMU shake detection, sound playback, NVS save/load, or any other timed behaviour. The non-blocking timer is the test that matters: if pressing B during an animation feels laggy, the loop is being blocked somewhere it should not be.
+
+**Files touched:** `lib/Display/display_manager.h`, `lib/Display/display_manager.cpp`, one or more new files in `lib/Display/sprites/`, raw `.c` files in `assets/sprites/raw/`, `SPRITE_GUIDE.md`. Possibly Hardware Gotcha 3 in Part 3 of this roadmap if the M5Canvas pattern needs additional notes after real-world use.
+
+---
+
+### Task 14 — Initial Simplification Pass
+
+**Why this task next?**
+
+After Tasks 13 and 13a land, the Tamagotchi has every feature it needs to function as a complete teaching artefact — five care actions, three screens, sprites, animation, sound, persistence, motion. Before adding RTC, voice memos, or networking on top, pause and remove the junk that accumulated while those features were being built. A teaching codebase only works if every file a student opens is meaningful. Empty stubs, unused methods, and dead overloads make the project feel cluttered and lead students to study code that does nothing.
+
+This pass is **smaller and narrower** than the pre-template simplification at Task 19. Task 19 is a deep rewrite for pedagogy. Task 14 only removes junk and tightens what already exists.
+
+**Before starting this task — gather the prerequisite course context.**
+
+Ask the user to share the two markdown files outlining the programming courses that students complete before this Tamagotchi course. Those files describe what concepts students already know — variable types, control flow, functions, basic OOP, etc. The simplification decisions in this pass should be informed by that gap: code that uses concepts students have already learned can stay readable as-is, while code that uses C++ idioms they have not encountered yet is the first candidate for expansion, a longer comment, or a renamed variable. Do not start the audit until those files are in the conversation.
 
 **Concrete starting points (from the dead-code audit run on 2026-05-09):**
 
-Line numbers below are accurate as of the audit. Re-grep before deleting in case Task 13 shifts them.
+Line numbers below are accurate as of the audit. Re-grep before deleting in case Tasks 13 or 13a have shifted them.
 
 - `lib/Interactions/` — four 0-byte files: `action_manager.h`, `action_manager.cpp`, `intput_handler.h` (note typo), `input_handler.cpp`. Included nowhere. Delete the whole directory.
 - `lib/Display/animation_manager.h` and `animation_manager.cpp` — both 0 bytes, included nowhere. Delete.
-- `lib/Microphone/microphone_manager.h` and `microphone_manager.cpp` — both 0 bytes, included nowhere. Delete. (Task 15 will create the module fresh when voice memos are implemented.)
+- `lib/Microphone/microphone_manager.h` and `microphone_manager.cpp` — both 0 bytes, included nowhere. Delete. (Task 16 will create the module fresh when voice memos are implemented.)
 - `ButtonHandler::isButtonAHeld() / isButtonBHeld() / isButtonCHeld()` — declared at `lib/Button/button_handler.h:57–59`, implemented in the .cpp, never called. Remove declarations and definitions.
 - `ImuManager::getAccelX() / getAccelY() / getAccelZ()` — declared at `lib/Imu/imu_manager.h:55–57`, never called. Only `wasShaken()` is used. Remove declarations and definitions.
 - `ActionMenu::displayCurrentMenu()` — declared at `lib/Actions/action_menu.h:86`, self-flagged "legacy, mostly unused" in its header comment, never called. Remove.
@@ -671,16 +725,17 @@ Line numbers below are accurate as of the audit. Re-grep before deleting in case
 - Member variables written but never read. The `Pet::tired` field is one candidate — it is persisted via `StorageManager` but never consulted by game logic, mood calculation, or rendering. Decide: wire it into a timer rule, or remove it. (Note: `Pet::sad` is also currently inert but is intentionally reserved for the deferred Sadness Logic task — leave it alone.)
 - Enum values, struct fields, or constants that no `switch` / conditional / draw call ever references.
 - Logic duplicated verbatim between two modules.
+- **Module-to-module coupling.** Walk each module's public API and identify how it is called from other modules. Flag places where a single function takes multiple manager references (e.g. `ActionMenu::confirmAction(Pet&, DisplayManager&, SpeakerManager&, StorageManager&)`), where one module reaches deep into another's internals, or where two modules share state that could be owned by one. Produce a written list of coupling candidates — but **do not refactor them in this pass**. Surfacing the coupling map is the deliverable; Task 19's pre-template rewrite will use that list to decide which couplings are worth changing for teaching clarity.
 
 **What this pass is NOT:**
 
 - It is **not a rewrite**. Do not rename variables for taste, do not collapse readable blocks into clever one-liners, do not introduce new abstractions. The pedagogical rules in `CLAUDE.md` still apply — readability first.
-- It is **not the pre-template polish** (that is Task 18). Do not normalise comments or extract helpers for teaching here.
+- It is **not the pre-template polish** (that is Task 19). Do not normalise comments or extract helpers for teaching here.
 - It is **not feature work**. Do not add new behaviour, even if it feels small.
 
 **Branch and commit strategy:**
 
-Create `refactor/initial-simplification-pass` from a clean `main` after Task 13 is merged. Make one logical commit per concern (per the atomic-commit rule in `CLAUDE.md`):
+Create `refactor/initial-simplification-pass` from a clean `main` after Tasks 13 and 13a are merged. Make one logical commit per concern (per the atomic-commit rule in `CLAUDE.md`):
 
 1. `chore: remove empty lib/Interactions/ module`
 2. `chore: remove empty animation_manager and microphone_manager stubs`

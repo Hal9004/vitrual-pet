@@ -35,7 +35,7 @@ in `USEFUL_NOTES.md`.
 2. In the right-hand panel, click the **Resize** icon (a square with arrows in the corners).
 3. Set **Width: 32** and **Height: 32**, then click **Resize**.
 4. Set the **Frames** count at the bottom to **1**. We are drawing one static image per
-   pet state for now — animation frames come in Task 13.
+   pet state for now — animation frames come in Task 13a.
 
 The canvas is now 32×32 pixels. Each small square you paint is one pixel on the device screen.
 
@@ -279,7 +279,7 @@ Drawn"** — for the full explanation of why this matters and how it works.
 ### Rule 4 — Flash memory budget
 
 For Task 12, each state is one static frame — well within budget. When you add animation
-in Task 13, keep to a maximum of **8 frames per state**. Here is the maths:
+in Task 13a, keep to a maximum of **8 frames per state**. Here is the maths:
 
 ```
 7 states × 8 frames × 32 pixels wide × 32 pixels tall × 2 bytes per pixel
@@ -293,7 +293,7 @@ so stay within the 8-frame limit for now.
 ### Rule 5 — One frame per state for Task 12
 
 Do not draw animation sequences yet. One clear, well-centred drawing per state is the
-deliverable for this task. Multi-frame animation is Task 13. Getting the single frames
+deliverable for this task. Multi-frame animation is Task 13a. Getting the single frames
 right first makes the animation work much smoother when you get there.
 
 ---
