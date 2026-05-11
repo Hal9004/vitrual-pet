@@ -48,7 +48,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Basic Sprite Rendering (Task 13) — replace the placeholder circle face with actual sprite bitmaps using the converted `.h` files from Task 12. See `DEV_ROADMAP.md` for details.
+**Next task on the queue:** Initial Simplification Pass (Task 13a) — remove the dead code that has accumulated across Levels 1–5 (empty stub modules, unused public methods, dead overloads) before any Level 6 feature work begins. See `DEV_ROADMAP.md` for the concrete starting points from the dead-code audit.
 
 ## Hardware Gotchas
 
