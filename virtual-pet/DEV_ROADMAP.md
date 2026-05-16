@@ -103,7 +103,7 @@ LEVEL 5 — ASSET PIPELINE
  14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
 14b. Roadmap Simplification Audit      (next — right-size Tasks 15–18 from "full reference feature" to "minimum teachable foundation students can expand". Output: amended task descriptions in this file. Examples to consider: basic mic input instead of voice memos; basic wireless scan instead of full BLE/WiFi communication; minimal static dashboard instead of full HTTP server. Also: add the new Task 14c — Gameplay Balance Tuning — to the queue below as part of this pass.)
-14c. Gameplay Balance Tuning           (new — discovered during 14a's device test. Three sub-issues: (a) Pet::play() costs -20 energy per call so a sustained shake gesture kills the pet in ~4 invocations; needs play()-cost reduction AND a millis()-based cooldown on imu.wasShaken() to prevent rapid re-firing. (b) HUNGER_INCREASE_AMOUNT=2 every 3 s reaches fatal in ~75 s — far too aggressive for idle play; revise all five decay/accumulation constants in time_manager.cpp toward a target time-to-fatal of 8–15 minutes per cause. (c) Verify the death-cause balance: hunger currently dominates by ~5×; aim for roughly equal time-to-fatal across hunger / happiness / energy. Pure constant tuning + one new IMU cooldown — no architectural changes. To run after 14b.)
+14c. Gameplay Balance Tuning           (see Task 14c section. Deferred — runs after Task 17 lands. Pure constant tuning + one new IMU cooldown — no architectural changes.)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
      The codebase has accumulated empty stub modules, unused public methods,
@@ -816,6 +816,65 @@ Create `refactor/14b-roadmap-simplification` from a clean `main` after Task 14a 
 After all commits, the roadmap should read end-to-end as a coherent teaching plan: every remaining task should be sized so a student-of-target-skill-level could complete it in a session, with explicit "stretch tasks" listed for advanced students who finish early.
 
 **Files touched:** `DEV_ROADMAP.md` (primarily), `COURSE_CHECKLIST.md` (if any wording shifts), `CLAUDE.md` (next-task pointer, possibly architecture map if any module's purpose is being redefined).
+
+---
+
+### Task 14c — Gameplay Balance Tuning
+
+**Why this sub-task:**
+
+The Task 14a device test surfaced that the Tamagotchi is, in practice, almost unplayable in its current state. The pet dies from hunger in roughly 75 seconds of idle play, and a sustained shake gesture during Play mode kills it in about four invocations. Students cannot meaningfully test new features (microphone reactions, wireless connections) against a game that ends before they can demo anything. This sub-task tunes the existing constants until idle time-to-fatal is in the 8–15 minute range per cause, and adds one small new mechanic — a cooldown on shake detection — so Play mode does not double as an instant-kill button.
+
+This is **constant tuning + one new field on `ImuManager`**. No new modules, no architectural changes, no new student-facing concepts.
+
+**Execution slot:**
+
+Deferred until **after Task 17 (WiFi Access Point Primitive)** is merged. The reason for the deferral: balance work tunes against the *finished* feature set rather than a moving target, and the Phase 5 wireless work introduces no new decay vectors that would invalidate the tuning. If during Task 16 or 17 testing the unplayable state becomes a real blocker, this task can be promoted forward — but the default ordering is "features first, balance last."
+
+**Findings from the 2026-05-09 device test:**
+
+- **`Pet::play()` energy cost is too high.** Each call subtracts 20 from `energised`. A sustained shake gesture triggers `ImuManager::wasShaken()` on most loop iterations, so the pet's energy hits zero — and the pet dies — within ~4 shakes. Two compounding bugs: the `play()` cost is too steep AND `wasShaken()` has no cooldown.
+- **`HUNGER_INCREASE_AMOUNT = 2` every 3 seconds is too aggressive.** Hunger ramps from 0 to 100 in 150 seconds and fatality kicks in around the 75-second mark. Idle play should not kill a pet that fast.
+- **Death-cause balance is skewed roughly 5:1 toward hunger.** Time-to-fatal across the five decay/accumulation rules is uneven — hunger dominates, happiness/energy/cleanliness/sickness all take much longer. Players experience the game as "feed the pet or die" rather than a balanced care loop.
+
+**Scope (foundation):**
+
+Three concrete edits, all in well-bounded files:
+
+1. **Add a `millis()`-based cooldown to `ImuManager::wasShaken()`.** New private field `unsigned long lastShakeTime` and a public constant `SHAKE_COOLDOWN_INTERVAL` (recommend 1500–2000 ms — long enough that a single shake gesture only fires once, short enough that deliberate repeated shakes still register). `wasShaken()` returns `true` only if `millis() - lastShakeTime > SHAKE_COOLDOWN_INTERVAL`, and updates `lastShakeTime` on every true return.
+2. **Reduce `Pet::play()` energy cost.** Pick a value in the range −5 to −10 (down from −20). The exact number is a tuning call — pick whichever feels right during the device test, then commit.
+3. **Revise all five constants in `lib/Timer/time_manager.cpp`** toward a target time-to-fatal of 8–15 minutes per cause:
+   - `HUNGER_INCREASE_INTERVAL` / `HUNGER_INCREASE_AMOUNT` (currently 3000 ms / 2)
+   - `HAPPINESS_DECAY_INTERVAL` / `HAPPINESS_DECAY_AMOUNT` (currently 5000 ms / 1)
+   - `ENERGY_DRAIN_INTERVAL` / `ENERGY_DRAIN_AMOUNT` (currently 8000 ms / 1)
+   - `CLEANLINESS_DECAY_INTERVAL` / `CLEANLINESS_DECAY_AMOUNT` (currently 10000 ms / 1)
+   - `SICKNESS_ACCUMULATION_INTERVAL` / `SICKNESS_ACCUMULATION_AMOUNT` (currently 12000 ms / 1)
+
+   For each, compute the current time-to-fatal as `(100 / amount) × interval`, then choose new values so all five land in 480 000–900 000 ms (8–15 min). Keep the **interval** values simple and human-readable; prefer changing intervals over amounts so the constants stay easy to reason about.
+
+**Parity check before merging:**
+
+Run a quick idle-test on the device with the new constants: leave the pet untouched and time which stat hits 100 (or 0) first. Repeat with no interaction. The first-to-fatal stat should rotate across hunger / happiness / energy across runs — if hunger still wins every time, the constants are not balanced yet. Cleanliness and sickness can stay slightly slower (they are secondary care concerns), but the three primary stats should be within a 2× range of each other.
+
+**What this sub-task is NOT:**
+
+- It is **not a new feature**. No new actions, no new stats, no new modules.
+- It is **not a refactor**. The existing decay loop pattern stays exactly as it is. Only constants and one new IMU field change.
+- It is **not the place to introduce a difficulty setting** or runtime-configurable rates. If those come later, they belong in a separate task.
+
+**Branch and commit strategy:**
+
+Create `task/14c-gameplay-balance` from a clean `main` after Task 17 is merged. Suggested commits:
+
+1. `feat: add shake cooldown to ImuManager to prevent rapid re-firing`
+2. `refactor: reduce Pet::play() energy cost from 20 to <new value>`
+3. `refactor: rebalance hunger/happiness/energy decay rates`
+4. `refactor: rebalance cleanliness/sickness rates to match`
+5. `docs: mark Task 14c done and advance next-task pointer`
+
+After all commits, test on device — confirm the parity check passes and a normal play session lasts at least 10 minutes before a stat becomes critical.
+
+**Files touched:** `lib/Imu/imu_manager.h` and `.cpp` (cooldown), `lib/Pet/pet.cpp` (play cost), `lib/Timer/time_manager.cpp` (five constants). No new files. No header signature changes other than the new private field on `ImuManager`.
 
 ---
 
