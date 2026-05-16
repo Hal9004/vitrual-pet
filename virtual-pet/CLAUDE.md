@@ -39,7 +39,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Actions` | `lib/Actions/action_menu.h/.cpp` | The 5-action menu (Feed/Play/Sleep/Bathe/Heal), cycling and confirmation |
 | `Imu` | `lib/Imu/imu_manager.h/.cpp` | MPU6886 accelerometer — detects shake gestures. Call `update()` once per loop, query `wasShaken()` |
 | `Timer` | `lib/Timer/time_manager.h/.cpp` | All automatic stat changes over time (hunger increase, happiness decay). Add new decay rules here |
-| `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts — not yet implemented |
+| `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts (Task 8 — implemented) |
 | `Microphone` | `lib/Microphone/microphone_manager.h/.cpp` | Voice memo record/playback — not yet implemented |
 | `Storage` | `lib/Storage/storage_manager.h/.cpp` | NVS persistence via Arduino `Preferences` — saves and loads all pet stats |
 
@@ -48,7 +48,9 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** Initial Simplification Pass (Task 14) — broken into two sub-tasks. **14a — Code Simplification Audit**: dead-code removal across `lib/`, identification of module-to-module coupling, and audit of overloads / dead member variables / dead enum values. **14b — Roadmap Simplification Audit**: walk Tasks 15–18 and right-size each one to a minimum teachable foundation that students can expand from (e.g. "basic microphone input" instead of full voice memos; "scan for nearby BLE devices" instead of full wireless communication). See `DEV_ROADMAP.md` for the concrete starting points.
+**Next task on the queue:** **Task 14b — Roadmap Simplification Audit**: walk Tasks 15–18 and right-size each one to a minimum teachable foundation that students can expand from (e.g. "basic microphone input" instead of full voice memos; "scan for nearby BLE devices" instead of full wireless communication). This pass is **roadmap maintenance only** — no code in `lib/` or `src/` changes; the deliverable is amended task descriptions in `DEV_ROADMAP.md`. While doing 14b, also add the new **Task 14c — Gameplay Balance Tuning** to the complexity queue (covers shake debouncing, `play()` energy cost, and idle decay rate revision — discovered during 14a's device test).
+
+**Just completed:** Task 14a — Code Simplification Audit. Removed dead `ActionMenu` legacy methods, collapsed the `printText(String)` overload, fixed `Pet::reset()` to use the `DEFAULT_*` constants (fixed a cleanliness=60 drift bug), inlined `ActionMenu::executePetAction`, collapsed `clearScreen` to a default-param method, and removed the unused `STATE_EVOLVING` placeholder. Output: `DEV_ROADMAP.md` Appendix A — module coupling map for Task 19 to consume later.
 
 **Deferred:** Sprite Animation (Task 13a) — paused. Return to it after Level 6/7 features (Tasks 15–18) are in. Animation becomes the last Level 5 task before the pre-template simplification at Task 19.
 
