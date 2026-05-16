@@ -104,6 +104,7 @@ LEVEL 5 — ASSET PIPELINE
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
 14b. Roadmap Simplification Audit      (next — right-size Tasks 15–18 from "full reference feature" to "minimum teachable foundation students can expand". Output: amended task descriptions in this file. Examples to consider: basic mic input instead of voice memos; basic wireless scan instead of full BLE/WiFi communication; minimal static dashboard instead of full HTTP server. Also: add the new Task 14c — Gameplay Balance Tuning — to the queue below as part of this pass.)
 14c. Gameplay Balance Tuning           (see Task 14c section. Deferred — runs after Task 17 lands. Pure constant tuning + one new IMU cooldown — no architectural changes.)
+14d. Sprite Display Simplification     (see Task 14d section. Deferred — runs after Task 14c, before Task 13a. Picks 80×80 as the single sprite size for the whole project, removes the sprite from the Stats screen, compresses the Interact screen's free space at y=181–220 to fit the larger sprite. Locks in the sprite size before animation work starts.)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
      The codebase has accumulated empty stub modules, unused public methods,
@@ -1018,6 +1019,69 @@ Create `task/17-wifi-ap-primitive` from a clean `main` after Task 16 is merged. 
 After all commits, test on device — confirm: SSID `PetPet-XXXX` appears in a phone's WiFi list, the phone can connect using the hardcoded password, the IP `192.168.4.1` matches what is shown on the Stats screen, and the pet's game loop continues running normally while the hotspot is active (no lag, no missed buttons).
 
 **Files touched:** new `lib/Wireless/wireless_manager.h` and `.cpp`, `src/main.cpp` (instantiate WirelessManager, call `beginAccessPoint()` in setup), `lib/Display/display_manager.cpp` (new info row on Stats screen), `CLAUDE.md` (architecture map row for the new Wireless module).
+
+---
+
+### Task 14d — Sprite Display Simplification
+
+**Why this sub-task:**
+
+The project currently ships **three** sprite assets at three different sizes: `sprite_64x64_test` on the Main screen, `sprite_48x48_test` on the Interact screen, and `sprite_newpiskel2` on the Stats screen. Each screen has its own `drawPetSprite()` call with a different width/height/data triple. For a teaching codebase this is more variety than the concept needs — students learning sprite rendering should see **one** size used consistently across the project, not three sizes that each require separate asset files and separate constants. This sub-task simplifies the sprite display to a single 80×80 asset, removes the sprite from the Stats screen entirely (the Stats screen now reads as a pure data/info view), and reflows the Interact screen to fit the larger sprite.
+
+This task **must run before Task 13a (Sprite Animation)** — animation work targets a specific sprite size, and we do not want to animate the wrong size and then have to re-do the asset.
+
+**Execution slot:**
+
+Deferred until **after Task 14c (Gameplay Balance Tuning)** and **before Task 13a (Sprite Animation).** Code-touching task, not a documentation pass.
+
+**Scope (foundation):**
+
+1. **Pick the single sprite size: 80×80.** Larger than today's 64×64 main-screen sprite so the pet has more visual presence; the LCD is 135px wide so 80×80 fits with margin on each side.
+2. **Generate the 80×80 asset.** Open the existing pet sprite in Piskel, resize to 80×80, export as `.c`, drop the raw export into `assets/sprites/raw/`, run `tools/piskel_converter/main.cpp` (see `SPRITE_GUIDE.md`) to produce a byte-swapped `lib/Display/sprites/80x80_default.h` (or similar name). RGB565 values must be pre-swapped to match the M5StickC Plus 2 LCD byte order (transparent key `0x1FF8`).
+3. **Update Main screen** (`renderMainScreen()` in `display_manager.cpp`) to draw the new 80×80 sprite at `MAIN_FACE_CENTER_Y` using `SPRITE_80X80_DEFAULT_WIDTH/HEIGHT`.
+4. **Update Interact screen** (`renderInteractScreen()` in `display_manager.cpp`) to draw the same 80×80 sprite. The current Interact layout has an empty region between y=181 and y=220 (approximately) — collapse that gap so the larger sprite fits without overlapping the action menu or the contextual stat bar. Adjust the relevant zone constants in `screen_layout.h` to match.
+5. **Remove the sprite from the Stats screen.** Delete the `drawPetSprite()` call in `renderStatsScreen()`. Reflow whatever the sprite was occupying — likely give the existing stat bars more vertical room, or use the freed space for the new SSID + IP info row that Task 17 introduces.
+6. **Delete the now-unused asset files:**
+   - `lib/Display/sprites/48x48_test.h`
+   - `lib/Display/sprites/64x64_test.h`
+   - `lib/Display/sprites/newpiskel2.h`
+   - `assets/sprites/raw/48x48_test.c`
+   - `assets/sprites/raw/64x64_test.c`
+   - `assets/sprites/raw/NewPiskel2.c`
+7. **Remove the now-unused size constants** (`SPRITE_48X48_TEST_WIDTH/HEIGHT`, `SPRITE_64X64_TEST_WIDTH/HEIGHT`, `SPRITE_NEWPISKEL2_WIDTH/HEIGHT`) from wherever they are declared.
+8. **Update the comment on `drawPetSprite()`** — the existing comment explains the three-size design ("Stats uses 32x32, Interact uses 48x48, Main uses 64x64"); rewrite it to say "Every screen uses the same 80×80 sprite; the width/height parameters are kept so future sizes can be passed in if needed." Keep the function signature unchanged.
+
+**Interact-screen layout — concrete adjustment:**
+
+Today the Interact screen reads top-to-bottom as: 48×48 sprite → contextual stat bar → empty space at y≈181–220 → action menu at ≈y=220+. To fit the new 80×80 sprite without breaking the action menu's position, compress that empty band. Two implementation paths:
+
+- **Path A — shift the sprite down, keep the action menu where it is.** Sprite ends lower on the screen; the gap above the action menu shrinks.
+- **Path B — keep the sprite centered in its zone, but shrink the zone's height.** `screen_layout.h` zone constants get smaller `height` values; downstream calculations propagate.
+
+Path B is the cleaner change for a teaching codebase — constants in one place, no recalculated offsets. Take Path B unless device testing reveals a layout glitch that Path A solves more cleanly.
+
+**What this sub-task is NOT:**
+
+- It is **not** an animation task. Multi-frame cycling is still Task 13a's job.
+- It is **not** a re-pixeling of the pet's art. Use the existing pet design, just resized to 80×80.
+- It is **not** a redesign of any screen. The Main and Stats layouts keep the same zones (minus the Stats-screen sprite); the Interact screen only shrinks the empty band between sprite and menu.
+- It is **not** the place to introduce a sprite-size constant lookup table or a runtime-selectable sprite renderer. One size, hardcoded.
+
+**Branch and commit strategy:**
+
+Create `task/14d-sprite-simplification` from a clean `main` after Task 14c is merged. Suggested commits:
+
+1. `chore: add 80x80 sprite asset (raw .c + converted .h)`
+2. `refactor: switch Main screen to the 80x80 sprite`
+3. `refactor: switch Interact screen to the 80x80 sprite and reflow zone heights`
+4. `refactor: remove sprite from Stats screen`
+5. `chore: delete unused 48x48, 64x64, and newpiskel2 sprite assets and constants`
+6. `docs: update drawPetSprite() comment to reflect single-size design`
+7. `docs: mark Task 14d done and advance next-task pointer to Task 13a`
+
+After all commits, test on device — confirm: Main screen shows the new 80×80 sprite without clipping; Interact screen shows the same sprite with the action menu still visible and the contextual stat bar still readable; Stats screen has no pet sprite and the freed space looks intentional (info row, larger stat bars, or whatever the chosen reflow puts there).
+
+**Files touched:** `lib/Display/sprites/` (delete 3 files, add 1), `assets/sprites/raw/` (delete 3 files, add 1), `lib/Display/display_manager.h` (constants removed/added), `lib/Display/display_manager.cpp` (three render methods updated, one delete), `lib/Display/screen_layout.h` (zone height adjustments). No changes to `lib/Pet/`, `lib/Actions/`, or any non-display module.
 
 ---
 
