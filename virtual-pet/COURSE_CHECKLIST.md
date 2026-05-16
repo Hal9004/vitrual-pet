@@ -28,7 +28,7 @@
 - [ ] Voice Memos (Microphone recording/playback for short sound bites)
 
 ## Phase 4: Environmental & Advanced Features
-- [ ] RTC (Real Time Clock) for overnight logic
+- 🔁 RTC (Real Time Clock) — moved to bonus during the Task 14b audit. Without overnight-decay logic, a clock widget does not integrate with any other module. Full design in `DEV_ROADMAP.md` Appendix B — Bonus Feature 1.
 - [x] NVS Persistence via `Preferences` (Saving pet state on power off) — Note: the checklist originally said "EEPROM" but the ESP32 has no real EEPROM. We used NVS (Non-Volatile Storage) directly via the Arduino `Preferences` library, which is the correct ESP32-native approach.
 - [ ] Evolution Logic (Growth stages based on care/time) — deferred, lower priority than EEPROM
 

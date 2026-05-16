@@ -49,7 +49,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
 | MPU6886 "Shake to Wake" (low-power wake) | 🚫 Removed | Hardware investigation confirmed the MPU6886 INT pin is not routed to an ESP32 GPIO on the M5StickCPlus2 — interrupt-driven wake is not possible on this board |
-| RTC (Real Time Clock for overnight logic) | ❌ Missing | `lib/Timer/time_manager.cpp` exists (decay timers implemented) but RTC/BM8563 integration not started |
+| RTC (Real Time Clock for overnight logic) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. Without overnight-decay logic, displaying HH:MM is a stand-alone widget that does not integrate with any other module — not a teaching outcome worth the new-concept slug. See Appendix B — Bonus Feature 1 for the full design |
 | NVS Persistence via `Preferences` (save pet on power-off) | ✅ Done | `lib/Storage/storage_manager.h/.cpp` — saves/loads all pet stats via Arduino `Preferences` (NVS). Wired into `setup()` (load) and Save action (write) in `src/main.cpp`. Note: this was originally labelled "EEPROM" but the ESP32 has no real EEPROM hardware — NVS is the correct native mechanism. |
 | Evolution Logic (growth stages based on care/time) | ❌ Missing | No growth stage tracking in `Pet` class |
 
@@ -120,7 +120,7 @@ LEVEL 5 — ASSET PIPELINE
      New features (RTC, voice memos, networking) wait until this pass is done.
 
 LEVEL 6 — COMPLEX HARDWARE
- 15. RTC overnight logic               (new: I2C, BM8563 library, Unix timestamp math)
+ 15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1. Right-sized out of the critical path during Task 14b: without overnight-decay logic, a clock widget does not integrate with any other module)
  16. Microphone Voice Memos            (new: DMA audio buffers — see Hardware Gotchas)
 
 LEVEL 7 — NETWORKING
