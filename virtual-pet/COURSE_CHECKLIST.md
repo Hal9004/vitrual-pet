@@ -25,7 +25,7 @@
 - [x] Menu UI (Visual indicators for selected actions)
 - [x] Motion Play (Using MPU6886 accelerometer for "Play" mode interactions)
 - [x] Sound Feedback (Buzzer melodies for Level Up, Hunger, etc.)
-- [ ] Voice Memos (Microphone recording/playback for short sound bites)
+- [ ] Microphone Input (Detect & React) — right-sized from the original "Voice Memos" during the Task 14b audit. Foundation: detect a loud noise (clap/voice/whistle), pet reacts with happiness +5 and a buzzer chirp. Full record/playback becomes Bonus Feature 5 (`DEV_ROADMAP.md` Appendix B).
 
 ## Phase 4: Environmental & Advanced Features
 - 🔁 RTC (Real Time Clock) — moved to bonus during the Task 14b audit. Without overnight-decay logic, a clock widget does not integrate with any other module. Full design in `DEV_ROADMAP.md` Appendix B — Bonus Feature 1.

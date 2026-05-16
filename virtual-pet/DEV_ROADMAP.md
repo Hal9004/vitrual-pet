@@ -42,7 +42,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
 | Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
 | Sound Feedback (buzzer melodies) | ✅ Done | `lib/Speaker/speaker_manager.h/.cpp` — melodies for all 5 actions, death, reset, hunger alert, sickness alert |
-| Voice Memos (microphone record/playback) | ❌ Missing | `lib/Microphone/microphone_manager.cpp` — empty |
+| Microphone Input (Detect & React) | ❌ Missing | Right-sized from the original "Voice Memos" during the Task 14b audit. New foundation: detect a loud noise (clap/voice/whistle), pet reacts with a small happiness boost and a buzzer chirp. Record/playback becomes Bonus Feature 5. The `lib/Microphone/microphone_manager.*` stub files were deleted during Task 14a; Task 16 re-creates the module from scratch. See Task 16 section |
 
 ### Phase 4: Environmental & Advanced Features
 
@@ -121,7 +121,7 @@ LEVEL 5 — ASSET PIPELINE
 
 LEVEL 6 — COMPLEX HARDWARE
  15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1. Right-sized out of the critical path during Task 14b: without overnight-decay logic, a clock widget does not integrate with any other module)
- 16. Microphone Voice Memos            (new: DMA audio buffers — see Hardware Gotchas)
+ 16. Microphone Input (Detect & React)  (see Task 16 section. Right-sized from the original "Voice Memos" during Task 14b: detect a loud noise → pet happiness +5 + buzzer chirp. Record/playback = Bonus Feature 5.)
 
 LEVEL 7 — NETWORKING
  17. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
@@ -875,6 +875,77 @@ Create `task/14c-gameplay-balance` from a clean `main` after Task 17 is merged. 
 After all commits, test on device — confirm the parity check passes and a normal play session lasts at least 10 minutes before a stat becomes critical.
 
 **Files touched:** `lib/Imu/imu_manager.h` and `.cpp` (cooldown), `lib/Pet/pet.cpp` (play cost), `lib/Timer/time_manager.cpp` (five constants). No new files. No header signature changes other than the new private field on `ImuManager`.
+
+---
+
+### Task 16 — Microphone Input (Detect & React)
+
+**Why this task:**
+
+The M5StickC Plus 2 ships with a built-in microphone, but the original "Voice Memos" scope (record + browse + playback) needed DMA buffers, double-buffering, sample-rate matching against the buzzer, and a UI for browsing recordings — three modules' worth of new concepts in one task. The Task 14b audit right-sized this to a foundation students can complete in one session: **the pet reacts when it hears a loud noise.** Clap at the pet, it perks up. Recording and playback become Bonus Feature 5 for students who finish early.
+
+This is the first task in Phase 5 that exercises **heap allocation** (Hardware Gotcha 1) — a meaningful new concept that students have not seen in Programming I or II.
+
+**Scope (foundation):**
+
+Re-create the `lib/Microphone/` module (the empty stub was deleted during Task 14a). Two new files: `microphone_manager.h` and `microphone_manager.cpp`.
+
+The module mirrors `ImuManager`'s shape exactly — students have already read that module, so the pattern transfers cleanly:
+
+```cpp
+class MicrophoneManager {
+public:
+    void begin();
+    void update();              // call once per loop
+    bool detectedLoudNoise();   // one-frame pulse, mirrors imu.wasShaken()
+
+private:
+    static const size_t SAMPLE_COUNT = 256;
+    static const int AMPLITUDE_THRESHOLD = ...;        // tune during device test
+    static const unsigned long DETECTION_COOLDOWN = 1500; // ms, prevents spam
+    int16_t* sampleBuffer;
+    bool loudNoiseDetected;
+    unsigned long lastDetectionTime;
+};
+```
+
+`update()` allocates the sample buffer **on the heap** (Hardware Gotcha 1) — `int16_t* buffer = (int16_t*) malloc(...)`, null-check, `M5.Mic.record(buffer, SAMPLE_COUNT, 16000)`, compute the peak absolute amplitude, set `loudNoiseDetected = true` if it exceeds the threshold AND the cooldown has elapsed, then `free(buffer)`. The detection pulse is a one-frame flag, identical to `ImuManager::wasShaken()`.
+
+**Two pet responses on detection (called from `main.cpp` loop):**
+
+1. **Happiness boost** — `myPet.setHappy(myPet.getHappy() + 5)`. Integrates with the existing care-action model.
+2. **Buzzer chirp** — add a new `SpeakerManager::playSurpriseChirp()` method. A short, light melody distinct from the existing care-action sounds. The exact notes are an implementation choice — pick something that reads as "perky" rather than "alarmed."
+
+Both responses fire from `main.cpp` in the same place — no `Pet&` or `SpeakerManager&` reference inside `MicrophoneManager` (keeps coupling flat, follows the pattern flagged in Appendix A).
+
+**Stretch tasks (for students who finish the foundation):**
+
+- **Level meter visualisation** — draw the current peak amplitude as a bar somewhere on the LCD, "talk into your pet and watch the bar move."
+- **Threshold calibration** — sample ambient noise for one second on boot, set the threshold to (ambient × multiplier). The pet adapts to its surroundings.
+- **Sound classification** — distinguish claps (short, sharp peak) from voices (sustained mid-amplitude) from whistles (sustained high-frequency). Each gets a different pet response. Real FFT or a simpler heuristic both work.
+- **Voice memos (the original Task 16 scope)** — record on long-press of Button A, store in heap, play back through the speaker. This is Bonus Feature 5 in Appendix B.
+
+**What this task is NOT:**
+
+- It is **not** a sound-recording feature. Samples are read, peak-detected, and discarded — never stored.
+- It is **not** a continuous-stream feature. One read per `update()` call, ~256 samples, ~16 ms of audio. Discarded immediately.
+- It is **not** allowed to keep the heap buffer alive across calls. Each `update()` allocates and frees its own buffer — that's the lesson. Caching it would be a premature optimisation and would hide Hardware Gotcha 1 from the student reading the code.
+
+**Branch and commit strategy:**
+
+Create `task/16-microphone-detect-react` from a clean `main` after Task 14b is merged. Suggested commits:
+
+1. `feat: re-create empty MicrophoneManager scaffolding`
+2. `feat: implement loud-noise detection with heap-allocated sample buffer`
+3. `feat: add cooldown to detectedLoudNoise() to prevent spam`
+4. `feat: add SpeakerManager::playSurpriseChirp() melody`
+5. `feat: wire microphone detection into main loop — pet reacts on loud noise`
+6. `docs: update architecture map in CLAUDE.md for re-created Microphone module`
+7. `docs: mark Task 16 done and advance next-task pointer to Task 17`
+
+After all commits, test on device — confirm: clap → pet happiness +5 + chirp; cooldown prevents one clap from triggering multiple times; talking quietly does not trigger; no heap fragmentation across long sessions (leave it running for 5 minutes, watch free heap).
+
+**Files touched:** new `lib/Microphone/microphone_manager.h` and `.cpp`, new method in `lib/Speaker/speaker_manager.h` and `.cpp`, `src/main.cpp` (instantiate MicrophoneManager, call `update()` + `detectedLoudNoise()` in the loop), `CLAUDE.md` (architecture map row restored for Microphone).
 
 ---
 
