@@ -190,15 +190,18 @@ bool Pet::isDead() const {
 
 // reset()
 // Restores all stats to the same starting values used in the constructor.
+// Uses the DEFAULT_* constants so the constructor, StorageManager::load(),
+// and reset() all share one source of truth — change a starting value in
+// pet.h and every code path agrees.
 // Called when the player chooses to restart after the pet has died.
 void Pet::reset() {
-    hungry      = 30;
-    tired       = 20;
-    happy       = 70;
-    sick        = 0;
-    sad         = 10;
-    cleanliness = 60;
-    energised   = 80;
+    hungry      = DEFAULT_HUNGRY;
+    tired       = DEFAULT_TIRED;
+    happy       = DEFAULT_HAPPY;
+    sick        = DEFAULT_SICK;
+    sad         = DEFAULT_SAD;
+    cleanliness = DEFAULT_CLEANLINESS;
+    energised   = DEFAULT_ENERGISED;
     currentState = STATE_IDLE;  // Clear death state so the next updateState() starts fresh
 
     // Clear alert state so no leftover flags carry over into the new life.
