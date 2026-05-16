@@ -815,3 +815,286 @@ Create `refactor/14b-roadmap-simplification` from a clean `main` after Task 14a 
 After all commits, the roadmap should read end-to-end as a coherent teaching plan: every remaining task should be sized so a student-of-target-skill-level could complete it in a session, with explicit "stretch tasks" listed for advanced students who finish early.
 
 **Files touched:** `DEV_ROADMAP.md` (primarily), `COURSE_CHECKLIST.md` (if any wording shifts), `CLAUDE.md` (next-task pointer, possibly architecture map if any module's purpose is being redefined).
+
+---
+
+## Appendix A — Module Coupling Map (Task 14a output)
+
+This appendix is the deliverable of Task 14a's coupling sweep. It is a snapshot
+of *which modules depend on which other modules and how heavily*, taken after
+the 14a deletions and refactors landed. The job here is to **surface** coupling
+so Task 19's pre-template rewrite can decide what to fix; nothing here has been
+refactored.
+
+Read order: the dependency diagrams first (who depends on whom), then the
+coupling hotspots, ordered loudest first.
+
+### A.1 — Module dependency diagram
+
+The graph below shows which module includes (or takes a reference to) which
+other module. An arrow `A ──► B` means "A's header includes B's header, or
+A's methods take B by reference/value." Modules with **no outgoing arrows**
+are *foundation modules* — nothing inside the project is required to compile
+them.
+
+```mermaid
+graph LR
+    Main([main.cpp])
+
+    subgraph Foundations
+        Pet[Pet]
+        Button[ButtonHandler]
+        IMU[ImuManager]
+        Speaker[SpeakerManager]
+        Layout[screen_layout]
+    end
+
+    Timer[TimerManager]
+    Storage[StorageManager]
+    Display[DisplayManager]
+    Nav[NavigationManager]
+    Menu[ActionMenu - hotspot]
+
+    Timer --> Pet
+    Storage --> Pet
+    Display --> Layout
+    Nav --> Layout
+    Nav --> Button
+    Nav --> Menu
+
+    Menu --> Pet
+    Menu --> Display
+    Menu --> Layout
+    Menu --> Button
+    Menu --> Speaker
+    Menu --> Storage
+
+    Display -. forward-decl .-> Menu
+
+    Main --> Pet
+    Main --> Display
+    Main --> Button
+    Main --> Menu
+    Main --> Nav
+    Main --> Timer
+    Main --> IMU
+    Main --> Speaker
+    Main --> Storage
+
+    classDef hotspot fill:#f8d4d4,stroke:#a00,stroke-width:2px
+    class Menu hotspot
+```
+
+If your viewer does not render Mermaid, the same graph in flat layered form:
+
+```
+Layer 0 — Foundations (no internal dependencies)
+═══════════════════════════════════════════════════
+   Pet      ButtonHandler   ImuManager   SpeakerManager   screen_layout
+
+
+Layer 1 — Single-dependency managers
+═══════════════════════════════════════════════════
+   TimerManager     ──►  Pet
+   StorageManager   ──►  Pet
+   DisplayManager   ──►  screen_layout   (+ forward-decl ActionMenu ↩ Hotspot 2)
+
+
+Layer 2 — Coordinator
+═══════════════════════════════════════════════════
+   NavigationManager  ──►  screen_layout, ButtonHandler, ActionMenu
+
+
+Layer 3 — HOTSPOT  ★ (six internal dependencies)
+═══════════════════════════════════════════════════
+   ActionMenu  ──►  Pet, DisplayManager, screen_layout,
+                    ButtonHandler, SpeakerManager, StorageManager
+
+
+Layer 4 — Orchestrator
+═══════════════════════════════════════════════════
+   main.cpp  ──►  owns one instance of every manager and Pet
+```
+
+Five modules are foundations. `ActionMenu` sits at the opposite end with six
+internal dependencies. The other four mid-tier modules sit between with one
+to three.
+
+### A.2 — Hotspot 1 — `ActionMenu::confirmAction` fan-in
+
+The single highest-coupling surface in the codebase. To call it, `main.cpp`
+must already own four other manager objects, and to *read* its body a student
+must already understand four other classes.
+
+```
+                           main.cpp
+                              │
+                              │ calls menu.confirmAction(pet, display, speaker, storage)
+                              ▼
+                  ┌──────────────────────┐
+                  │   ActionMenu         │
+                  │   confirmAction(...) │
+                  └──┬────┬────┬────┬────┘
+                     │    │    │    │
+            ┌────────┘    │    │    └────────┐
+            ▼             ▼    ▼             ▼
+         ┌─────┐     ┌────────┐ ┌───────┐ ┌────────┐
+         │ Pet │     │Display │ │Speaker│ │Storage │
+         └─────┘     └────────┘ └───────┘ └────────┘
+         feed/play/  showAction  playFeed  save
+         sleep/etc.  Feedback    Sound...
+```
+
+Inside the switch, each of the four managers is used for a different reason:
+
+| Case | Pet | DisplayManager | SpeakerManager | StorageManager |
+|---|---|---|---|---|
+| FEED / PLAY / SLEEP / BATHE / HEAL | state change | feedback | sound | — |
+| SAVE | — | feedback | sound | save |
+| BACK | — | — | — | — |
+
+**Why it ended up here:** five care actions, plus the special SAVE case, plus
+the post-action feedback message — naturally lived in one place, and the
+simplest way to do it was to give `confirmAction` every manager it might need.
+
+**What Task 19 could consider:** split into per-concern methods
+(`executeAction(pet)`, `playActionSound(speaker)`, `showFeedback(display)`)
+and let `main.cpp` orchestrate them in sequence, OR move the orchestration
+into a thin coordinator the student reads top-to-bottom. Either approach
+drops `ActionMenu`'s internal dependencies from six to two or three. The
+trade-off is more lines in `main.cpp` — possibly the wrong place to grow
+complexity for beginners.
+
+### A.3 — Hotspot 2 — `ActionMenu` ↔ `DisplayManager` circular knowledge
+
+`action_menu.h` includes `display_manager.h` because `confirmAction` takes a
+`DisplayManager&`. `display_manager.h` forward-declares `ActionMenu` because
+three of its methods take `const ActionMenu&`:
+
+- `renderDisplay(... const ActionMenu& menu, ...)`
+- `renderInteractScreen(... const ActionMenu& menu, ...)`
+- `drawMenuIndicator(const ActionMenu& menu, int x, int y)`
+
+```
+                #include "display_manager.h"
+        ┌──────────────────────────────────────┐
+        │                                      ▼
+   ┌──────────┐                          ┌──────────┐
+   │ActionMenu│                          │ Display  │
+   │          │◄ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │ Manager  │
+   └──────────┘    forward-declare       └──────────┘
+                  class ActionMenu;
+                  (workaround for the
+                   circular include)
+```
+
+The comment at `display_manager.h:11–13` names this directly: *"This avoids
+a circular include: action_menu.h already includes display_manager.h."*
+
+`DisplayManager` actually reaches into `ActionMenu` for only two things: the
+selected action's name (a `const char*`) and the relevant stat to highlight
+(a `RelevantStat` enum). Both are primitives.
+
+**What Task 19 could consider:** pass the primitives directly
+(`const char* selectedActionName`, `RelevantStat relevantStat`) rather than
+the whole menu object. Removes the forward declaration and breaks the
+circular knowledge without changing behaviour. Easier to draw a clean
+arrow: main → display, main → menu, no menu ↔ display loop.
+
+### A.4 — Hotspot 3 — `Pet` owns alert-coordination state that exists only for `SpeakerManager`
+
+`Pet` holds three flags — `deathSoundReady`, `hungerAlertReady`,
+`sicknessAlertReady` — plus two `lastXAlertTime` timestamps. None of these
+describe the pet's biological state; they exist only so `main.cpp` can read
+them and call the matching `speaker.play…Sound()` without `Pet` ever having
+to import `SpeakerManager`. The comment at `pet.cpp:109–111` documents the
+intent: *"Sets the flag so main.cpp can play the sound without Pet knowing
+about SpeakerManager."*
+
+```
+       ┌─────────────────────────┐                ┌──────────────┐
+       │           Pet            │                │ SpeakerMgr   │
+       │  hungerAlertReady = true ├──►  read by ──┤              │
+       │  (set in updateState)    │   main.cpp    │ playHunger…  │
+       └─────────────────────────┘                └──────────────┘
+                  ▲                                       ▲
+                  │                                       │
+                  └──────── main.cpp polls ───────────────┘
+                  checkHungerAlert() returns true once,
+                  main calls speaker.playHungerAlertSound()
+```
+
+**Why it ended up here:** keeping `Pet` independent of `SpeakerManager` is
+the right call — they sit at different layers. The flag pattern is the cost
+of that decoupling.
+
+**What Task 19 could consider:** an `AlertManager` (or similar) that owns
+the threshold-and-cooldown logic and exposes the same `checkXAlert()` pulse
+API. `Pet` shrinks back to just stats; `main.cpp` reads alert pulses from
+the new module instead. Trade-off: another module in the architecture map
+for beginners to learn — only worth doing if the alert logic grows further.
+
+### A.5 — Hotspot 4 — `main.cpp` fan-out at the render call
+
+`main.cpp:140–145` pulls six values out of `Pet` to pass into
+`renderDisplay`:
+
+```cpp
+display.renderDisplay(
+    myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
+    myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
+    menu, petIsDead, myPet.getPetName(),
+    navManager.getCurrentScreen()
+);
+```
+
+The call site has to know that `Pet` exposes those six getters AND that
+`renderDisplay` wants them in this exact order. The same six values then
+flow through every screen's private render method, recursively.
+
+**What Task 19 could consider:** pass `const Pet&` to `renderDisplay` and let
+DisplayManager pull the values it actually needs. Removes the
+parameter-order knowledge from `main.cpp` but adds a `Pet` dependency to
+`DisplayManager` — currently DisplayManager has no opinion about who owns
+the stats. Worth weighing.
+
+### A.6 — Hotspot 5 — `NavigationManager::update(const ButtonHandler&, const ActionMenu&)`
+
+Smaller two-manager fan-in. `NavigationManager` uses `ButtonHandler` to read
+which button was pressed and `ActionMenu` to ask `isBackSelected()` and
+`getCurrentActionIndex()`. The menu reference is only used as a query.
+
+**What Task 19 could consider:** pass a single `bool backSelected` from
+`main.cpp` rather than the whole `ActionMenu`. Removes
+`NavigationManager`'s direct knowledge of `ActionMenu` entirely.
+
+### A.7 — What is already clean (do NOT undo in Task 19)
+
+These shapes are worth preserving.
+
+- **`Pet` depends on nothing.** Every other module depends on Pet (directly
+  or transitively). Pet is the foundation, and that is the correct direction.
+- **`SpeakerManager`, `ButtonHandler`, `ImuManager` each wrap one piece of
+  hardware and depend on nothing internal.** This is the model the more
+  coupled modules could aspire to.
+- **`TimerManager::update(Pet&)` and `StorageManager::save/load(Pet&)` take
+  exactly one manager each.** Easy to read, easy to test if testing is ever
+  added.
+- **`Pet` does not import `SpeakerManager`.** The flag/poll pattern
+  (Hotspot 3) is the cost of that decoupling and the trade is worth it —
+  moving the flags out should not put the dependency back in.
+
+### A.8 — Calibration notes for Task 19
+
+Students completing the prerequisite Programming I/II courses have written
+JavaScript classes with attributes and methods, but have not yet seen:
+references (`Pet&`), pointers, header/.cpp separation, function overloading,
+or `static const`. Any coupling fix in Task 19 should land on simpler C++
+shapes than the current code, not more elaborate ones.
+
+Specifically:
+- Prefer passing primitives (`int`, `const char*`, an enum value) over
+  passing whole manager objects, when only one or two fields are read.
+- Prefer one method that takes one manager over one method that takes four.
+- Avoid introducing new C++ idioms (templates, `std::function`, callbacks)
+  in service of decoupling.
