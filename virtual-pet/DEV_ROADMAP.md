@@ -42,7 +42,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
 | Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
 | Sound Feedback (buzzer melodies) | ✅ Done | `lib/Speaker/speaker_manager.h/.cpp` — melodies for all 5 actions, death, reset, hunger alert, sickness alert |
-| Microphone Input (Detect & React) | ❌ Missing | Right-sized from the original "Voice Memos" during the Task 14b audit. New foundation: detect a loud noise (clap/voice/whistle), pet reacts with a small happiness boost and a buzzer chirp. Record/playback becomes Bonus Feature 5. The `lib/Microphone/microphone_manager.*` stub files were deleted during Task 14a; Task 16 re-creates the module from scratch. See Task 16 section |
+| Microphone Input (Detect & React) | ❌ Missing | Right-sized from the original "Voice Memos" during the Task 14b audit. New foundation: detect a loud noise (clap/voice/whistle), pet reacts with a small happiness boost and a buzzer chirp. Record/playback becomes Bonus Feature 6. The `lib/Microphone/microphone_manager.*` stub files were deleted during Task 14a; Task 16 re-creates the module from scratch. See Task 16 section |
 
 ### Phase 4: Environmental & Advanced Features
 
@@ -57,8 +57,8 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
-| Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
+| Wireless Access Point Primitive | ❌ Missing | Right-sized from the original "Wireless Communication (BLE/WiFi)" during the Task 14b audit. New foundation: device broadcasts its own WiFi hotspot and displays the SSID + IP on the LCD. No web server, no second-device communication. See Task 17 section |
+| Remote Dashboard (Web/App stat checking) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. The web server pattern adds another module of new concepts (HTTP routes, named callbacks, `String` HTML building) on top of Task 17 — better as a follow-on bonus that students opt into. See Appendix B — Bonus Feature 2 |
 | Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation (Task 13a) is deferred — picked back up after Tasks 15–18. |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
@@ -121,11 +121,11 @@ LEVEL 5 — ASSET PIPELINE
 
 LEVEL 6 — COMPLEX HARDWARE
  15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1. Right-sized out of the critical path during Task 14b: without overnight-decay logic, a clock widget does not integrate with any other module)
- 16. Microphone Input (Detect & React)  (see Task 16 section. Right-sized from the original "Voice Memos" during Task 14b: detect a loud noise → pet happiness +5 + buzzer chirp. Record/playback = Bonus Feature 5.)
+ 16. Microphone Input (Detect & React)  (see Task 16 section. Right-sized from the original "Voice Memos" during Task 14b: detect a loud noise → pet happiness +5 + buzzer chirp. Record/playback = Bonus Feature 6.)
 
 LEVEL 7 — NETWORKING
- 17. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
- 18. Remote Dashboard                  (requires: task 17 + simple HTTP server)
+ 17. Wireless Access Point Primitive   (see Task 17 section. Right-sized from "Wireless Communication (BLE/WiFi)" during Task 14b: device hosts its own WiFi hotspot and shows SSID + IP on the LCD. Web server, two-device comms, and BLE all become Bonus Features in Appendix B.)
+ 18. Remote Dashboard                  🔁 Moved to Bonus (see Appendix B — Bonus Feature 2. The web server pattern is its own slug of new concepts and is better as a follow-on bonus than a mandatory task.)
 
 PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
 
@@ -882,7 +882,7 @@ After all commits, test on device — confirm the parity check passes and a norm
 
 **Why this task:**
 
-The M5StickC Plus 2 ships with a built-in microphone, but the original "Voice Memos" scope (record + browse + playback) needed DMA buffers, double-buffering, sample-rate matching against the buzzer, and a UI for browsing recordings — three modules' worth of new concepts in one task. The Task 14b audit right-sized this to a foundation students can complete in one session: **the pet reacts when it hears a loud noise.** Clap at the pet, it perks up. Recording and playback become Bonus Feature 5 for students who finish early.
+The M5StickC Plus 2 ships with a built-in microphone, but the original "Voice Memos" scope (record + browse + playback) needed DMA buffers, double-buffering, sample-rate matching against the buzzer, and a UI for browsing recordings — three modules' worth of new concepts in one task. The Task 14b audit right-sized this to a foundation students can complete in one session: **the pet reacts when it hears a loud noise.** Clap at the pet, it perks up. Recording and playback become Bonus Feature 6 for students who finish early.
 
 This is the first task in Phase 5 that exercises **heap allocation** (Hardware Gotcha 1) — a meaningful new concept that students have not seen in Programming I or II.
 
@@ -923,7 +923,7 @@ Both responses fire from `main.cpp` in the same place — no `Pet&` or `SpeakerM
 - **Level meter visualisation** — draw the current peak amplitude as a bar somewhere on the LCD, "talk into your pet and watch the bar move."
 - **Threshold calibration** — sample ambient noise for one second on boot, set the threshold to (ambient × multiplier). The pet adapts to its surroundings.
 - **Sound classification** — distinguish claps (short, sharp peak) from voices (sustained mid-amplitude) from whistles (sustained high-frequency). Each gets a different pet response. Real FFT or a simpler heuristic both work.
-- **Voice memos (the original Task 16 scope)** — record on long-press of Button A, store in heap, play back through the speaker. This is Bonus Feature 5 in Appendix B.
+- **Voice memos (the original Task 16 scope)** — record on long-press of Button A, store in heap, play back through the speaker. This is Bonus Feature 6 in Appendix B.
 
 **What this task is NOT:**
 
@@ -946,6 +946,78 @@ Create `task/16-microphone-detect-react` from a clean `main` after Task 14b is m
 After all commits, test on device — confirm: clap → pet happiness +5 + chirp; cooldown prevents one clap from triggering multiple times; talking quietly does not trigger; no heap fragmentation across long sessions (leave it running for 5 minutes, watch free heap).
 
 **Files touched:** new `lib/Microphone/microphone_manager.h` and `.cpp`, new method in `lib/Speaker/speaker_manager.h` and `.cpp`, `src/main.cpp` (instantiate MicrophoneManager, call `update()` + `detectedLoudNoise()` in the loop), `CLAUDE.md` (architecture map row restored for Microphone).
+
+---
+
+### Task 17 — Wireless Access Point Primitive
+
+**Why this task:**
+
+The original "Wireless Communication (BLE/WiFi)" entry named libraries (`WiFi.h`, ESP-NOW, BLE) but did not pick a concrete deliverable. The Task 14b audit decided that **every** rich wireless feature — two-device pet-to-pet comms, an HTTP dashboard, BLE scanning — is its own slug of new concepts and should live in the bonus appendix. What the critical path needs is the **simplest, most tangible "the pet is on a network" demonstration possible.** That demonstration is: the device broadcasts its own WiFi hotspot. A student opens their phone's WiFi list and sees their pet there. Done.
+
+This task delivers a guaranteed wireless win for every student without requiring a second M5StickC Plus 2, an HTTP server, an HTML page, or any phone-side coding.
+
+**Scope (foundation):**
+
+New `lib/Wireless/wireless_manager.h` and `wireless_manager.cpp`. Module mirrors the shape of the other managers in this project (a `begin()` + a small number of getters).
+
+```cpp
+class WirelessManager {
+public:
+    void beginAccessPoint();           // calls WiFi.softAP(SSID, PASSWORD)
+    const char* getSsid() const;       // returns the broadcast SSID
+    IPAddress getIp() const;           // returns 192.168.4.1 by default
+
+private:
+    static const char* AP_SSID;        // e.g. "PetPet-XXXX"
+    static const char* AP_PASSWORD;    // hardcoded, ≥8 chars per WiFi rules
+};
+```
+
+Wire `wireless.beginAccessPoint()` into `setup()` in `src/main.cpp` after `M5.begin()`. The hotspot then runs for the entire device session.
+
+**Display the SSID + IP on the Stats screen** as a new info row at the bottom of the layout. The Stats screen has more vertical room than the other two and is already the "info" screen. Use the existing `printText()` helper — no new font, no new colour palette.
+
+**Verification path:** student powers on the device, opens their phone's WiFi list, sees `PetPet-XXXX` in the list, connects, success. No browser, no server, no second device. The success moment is "my pet is broadcasting WiFi."
+
+**Stretch tasks (Appendix B bonuses, all opt-in):**
+
+- **Bonus Feature 2 — Web Dashboard.** Add `WebServer`, serve one static HTML page with stats at `http://192.168.4.1/`.
+- **Bonus Feature 3 — Pet-to-Pet ESP-NOW.** Two M5Sticks swap a happiness boost on shake. *Requires two devices.*
+- **Bonus Feature 4 — Live-Refreshing Dashboard.** Builds on Bonus 2. Adds JS fetch so stats refresh without reload.
+- **Bonus Feature 5 — Phone-Controlled Actions.** Builds on Bonus 2. Adds `/feed`, `/play` etc. routes that call `pet.feed()`, `pet.play()`.
+
+All four are documented in full detail in Appendix B, with code skeletons and new-concept inventories.
+
+**What this task is NOT:**
+
+- It is **not** a web server. No HTML, no `WebServer.h`, no routes. That is Bonus Feature 2.
+- It is **not** a WiFi client. The device does not join an existing network. The device IS the network. (Existing-network mode would force every student to type school WiFi credentials into source code — not a great teaching experience and doesn't work in environments with captive portals.)
+- It is **not** BLE. BLE is a different radio mode and a different teaching unit. If a future curriculum needs BLE, it gets its own task.
+- It is **not** two-device communication. Pet-to-pet swap is Bonus Feature 3 and is testable only with two physical devices.
+
+**New concepts introduced (small, controlled slug):**
+
+- SSID and password as `const char*` constants
+- "Your device IS the network now" mental model
+- IP address as a printable value
+- `WiFi.softAP(...)` API call
+
+No new student-facing concepts beyond those four. Notably no new concepts around routing, callbacks, structs-as-bytes, or HTML.
+
+**Branch and commit strategy:**
+
+Create `task/17-wifi-ap-primitive` from a clean `main` after Task 16 is merged. Suggested commits:
+
+1. `feat: create WirelessManager module with beginAccessPoint()`
+2. `feat: wire WirelessManager into main.cpp setup`
+3. `feat: display SSID and IP on the Stats screen`
+4. `docs: update architecture map in CLAUDE.md for new Wireless module`
+5. `docs: mark Task 17 done and advance next-task pointer to Task 14c`
+
+After all commits, test on device — confirm: SSID `PetPet-XXXX` appears in a phone's WiFi list, the phone can connect using the hardcoded password, the IP `192.168.4.1` matches what is shown on the Stats screen, and the pet's game loop continues running normally while the hotspot is active (no lag, no missed buttons).
+
+**Files touched:** new `lib/Wireless/wireless_manager.h` and `.cpp`, `src/main.cpp` (instantiate WirelessManager, call `beginAccessPoint()` in setup), `lib/Display/display_manager.cpp` (new info row on Stats screen), `CLAUDE.md` (architecture map row for the new Wireless module).
 
 ---
 
