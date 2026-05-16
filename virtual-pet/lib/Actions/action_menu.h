@@ -81,13 +81,6 @@ public:
     // Only call this when isBackSelected() is false — Back is handled separately.
     // StorageManager is needed because the Save action writes directly to NVS.
     void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage);
-
-    // displayCurrentMenu() — full-screen action display (legacy, mostly unused now).
-    void displayCurrentMenu(DisplayManager& display) const;
-
-    // drawMenuIndicator() — draws the compact action name overlay at the bottom of the screen.
-    // Used on the Interact screen where the pet face takes up the top portion.
-    void drawMenuIndicator(DisplayManager& display, int x, int y) const;
 };
 
 #endif

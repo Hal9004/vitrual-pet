@@ -120,33 +120,3 @@ void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager
     // Hold the feedback message long enough for the player to read it.
     delay(1000);
 }
-
-void ActionMenu::displayCurrentMenu(DisplayManager& display) const {
-    Action selectedAction = getSelectedAction();
-    
-    // Display the selected action name
-    // Format: "[ACTION_NAME]" centered on screen
-    // NOTE: This method no longer clears the screen - screen should be cleared by caller if needed
-    display.clearScreen();
-    display.printCenteredText("Select Action:", 30);
-    display.printCenteredText(selectedAction.name, 100, TFT_YELLOW, 3);
-    display.printCenteredText(selectedAction.description, 180, TFT_WHITE, 1);
-    
-    // Display navigation hint
-    display.printCenteredText("C: Previous  B: Next", 215, TFT_CYAN, 1);
-}
-
-// Draw a small menu indicator overlay on the status view
-void ActionMenu::drawMenuIndicator(DisplayManager& display, int x, int y) const {
-    Action selectedAction = getSelectedAction();
-    
-    // Clear only the indicator area before redrawing
-    display.fillRect(x, y, 130, 20, TFT_BLACK);
-    
-    // Draw small box around the indication area
-    M5.Lcd.drawRect(x, y, 130, 20, TFT_CYAN);
-    
-    // Show selected action name in small text
-    display.printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
-    display.printText(selectedAction.name, x + 50, y + 4, TFT_YELLOW, 1);
-}
