@@ -100,7 +100,6 @@ public:
 
     // Text display
     void printText(const char* text, int x, int y, uint32_t color = TFT_WHITE, uint8_t size = 2);
-    void printText(String text, int x, int y, uint32_t color = TFT_WHITE, uint8_t size = 2);
     void printCenteredText(const char* text, int y, uint32_t color = TFT_WHITE, uint8_t size = 2);
 
     // renderDisplay() — the single call that loop() makes every frame.

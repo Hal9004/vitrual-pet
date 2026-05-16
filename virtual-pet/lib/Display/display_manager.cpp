@@ -306,13 +306,6 @@ void DisplayManager::printText(const char* text, int x, int y, uint32_t color, u
     M5.Lcd.print(text);
 }
 
-void DisplayManager::printText(String text, int x, int y, uint32_t color, uint8_t size) {
-    M5.Lcd.setCursor(x, y);
-    M5.Lcd.setTextColor(color);
-    M5.Lcd.setTextSize(size);
-    M5.Lcd.print(text);
-}
-
 void DisplayManager::printCenteredText(const char* text, int y, uint32_t color, uint8_t size) {
     M5.Lcd.setTextColor(color);
     M5.Lcd.setTextSize(size);
