@@ -160,11 +160,6 @@ void Pet::updateState() {
             setState(STATE_IDLE);
             break;
 
-        case STATE_EVOLVING:
-            // Placeholder — evolution logic added in task 9a
-            setState(STATE_IDLE);
-            break;
-
         case STATE_DEAD:
             // Nothing to do here — main.cpp handles the death screen and restart button.
             break;

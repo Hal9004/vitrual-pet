@@ -11,7 +11,6 @@ enum PetState {
     STATE_SICK,      // Entered automatically when sick stat is high — pet is unwell
     STATE_HEALING,   // Triggered by heal() — pet is receiving treatment
     STATE_BATHING,   // Triggered by bathe() — pet is being cleaned
-    STATE_EVOLVING,  // Reserved for future evolution logic (task 9a)
     STATE_DEAD       // Entered when any critical stat reaches a fatal level
 };
 
