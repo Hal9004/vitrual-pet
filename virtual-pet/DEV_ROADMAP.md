@@ -920,7 +920,50 @@ Five modules are foundations. `ActionMenu` sits at the opposite end with six
 internal dependencies. The other four mid-tier modules sit between with one
 to three.
 
-### A.2 — Hotspot 1 — `ActionMenu::confirmAction` fan-in
+### A.2 — Vocabulary and three categories of fix
+
+Before the hotspot deep-dives, two pieces of vocabulary used throughout the
+recommendations.
+
+**Passing primitives.** A "primitive" is a simple value type — an `int`,
+`bool`, `float`, `char`, `const char*` (string), or an enum value — as
+opposed to a whole class instance. *Passing primitives* means: when a
+function needs information from another object, hand it the specific values
+it uses rather than the entire object.
+
+```cpp
+// Object-style — the function receives the whole ActionMenu
+void renderInteractScreen(..., const ActionMenu& menu, ...) {
+    // inside, only two things are read:
+    Action selected   = menu.getSelectedAction();    // for .name
+    RelevantStat stat = menu.getRelevantStat();
+}
+
+// Primitive-style — caller extracts the values once, function takes plain types
+void renderInteractScreen(..., const char* selectedActionName,
+                          RelevantStat relevantStat, ...) {
+    // no menu object needed inside; the action_menu.h #include can go too
+}
+```
+
+The primitive-style signature also matches how students already write
+parameters in JavaScript (`function showAction(name, color)`), so it is a
+shape they can read without needing to learn what a C++ reference is.
+
+**Three categories of fix.** Each hotspot below falls into one of three
+classes of remedy. Task 19 should weigh each one differently.
+
+| Category | What it means | Cost | Payoff |
+|---|---|---|---|
+| **1. Pass primitives at the boundary** | Narrow a function signature so it receives values, not whole manager objects. *No logic moves.* | Low — just a signature change and a caller extract. | High — removes circular includes, removes `#include` chains, removes "what is this `const X&`?" from students' reading load. |
+| **2. Accept domain-matched coupling** | Some couplings *match the domain*: the display depends on the pet because it shows the pet. Leave them. | Zero. | Medium — *not* fixing a fake problem keeps the architecture honest. |
+| **3. Structural rework** | Genuinely move logic from one module to another (typically: split a method, or move orchestration into a coordinator or `main.cpp`). | High — `main.cpp` or a new coordinator grows; coupling is *moved*, not removed. | Sometimes high, sometimes negative. Worth it only when the new home reads more clearly than the old one. |
+
+Categories 1 and 2 are usually safe to recommend. Category 3 should be
+recommended only when the current shape is actively confusing — not just
+because the dependency count looks high.
+
+### A.3 — Hotspot 1 — `ActionMenu::confirmAction` fan-in
 
 The single highest-coupling surface in the codebase. To call it, `main.cpp`
 must already own four other manager objects, and to *read* its body a student
@@ -957,15 +1000,26 @@ Inside the switch, each of the four managers is used for a different reason:
 the post-action feedback message — naturally lived in one place, and the
 simplest way to do it was to give `confirmAction` every manager it might need.
 
-**What Task 19 could consider:** split into per-concern methods
-(`executeAction(pet)`, `playActionSound(speaker)`, `showFeedback(display)`)
-and let `main.cpp` orchestrate them in sequence, OR move the orchestration
-into a thin coordinator the student reads top-to-bottom. Either approach
-drops `ActionMenu`'s internal dependencies from six to two or three. The
-trade-off is more lines in `main.cpp` — possibly the wrong place to grow
-complexity for beginners.
+**Categorising this hotspot:** Category 2 (probably) — domain-matched coupling.
+`ActionMenu` *is* the thing that runs actions; running an action genuinely
+requires touching the pet, the speaker, the display, and (for Save) storage.
+The body of `confirmAction` is short and reads top-to-bottom — a student can
+follow it linearly. **Default recommendation: leave it alone** and document
+the four-manager signature as natural for an action runner, not as a defect.
 
-### A.3 — Hotspot 2 — `ActionMenu` ↔ `DisplayManager` circular knowledge
+**Only if Task 19 wants to push further** — the choices in order of cost:
+- **Category 1 (cheap, partial):** None of the four managers are passed as
+  whole objects when a primitive would do — they are all used heavily inside
+  the switch. So passing primitives does not help here. Skip.
+- **Category 3 (expensive, structural):** Split into per-concern methods
+  (`executeAction(pet)`, `playActionSound(speaker)`, `showFeedback(display)`)
+  and let `main.cpp` orchestrate them in sequence. Drops `ActionMenu`'s
+  internal dependencies from six to two or three — but adds 5–10 lines per
+  action to `main.cpp`. Worth it *only* if `main.cpp` stays readable
+  end-to-end. For five actions this is borderline; for ten or twenty it
+  would become a clear win.
+
+### A.4 — Hotspot 2 — `ActionMenu` ↔ `DisplayManager` circular knowledge
 
 `action_menu.h` includes `display_manager.h` because `confirmAction` takes a
 `DisplayManager&`. `display_manager.h` forward-declares `ActionMenu` because
@@ -995,13 +1049,49 @@ a circular include: action_menu.h already includes display_manager.h."*
 selected action's name (a `const char*`) and the relevant stat to highlight
 (a `RelevantStat` enum). Both are primitives.
 
-**What Task 19 could consider:** pass the primitives directly
-(`const char* selectedActionName`, `RelevantStat relevantStat`) rather than
-the whole menu object. Removes the forward declaration and breaks the
-circular knowledge without changing behaviour. Easier to draw a clean
-arrow: main → display, main → menu, no menu ↔ display loop.
+**Categorising this hotspot:** Category 1 — pass primitives at the boundary.
+The cheapest, highest-payoff fix in the appendix.
 
-### A.4 — Hotspot 3 — `Pet` owns alert-coordination state that exists only for `SpeakerManager`
+**Concrete shape of the fix:**
+
+```cpp
+// BEFORE — display_manager.h takes the whole ActionMenu
+void renderDisplay(int happiness, int hunger, int energy,
+                   int cleanliness, int sick, int moodIndex,
+                   const ActionMenu& menu,         // ← whole object
+                   bool petIsDead,
+                   const char* petName,
+                   ScreenState screenState);
+
+// AFTER — primitives only
+void renderDisplay(int happiness, int hunger, int energy,
+                   int cleanliness, int sick, int moodIndex,
+                   const char* selectedActionName, // ← extracted by caller
+                   RelevantStat relevantStat,      //   (enum is also primitive-like)
+                   bool petIsDead,
+                   const char* petName,
+                   ScreenState screenState);
+```
+
+And in `main.cpp`, the caller extracts the values once:
+
+```cpp
+display.renderDisplay(
+    myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
+    myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
+    menu.getSelectedAction().name,   // primitives extracted here
+    menu.getRelevantStat(),
+    petIsDead, myPet.getPetName(),
+    navManager.getCurrentScreen()
+);
+```
+
+After this change: `display_manager.h` no longer forward-declares
+`ActionMenu`, `display_manager.cpp` no longer needs to know `ActionMenu`
+exists at all, and the circular knowledge between the two modules is
+gone. **No logic moves anywhere.**
+
+### A.5 — Hotspot 3 — `Pet` owns alert-coordination state that exists only for `SpeakerManager`
 
 `Pet` holds three flags — `deathSoundReady`, `hungerAlertReady`,
 `sicknessAlertReady` — plus two `lastXAlertTime` timestamps. None of these
@@ -1028,13 +1118,19 @@ about SpeakerManager."*
 the right call — they sit at different layers. The flag pattern is the cost
 of that decoupling.
 
-**What Task 19 could consider:** an `AlertManager` (or similar) that owns
-the threshold-and-cooldown logic and exposes the same `checkXAlert()` pulse
-API. `Pet` shrinks back to just stats; `main.cpp` reads alert pulses from
-the new module instead. Trade-off: another module in the architecture map
-for beginners to learn — only worth doing if the alert logic grows further.
+**Categorising this hotspot:** Category 3 — structural rework. The fix would
+be an `AlertManager` (or similar) that owns the threshold-and-cooldown logic
+and exposes the same `checkXAlert()` pulse API. `Pet` shrinks back to just
+stats; `main.cpp` reads alert pulses from the new module instead.
 
-### A.5 — Hotspot 4 — `main.cpp` fan-out at the render call
+**Default recommendation: leave it alone for now.** There are currently only
+two alerts (hunger, sickness) plus the death one-shot. Introducing a new
+manager class adds one more entry in the architecture map for beginners to
+learn, in exchange for moving five member variables out of `Pet`. The cost
+exceeds the payoff at today's scale. Re-evaluate if the alert logic grows
+beyond ~5 alert types or starts needing per-alert configuration.
+
+### A.6 — Hotspot 4 — `main.cpp` fan-out at the render call
 
 `main.cpp:140–145` pulls six values out of `Pet` to pass into
 `renderDisplay`:
@@ -1052,23 +1148,53 @@ The call site has to know that `Pet` exposes those six getters AND that
 `renderDisplay` wants them in this exact order. The same six values then
 flow through every screen's private render method, recursively.
 
-**What Task 19 could consider:** pass `const Pet&` to `renderDisplay` and let
-DisplayManager pull the values it actually needs. Removes the
-parameter-order knowledge from `main.cpp` but adds a `Pet` dependency to
-`DisplayManager` — currently DisplayManager has no opinion about who owns
-the stats. Worth weighing.
+**Categorising this hotspot:** Category 2 — domain-matched coupling, mostly.
+The fix would be Category 3: pass `const Pet&` to `renderDisplay` and let
+DisplayManager pull the values it actually needs. That removes the
+parameter-order knowledge from `main.cpp` but *adds* a direct
+`DisplayManager → Pet` dependency that does not exist today.
 
-### A.6 — Hotspot 5 — `NavigationManager::update(const ButtonHandler&, const ActionMenu&)`
+**Default recommendation: leave it alone.** The current shape is explicit
+and honest: `main.cpp` reads six pet stats and hands them to the display.
+A student following the code top-to-bottom can see exactly what data flows
+where. Switching to `const Pet&` would hide that data flow inside
+DisplayManager and introduce a new module-to-module link — net negative
+for teaching clarity even though it shrinks the signature.
+
+If the parameter count grows further (e.g. an evolution stage, age,
+nickname) and the call becomes painfully long, revisit and pick: either
+group the values in a small `PetStatsSnapshot` struct (still primitives,
+just bundled) or accept the `const Pet&` coupling at that point.
+
+### A.7 — Hotspot 5 — `NavigationManager::update(const ButtonHandler&, const ActionMenu&)`
 
 Smaller two-manager fan-in. `NavigationManager` uses `ButtonHandler` to read
 which button was pressed and `ActionMenu` to ask `isBackSelected()` and
 `getCurrentActionIndex()`. The menu reference is only used as a query.
 
-**What Task 19 could consider:** pass a single `bool backSelected` from
-`main.cpp` rather than the whole `ActionMenu`. Removes
-`NavigationManager`'s direct knowledge of `ActionMenu` entirely.
+**Categorising this hotspot:** Category 1 — pass primitives at the boundary.
 
-### A.7 — What is already clean (do NOT undo in Task 19)
+**Concrete shape of the fix:**
+
+```cpp
+// BEFORE — NavigationManager has to know what an ActionMenu is
+void update(const ButtonHandler& buttons, const ActionMenu& menu);
+
+// AFTER — NavigationManager just receives the two facts it needs
+void update(const ButtonHandler& buttons, bool backSelected);
+```
+
+`main.cpp` extracts the value before the call:
+
+```cpp
+navManager.update(buttons, menu.isBackSelected());
+```
+
+After this change: `navigation_manager.h` no longer includes
+`action_menu.h`, and `NavigationManager` has zero knowledge of the action
+menu's existence — it just receives a `bool`. **No logic moves anywhere.**
+
+### A.8 — What is already clean (do NOT undo in Task 19)
 
 These shapes are worth preserving.
 
@@ -1084,7 +1210,7 @@ These shapes are worth preserving.
   (Hotspot 3) is the cost of that decoupling and the trade is worth it —
   moving the flags out should not put the dependency back in.
 
-### A.8 — Calibration notes for Task 19
+### A.9 — Calibration notes for Task 19
 
 Students completing the prerequisite Programming I/II courses have written
 JavaScript classes with attributes and methods, but have not yet seen:
@@ -1098,3 +1224,23 @@ Specifically:
 - Prefer one method that takes one manager over one method that takes four.
 - Avoid introducing new C++ idioms (templates, `std::function`, callbacks)
   in service of decoupling.
+
+### A.10 — Recommended-action summary
+
+| # | Hotspot | Category | Recommendation | Estimated payoff |
+|---|---|---|---|---|
+| 1 | `ActionMenu::confirmAction` four-manager fan-in | 2 (domain-matched) | **Leave alone.** Document the signature as natural for an action runner. Revisit only if action count grows past ~10. | — |
+| 2 | `ActionMenu` ↔ `DisplayManager` circular knowledge | 1 (primitives) | **Apply.** Pass `const char* selectedActionName` and `RelevantStat relevantStat` to `renderDisplay` and `renderInteractScreen`. Drop the forward declaration and the `#include` chain. | **High.** No logic moves. Two headers stop knowing about each other. |
+| 3 | `Pet` owns alert-coordination state | 3 (structural) | **Leave alone for now.** Re-evaluate when alert types grow past ~5. | — |
+| 4 | `main.cpp` six-value fan-out at the render call | 2 (domain-matched) | **Leave alone.** Current shape is explicit and honest; hiding the values inside `const Pet&` adds a new module link for small readability gain. If params grow, prefer a `PetStatsSnapshot` struct over `const Pet&`. | — |
+| 5 | `NavigationManager::update` two-manager fan-in | 1 (primitives) | **Apply.** Pass `bool backSelected` instead of `const ActionMenu&`. Removes one `#include` chain. | **Medium.** No logic moves. NavigationManager loses all knowledge of ActionMenu. |
+
+**Net for Task 19:** two clear primitive-style fixes (Hotspots 2 and 5),
+three "leave alone" decisions (Hotspots 1, 3, 4) — three of which are
+domain-matched couplings that *look* like problems but are actually the
+right shape for a teaching codebase.
+
+The thing this map is *not* recommending is "move orchestration into
+`main.cpp`." That move trades one kind of coupling for another and is
+worth doing only when the new home reads more clearly than the old one —
+which, for a beginner-facing codebase, is not the default outcome.
