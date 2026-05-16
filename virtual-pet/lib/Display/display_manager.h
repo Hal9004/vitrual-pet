@@ -94,8 +94,10 @@ public:
     void init();
 
     // Screen management
-    void clearScreen();
-    void clearScreen(uint32_t color);
+    // Default colour is TFT_BLACK — callers can override to clear with any colour.
+    // Using a default parameter (familiar from JavaScript) keeps both call styles
+    // working without needing two separate methods.
+    void clearScreen(uint32_t color = TFT_BLACK);
     void fillRect(int x, int y, int width, int height, uint32_t color);
 
     // Text display

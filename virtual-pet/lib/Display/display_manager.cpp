@@ -12,10 +12,6 @@ void DisplayManager::init() {
     clearScreen(TFT_BLACK);
 }
 
-void DisplayManager::clearScreen() {
-    M5.Lcd.clear(TFT_BLACK);
-}
-
 void DisplayManager::clearScreen(uint32_t color) {
     M5.Lcd.clear(color);
 }
