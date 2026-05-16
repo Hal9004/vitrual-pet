@@ -42,14 +42,14 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
 | Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
 | Sound Feedback (buzzer melodies) | ✅ Done | `lib/Speaker/speaker_manager.h/.cpp` — melodies for all 5 actions, death, reset, hunger alert, sickness alert |
-| Voice Memos (microphone record/playback) | ❌ Missing | `lib/Microphone/microphone_manager.cpp` — empty |
+| Microphone Input (Detect & React) | ❌ Missing | Right-sized from the original "Voice Memos" during the Task 14b audit. New foundation: detect a loud noise (clap/voice/whistle), pet reacts with a small happiness boost and a buzzer chirp. Record/playback becomes Bonus Feature 6. The `lib/Microphone/microphone_manager.*` stub files were deleted during Task 14a; Task 16 re-creates the module from scratch. See Task 16 section |
 
 ### Phase 4: Environmental & Advanced Features
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
 | MPU6886 "Shake to Wake" (low-power wake) | 🚫 Removed | Hardware investigation confirmed the MPU6886 INT pin is not routed to an ESP32 GPIO on the M5StickCPlus2 — interrupt-driven wake is not possible on this board |
-| RTC (Real Time Clock for overnight logic) | ❌ Missing | `lib/Timer/time_manager.cpp` exists (decay timers implemented) but RTC/BM8563 integration not started |
+| RTC (Real Time Clock for overnight logic) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. Without overnight-decay logic, displaying HH:MM is a stand-alone widget that does not integrate with any other module — not a teaching outcome worth the new-concept slug. See Appendix B — Bonus Feature 1 for the full design |
 | NVS Persistence via `Preferences` (save pet on power-off) | ✅ Done | `lib/Storage/storage_manager.h/.cpp` — saves/loads all pet stats via Arduino `Preferences` (NVS). Wired into `setup()` (load) and Save action (write) in `src/main.cpp`. Note: this was originally labelled "EEPROM" but the ESP32 has no real EEPROM hardware — NVS is the correct native mechanism. |
 | Evolution Logic (growth stages based on care/time) | ❌ Missing | No growth stage tracking in `Pet` class |
 
@@ -57,8 +57,8 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| Wireless Communication (BLE or WiFi) | ❌ Missing | Not started |
-| Remote Dashboard (Web/App stat checking) | ❌ Missing | Not started |
+| Wireless Access Point Primitive | ❌ Missing | Right-sized from the original "Wireless Communication (BLE/WiFi)" during the Task 14b audit. New foundation: device broadcasts its own WiFi hotspot and displays the SSID + IP on the LCD. No web server, no second-device communication. See Task 17 section |
+| Remote Dashboard (Web/App stat checking) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. The web server pattern adds another module of new concepts (HTTP routes, named callbacks, `String` HTML building) on top of Task 17 — better as a follow-on bonus that students opt into. See Appendix B — Bonus Feature 2 |
 | Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation (Task 13a) is deferred — picked back up after Tasks 15–18. |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
@@ -102,8 +102,9 @@ LEVEL 5 — ASSET PIPELINE
 13a. Sprite Animation                  ⏸ Deferred — return after Level 6/7 features (Tasks 15–18). Multi-frame cycling using existing FRAME_COUNT dimension, millis() timer, optional M5Canvas double-buffer for flicker. Will run as the last Level 5 task before Task 19's pre-template simplification.
  14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
-14b. Roadmap Simplification Audit      (next — right-size Tasks 15–18 from "full reference feature" to "minimum teachable foundation students can expand". Output: amended task descriptions in this file. Examples to consider: basic mic input instead of voice memos; basic wireless scan instead of full BLE/WiFi communication; minimal static dashboard instead of full HTTP server. Also: add the new Task 14c — Gameplay Balance Tuning — to the queue below as part of this pass.)
-14c. Gameplay Balance Tuning           (new — discovered during 14a's device test. Three sub-issues: (a) Pet::play() costs -20 energy per call so a sustained shake gesture kills the pet in ~4 invocations; needs play()-cost reduction AND a millis()-based cooldown on imu.wasShaken() to prevent rapid re-firing. (b) HUNGER_INCREASE_AMOUNT=2 every 3 s reaches fatal in ~75 s — far too aggressive for idle play; revise all five decay/accumulation constants in time_manager.cpp toward a target time-to-fatal of 8–15 minutes per cause. (c) Verify the death-cause balance: hunger currently dominates by ~5×; aim for roughly equal time-to-fatal across hunger / happiness / energy. Pure constant tuning + one new IMU cooldown — no architectural changes. To run after 14b.)
+14b. Roadmap Simplification Audit      ✅ Done (right-sized Tasks 15–18 toward minimum teachable foundations. Task 15 RTC moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)" with happiness +5 and a buzzer chirp; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 Remote Dashboard moved to Bonus Feature 2. Expanded Task 14c into a full section. Added Task 14d (Sprite Display Simplification) to lock in single 80×80 sprite size before animation. Added Appendix B with six bonus features (RTC, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos). Branch: refactor/14b-roadmap-simplification.)
+14c. Gameplay Balance Tuning           (see Task 14c section. Deferred — runs after Task 17 lands. Pure constant tuning + one new IMU cooldown — no architectural changes.)
+14d. Sprite Display Simplification     (see Task 14d section. Deferred — runs after Task 14c, before Task 13a. Picks 80×80 as the single sprite size for the whole project, removes the sprite from the Stats screen, compresses the Interact screen's free space at y=181–220 to fit the larger sprite. Locks in the sprite size before animation work starts.)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
      The codebase has accumulated empty stub modules, unused public methods,
@@ -120,12 +121,12 @@ LEVEL 5 — ASSET PIPELINE
      New features (RTC, voice memos, networking) wait until this pass is done.
 
 LEVEL 6 — COMPLEX HARDWARE
- 15. RTC overnight logic               (new: I2C, BM8563 library, Unix timestamp math)
- 16. Microphone Voice Memos            (new: DMA audio buffers — see Hardware Gotchas)
+ 15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1. Right-sized out of the critical path during Task 14b: without overnight-decay logic, a clock widget does not integrate with any other module)
+ 16. Microphone Input (Detect & React)  (see Task 16 section. Right-sized from the original "Voice Memos" during Task 14b: detect a loud noise → pet happiness +5 + buzzer chirp. Record/playback = Bonus Feature 6.)
 
 LEVEL 7 — NETWORKING
- 17. Wireless Communication (BLE/WiFi) (new: WiFi.h, ESP-NOW or BLE library)
- 18. Remote Dashboard                  (requires: task 17 + simple HTTP server)
+ 17. Wireless Access Point Primitive   (see Task 17 section. Right-sized from "Wireless Communication (BLE/WiFi)" during Task 14b: device hosts its own WiFi hotspot and shows SSID + IP on the LCD. Web server, two-device comms, and BLE all become Bonus Features in Appendix B.)
+ 18. Remote Dashboard                  🔁 Moved to Bonus (see Appendix B — Bonus Feature 2. The web server pattern is its own slug of new concepts and is better as a follow-on bonus than a mandatory task.)
 
 PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
 
@@ -819,6 +820,271 @@ After all commits, the roadmap should read end-to-end as a coherent teaching pla
 
 ---
 
+### Task 14c — Gameplay Balance Tuning
+
+**Why this sub-task:**
+
+The Task 14a device test surfaced that the Tamagotchi is, in practice, almost unplayable in its current state. The pet dies from hunger in roughly 75 seconds of idle play, and a sustained shake gesture during Play mode kills it in about four invocations. Students cannot meaningfully test new features (microphone reactions, wireless connections) against a game that ends before they can demo anything. This sub-task tunes the existing constants until idle time-to-fatal is in the 8–15 minute range per cause, and adds one small new mechanic — a cooldown on shake detection — so Play mode does not double as an instant-kill button.
+
+This is **constant tuning + one new field on `ImuManager`**. No new modules, no architectural changes, no new student-facing concepts.
+
+**Execution slot:**
+
+Deferred until **after Task 17 (WiFi Access Point Primitive)** is merged. The reason for the deferral: balance work tunes against the *finished* feature set rather than a moving target, and the Phase 5 wireless work introduces no new decay vectors that would invalidate the tuning. If during Task 16 or 17 testing the unplayable state becomes a real blocker, this task can be promoted forward — but the default ordering is "features first, balance last."
+
+**Findings from the 2026-05-09 device test:**
+
+- **`Pet::play()` energy cost is too high.** Each call subtracts 20 from `energised`. A sustained shake gesture triggers `ImuManager::wasShaken()` on most loop iterations, so the pet's energy hits zero — and the pet dies — within ~4 shakes. Two compounding bugs: the `play()` cost is too steep AND `wasShaken()` has no cooldown.
+- **`HUNGER_INCREASE_AMOUNT = 2` every 3 seconds is too aggressive.** Hunger ramps from 0 to 100 in 150 seconds and fatality kicks in around the 75-second mark. Idle play should not kill a pet that fast.
+- **Death-cause balance is skewed roughly 5:1 toward hunger.** Time-to-fatal across the five decay/accumulation rules is uneven — hunger dominates, happiness/energy/cleanliness/sickness all take much longer. Players experience the game as "feed the pet or die" rather than a balanced care loop.
+
+**Scope (foundation):**
+
+Three concrete edits, all in well-bounded files:
+
+1. **Add a `millis()`-based cooldown to `ImuManager::wasShaken()`.** New private field `unsigned long lastShakeTime` and a public constant `SHAKE_COOLDOWN_INTERVAL` (recommend 1500–2000 ms — long enough that a single shake gesture only fires once, short enough that deliberate repeated shakes still register). `wasShaken()` returns `true` only if `millis() - lastShakeTime > SHAKE_COOLDOWN_INTERVAL`, and updates `lastShakeTime` on every true return.
+2. **Reduce `Pet::play()` energy cost.** Pick a value in the range −5 to −10 (down from −20). The exact number is a tuning call — pick whichever feels right during the device test, then commit.
+3. **Revise all five constants in `lib/Timer/time_manager.cpp`** toward a target time-to-fatal of 8–15 minutes per cause:
+   - `HUNGER_INCREASE_INTERVAL` / `HUNGER_INCREASE_AMOUNT` (currently 3000 ms / 2)
+   - `HAPPINESS_DECAY_INTERVAL` / `HAPPINESS_DECAY_AMOUNT` (currently 5000 ms / 1)
+   - `ENERGY_DRAIN_INTERVAL` / `ENERGY_DRAIN_AMOUNT` (currently 8000 ms / 1)
+   - `CLEANLINESS_DECAY_INTERVAL` / `CLEANLINESS_DECAY_AMOUNT` (currently 10000 ms / 1)
+   - `SICKNESS_ACCUMULATION_INTERVAL` / `SICKNESS_ACCUMULATION_AMOUNT` (currently 12000 ms / 1)
+
+   For each, compute the current time-to-fatal as `(100 / amount) × interval`, then choose new values so all five land in 480 000–900 000 ms (8–15 min). Keep the **interval** values simple and human-readable; prefer changing intervals over amounts so the constants stay easy to reason about.
+
+**Parity check before merging:**
+
+Run a quick idle-test on the device with the new constants: leave the pet untouched and time which stat hits 100 (or 0) first. Repeat with no interaction. The first-to-fatal stat should rotate across hunger / happiness / energy across runs — if hunger still wins every time, the constants are not balanced yet. Cleanliness and sickness can stay slightly slower (they are secondary care concerns), but the three primary stats should be within a 2× range of each other.
+
+**What this sub-task is NOT:**
+
+- It is **not a new feature**. No new actions, no new stats, no new modules.
+- It is **not a refactor**. The existing decay loop pattern stays exactly as it is. Only constants and one new IMU field change.
+- It is **not the place to introduce a difficulty setting** or runtime-configurable rates. If those come later, they belong in a separate task.
+
+**Branch and commit strategy:**
+
+Create `task/14c-gameplay-balance` from a clean `main` after Task 17 is merged. Suggested commits:
+
+1. `feat: add shake cooldown to ImuManager to prevent rapid re-firing`
+2. `refactor: reduce Pet::play() energy cost from 20 to <new value>`
+3. `refactor: rebalance hunger/happiness/energy decay rates`
+4. `refactor: rebalance cleanliness/sickness rates to match`
+5. `docs: mark Task 14c done and advance next-task pointer`
+
+After all commits, test on device — confirm the parity check passes and a normal play session lasts at least 10 minutes before a stat becomes critical.
+
+**Files touched:** `lib/Imu/imu_manager.h` and `.cpp` (cooldown), `lib/Pet/pet.cpp` (play cost), `lib/Timer/time_manager.cpp` (five constants). No new files. No header signature changes other than the new private field on `ImuManager`.
+
+---
+
+### Task 16 — Microphone Input (Detect & React)
+
+**Why this task:**
+
+The M5StickC Plus 2 ships with a built-in microphone, but the original "Voice Memos" scope (record + browse + playback) needed DMA buffers, double-buffering, sample-rate matching against the buzzer, and a UI for browsing recordings — three modules' worth of new concepts in one task. The Task 14b audit right-sized this to a foundation students can complete in one session: **the pet reacts when it hears a loud noise.** Clap at the pet, it perks up. Recording and playback become Bonus Feature 6 for students who finish early.
+
+This is the first task in Phase 5 that exercises **heap allocation** (Hardware Gotcha 1) — a meaningful new concept that students have not seen in Programming I or II.
+
+**Scope (foundation):**
+
+Re-create the `lib/Microphone/` module (the empty stub was deleted during Task 14a). Two new files: `microphone_manager.h` and `microphone_manager.cpp`.
+
+The module mirrors `ImuManager`'s shape exactly — students have already read that module, so the pattern transfers cleanly:
+
+```cpp
+class MicrophoneManager {
+public:
+    void begin();
+    void update();              // call once per loop
+    bool detectedLoudNoise();   // one-frame pulse, mirrors imu.wasShaken()
+
+private:
+    static const size_t SAMPLE_COUNT = 256;
+    static const int AMPLITUDE_THRESHOLD = ...;        // tune during device test
+    static const unsigned long DETECTION_COOLDOWN = 1500; // ms, prevents spam
+    int16_t* sampleBuffer;
+    bool loudNoiseDetected;
+    unsigned long lastDetectionTime;
+};
+```
+
+`update()` allocates the sample buffer **on the heap** (Hardware Gotcha 1) — `int16_t* buffer = (int16_t*) malloc(...)`, null-check, `M5.Mic.record(buffer, SAMPLE_COUNT, 16000)`, compute the peak absolute amplitude, set `loudNoiseDetected = true` if it exceeds the threshold AND the cooldown has elapsed, then `free(buffer)`. The detection pulse is a one-frame flag, identical to `ImuManager::wasShaken()`.
+
+**Two pet responses on detection (called from `main.cpp` loop):**
+
+1. **Happiness boost** — `myPet.setHappy(myPet.getHappy() + 5)`. Integrates with the existing care-action model.
+2. **Buzzer chirp** — add a new `SpeakerManager::playSurpriseChirp()` method. A short, light melody distinct from the existing care-action sounds. The exact notes are an implementation choice — pick something that reads as "perky" rather than "alarmed."
+
+Both responses fire from `main.cpp` in the same place — no `Pet&` or `SpeakerManager&` reference inside `MicrophoneManager` (keeps coupling flat, follows the pattern flagged in Appendix A).
+
+**Stretch tasks (for students who finish the foundation):**
+
+- **Level meter visualisation** — draw the current peak amplitude as a bar somewhere on the LCD, "talk into your pet and watch the bar move."
+- **Threshold calibration** — sample ambient noise for one second on boot, set the threshold to (ambient × multiplier). The pet adapts to its surroundings.
+- **Sound classification** — distinguish claps (short, sharp peak) from voices (sustained mid-amplitude) from whistles (sustained high-frequency). Each gets a different pet response. Real FFT or a simpler heuristic both work.
+- **Voice memos (the original Task 16 scope)** — record on long-press of Button A, store in heap, play back through the speaker. This is Bonus Feature 6 in Appendix B.
+
+**What this task is NOT:**
+
+- It is **not** a sound-recording feature. Samples are read, peak-detected, and discarded — never stored.
+- It is **not** a continuous-stream feature. One read per `update()` call, ~256 samples, ~16 ms of audio. Discarded immediately.
+- It is **not** allowed to keep the heap buffer alive across calls. Each `update()` allocates and frees its own buffer — that's the lesson. Caching it would be a premature optimisation and would hide Hardware Gotcha 1 from the student reading the code.
+
+**Branch and commit strategy:**
+
+Create `task/16-microphone-detect-react` from a clean `main` after Task 14b is merged. Suggested commits:
+
+1. `feat: re-create empty MicrophoneManager scaffolding`
+2. `feat: implement loud-noise detection with heap-allocated sample buffer`
+3. `feat: add cooldown to detectedLoudNoise() to prevent spam`
+4. `feat: add SpeakerManager::playSurpriseChirp() melody`
+5. `feat: wire microphone detection into main loop — pet reacts on loud noise`
+6. `docs: update architecture map in CLAUDE.md for re-created Microphone module`
+7. `docs: mark Task 16 done and advance next-task pointer to Task 17`
+
+After all commits, test on device — confirm: clap → pet happiness +5 + chirp; cooldown prevents one clap from triggering multiple times; talking quietly does not trigger; no heap fragmentation across long sessions (leave it running for 5 minutes, watch free heap).
+
+**Files touched:** new `lib/Microphone/microphone_manager.h` and `.cpp`, new method in `lib/Speaker/speaker_manager.h` and `.cpp`, `src/main.cpp` (instantiate MicrophoneManager, call `update()` + `detectedLoudNoise()` in the loop), `CLAUDE.md` (architecture map row restored for Microphone).
+
+---
+
+### Task 17 — Wireless Access Point Primitive
+
+**Why this task:**
+
+The original "Wireless Communication (BLE/WiFi)" entry named libraries (`WiFi.h`, ESP-NOW, BLE) but did not pick a concrete deliverable. The Task 14b audit decided that **every** rich wireless feature — two-device pet-to-pet comms, an HTTP dashboard, BLE scanning — is its own slug of new concepts and should live in the bonus appendix. What the critical path needs is the **simplest, most tangible "the pet is on a network" demonstration possible.** That demonstration is: the device broadcasts its own WiFi hotspot. A student opens their phone's WiFi list and sees their pet there. Done.
+
+This task delivers a guaranteed wireless win for every student without requiring a second M5StickC Plus 2, an HTTP server, an HTML page, or any phone-side coding.
+
+**Scope (foundation):**
+
+New `lib/Wireless/wireless_manager.h` and `wireless_manager.cpp`. Module mirrors the shape of the other managers in this project (a `begin()` + a small number of getters).
+
+```cpp
+class WirelessManager {
+public:
+    void beginAccessPoint();           // calls WiFi.softAP(SSID, PASSWORD)
+    const char* getSsid() const;       // returns the broadcast SSID
+    IPAddress getIp() const;           // returns 192.168.4.1 by default
+
+private:
+    static const char* AP_SSID;        // e.g. "PetPet-XXXX"
+    static const char* AP_PASSWORD;    // hardcoded, ≥8 chars per WiFi rules
+};
+```
+
+Wire `wireless.beginAccessPoint()` into `setup()` in `src/main.cpp` after `M5.begin()`. The hotspot then runs for the entire device session.
+
+**Display the SSID + IP on the Stats screen** as a new info row at the bottom of the layout. The Stats screen has more vertical room than the other two and is already the "info" screen. Use the existing `printText()` helper — no new font, no new colour palette.
+
+**Verification path:** student powers on the device, opens their phone's WiFi list, sees `PetPet-XXXX` in the list, connects, success. No browser, no server, no second device. The success moment is "my pet is broadcasting WiFi."
+
+**Stretch tasks (Appendix B bonuses, all opt-in):**
+
+- **Bonus Feature 2 — Web Dashboard.** Add `WebServer`, serve one static HTML page with stats at `http://192.168.4.1/`.
+- **Bonus Feature 3 — Pet-to-Pet ESP-NOW.** Two M5Sticks swap a happiness boost on shake. *Requires two devices.*
+- **Bonus Feature 4 — Live-Refreshing Dashboard.** Builds on Bonus 2. Adds JS fetch so stats refresh without reload.
+- **Bonus Feature 5 — Phone-Controlled Actions.** Builds on Bonus 2. Adds `/feed`, `/play` etc. routes that call `pet.feed()`, `pet.play()`.
+
+All four are documented in full detail in Appendix B, with code skeletons and new-concept inventories.
+
+**What this task is NOT:**
+
+- It is **not** a web server. No HTML, no `WebServer.h`, no routes. That is Bonus Feature 2.
+- It is **not** a WiFi client. The device does not join an existing network. The device IS the network. (Existing-network mode would force every student to type school WiFi credentials into source code — not a great teaching experience and doesn't work in environments with captive portals.)
+- It is **not** BLE. BLE is a different radio mode and a different teaching unit. If a future curriculum needs BLE, it gets its own task.
+- It is **not** two-device communication. Pet-to-pet swap is Bonus Feature 3 and is testable only with two physical devices.
+
+**New concepts introduced (small, controlled slug):**
+
+- SSID and password as `const char*` constants
+- "Your device IS the network now" mental model
+- IP address as a printable value
+- `WiFi.softAP(...)` API call
+
+No new student-facing concepts beyond those four. Notably no new concepts around routing, callbacks, structs-as-bytes, or HTML.
+
+**Branch and commit strategy:**
+
+Create `task/17-wifi-ap-primitive` from a clean `main` after Task 16 is merged. Suggested commits:
+
+1. `feat: create WirelessManager module with beginAccessPoint()`
+2. `feat: wire WirelessManager into main.cpp setup`
+3. `feat: display SSID and IP on the Stats screen`
+4. `docs: update architecture map in CLAUDE.md for new Wireless module`
+5. `docs: mark Task 17 done and advance next-task pointer to Task 14c`
+
+After all commits, test on device — confirm: SSID `PetPet-XXXX` appears in a phone's WiFi list, the phone can connect using the hardcoded password, the IP `192.168.4.1` matches what is shown on the Stats screen, and the pet's game loop continues running normally while the hotspot is active (no lag, no missed buttons).
+
+**Files touched:** new `lib/Wireless/wireless_manager.h` and `.cpp`, `src/main.cpp` (instantiate WirelessManager, call `beginAccessPoint()` in setup), `lib/Display/display_manager.cpp` (new info row on Stats screen), `CLAUDE.md` (architecture map row for the new Wireless module).
+
+---
+
+### Task 14d — Sprite Display Simplification
+
+**Why this sub-task:**
+
+The project currently ships **three** sprite assets at three different sizes: `sprite_64x64_test` on the Main screen, `sprite_48x48_test` on the Interact screen, and `sprite_newpiskel2` on the Stats screen. Each screen has its own `drawPetSprite()` call with a different width/height/data triple. For a teaching codebase this is more variety than the concept needs — students learning sprite rendering should see **one** size used consistently across the project, not three sizes that each require separate asset files and separate constants. This sub-task simplifies the sprite display to a single 80×80 asset, removes the sprite from the Stats screen entirely (the Stats screen now reads as a pure data/info view), and reflows the Interact screen to fit the larger sprite.
+
+This task **must run before Task 13a (Sprite Animation)** — animation work targets a specific sprite size, and we do not want to animate the wrong size and then have to re-do the asset.
+
+**Execution slot:**
+
+Deferred until **after Task 14c (Gameplay Balance Tuning)** and **before Task 13a (Sprite Animation).** Code-touching task, not a documentation pass.
+
+**Scope (foundation):**
+
+1. **Pick the single sprite size: 80×80.** Larger than today's 64×64 main-screen sprite so the pet has more visual presence; the LCD is 135px wide so 80×80 fits with margin on each side.
+2. **Generate the 80×80 asset.** Open the existing pet sprite in Piskel, resize to 80×80, export as `.c`, drop the raw export into `assets/sprites/raw/`, run `tools/piskel_converter/main.cpp` (see `SPRITE_GUIDE.md`) to produce a byte-swapped `lib/Display/sprites/80x80_default.h` (or similar name). RGB565 values must be pre-swapped to match the M5StickC Plus 2 LCD byte order (transparent key `0x1FF8`).
+3. **Update Main screen** (`renderMainScreen()` in `display_manager.cpp`) to draw the new 80×80 sprite at `MAIN_FACE_CENTER_Y` using `SPRITE_80X80_DEFAULT_WIDTH/HEIGHT`.
+4. **Update Interact screen** (`renderInteractScreen()` in `display_manager.cpp`) to draw the same 80×80 sprite. The current Interact layout has an empty region between y=181 and y=220 (approximately) — collapse that gap so the larger sprite fits without overlapping the action menu or the contextual stat bar. Adjust the relevant zone constants in `screen_layout.h` to match.
+5. **Remove the sprite from the Stats screen.** Delete the `drawPetSprite()` call in `renderStatsScreen()`. Reflow whatever the sprite was occupying — likely give the existing stat bars more vertical room, or use the freed space for the new SSID + IP info row that Task 17 introduces.
+6. **Delete the now-unused asset files:**
+   - `lib/Display/sprites/48x48_test.h`
+   - `lib/Display/sprites/64x64_test.h`
+   - `lib/Display/sprites/newpiskel2.h`
+   - `assets/sprites/raw/48x48_test.c`
+   - `assets/sprites/raw/64x64_test.c`
+   - `assets/sprites/raw/NewPiskel2.c`
+7. **Remove the now-unused size constants** (`SPRITE_48X48_TEST_WIDTH/HEIGHT`, `SPRITE_64X64_TEST_WIDTH/HEIGHT`, `SPRITE_NEWPISKEL2_WIDTH/HEIGHT`) from wherever they are declared.
+8. **Update the comment on `drawPetSprite()`** — the existing comment explains the three-size design ("Stats uses 32x32, Interact uses 48x48, Main uses 64x64"); rewrite it to say "Every screen uses the same 80×80 sprite; the width/height parameters are kept so future sizes can be passed in if needed." Keep the function signature unchanged.
+
+**Interact-screen layout — concrete adjustment:**
+
+Today the Interact screen reads top-to-bottom as: 48×48 sprite → contextual stat bar → empty space at y≈181–220 → action menu at ≈y=220+. To fit the new 80×80 sprite without breaking the action menu's position, compress that empty band. Two implementation paths:
+
+- **Path A — shift the sprite down, keep the action menu where it is.** Sprite ends lower on the screen; the gap above the action menu shrinks.
+- **Path B — keep the sprite centered in its zone, but shrink the zone's height.** `screen_layout.h` zone constants get smaller `height` values; downstream calculations propagate.
+
+Path B is the cleaner change for a teaching codebase — constants in one place, no recalculated offsets. Take Path B unless device testing reveals a layout glitch that Path A solves more cleanly.
+
+**What this sub-task is NOT:**
+
+- It is **not** an animation task. Multi-frame cycling is still Task 13a's job.
+- It is **not** a re-pixeling of the pet's art. Use the existing pet design, just resized to 80×80.
+- It is **not** a redesign of any screen. The Main and Stats layouts keep the same zones (minus the Stats-screen sprite); the Interact screen only shrinks the empty band between sprite and menu.
+- It is **not** the place to introduce a sprite-size constant lookup table or a runtime-selectable sprite renderer. One size, hardcoded.
+
+**Branch and commit strategy:**
+
+Create `task/14d-sprite-simplification` from a clean `main` after Task 14c is merged. Suggested commits:
+
+1. `chore: add 80x80 sprite asset (raw .c + converted .h)`
+2. `refactor: switch Main screen to the 80x80 sprite`
+3. `refactor: switch Interact screen to the 80x80 sprite and reflow zone heights`
+4. `refactor: remove sprite from Stats screen`
+5. `chore: delete unused 48x48, 64x64, and newpiskel2 sprite assets and constants`
+6. `docs: update drawPetSprite() comment to reflect single-size design`
+7. `docs: mark Task 14d done and advance next-task pointer to Task 13a`
+
+After all commits, test on device — confirm: Main screen shows the new 80×80 sprite without clipping; Interact screen shows the same sprite with the action menu still visible and the contextual stat bar still readable; Stats screen has no pet sprite and the freed space looks intentional (info row, larger stat bars, or whatever the chosen reflow puts there).
+
+**Files touched:** `lib/Display/sprites/` (delete 3 files, add 1), `assets/sprites/raw/` (delete 3 files, add 1), `lib/Display/display_manager.h` (constants removed/added), `lib/Display/display_manager.cpp` (three render methods updated, one delete), `lib/Display/screen_layout.h` (zone height adjustments). No changes to `lib/Pet/`, `lib/Actions/`, or any non-display module.
+
+---
+
 ## Appendix A — Module Coupling Map (Task 14a output)
 
 This appendix is the deliverable of Task 14a's coupling sweep. It is a snapshot
@@ -1245,3 +1511,433 @@ The thing this map is *not* recommending is "move orchestration into
 `main.cpp`." That move trades one kind of coupling for another and is
 worth doing only when the new home reads more clearly than the old one —
 which, for a beginner-facing codebase, is not the default outcome.
+
+---
+
+## Appendix B — Bonus Features
+
+This appendix holds features that were originally on the critical path
+but were right-sized **out** during the Task 14b audit. They are
+**opt-in** — students who finish the critical path with time to spare,
+or who want a deeper dive into a specific area, can attempt any of
+these. None are required to complete the Tamagotchi.
+
+Each bonus feature is documented at roughly the same depth as a
+critical-path task: why, scope, a code skeleton showing the API shape,
+new concepts introduced, and a stretch list within the bonus itself.
+The goal is that a student (or a future maintainer of this curriculum)
+can pick one up cold and have enough scaffolding to start.
+
+Numbering:
+1. **RTC Clock Widget** — display the current time on the LCD.
+2. **Web Dashboard (Static Stats Page)** — phone connects to the pet, sees stats in a browser.
+3. **Pet-to-Pet Stat Swap (ESP-NOW)** — two M5Sticks exchange a happiness boost.
+4. **Live-Refreshing Dashboard** — the dashboard updates without page reload.
+5. **Phone-Controlled Actions** — buttons on the dashboard trigger pet actions.
+6. **Voice Memos** — record short audio clips and play them back through the buzzer.
+
+---
+
+### Bonus Feature 1 — RTC Clock Widget
+
+**Builds on:** nothing — independent.
+
+**Why this is a bonus rather than a critical-path task:**
+
+The M5StickC Plus 2 has a BM8563 RTC chip on its I²C bus, accessible
+via the `M5.Rtc` API in the M5Unified library. The original Task 15
+scope ("RTC overnight logic") wanted to use that chip to apply
+accumulated decay during off-time, which would need Unix-timestamp
+math, NVS persistence of the last-seen timestamp, capping logic so a
+pet does not die after a week off, and a UI for setting the initial
+time. Without overnight-decay logic, the only thing left is "show
+HH:MM on a screen" — a stand-alone widget that does not integrate with
+any other module. The Task 14b audit decided this is better as opt-in
+bonus content than as a critical-path slug.
+
+**Foundation scope:**
+
+New `lib/Clock/clock_manager.h` and `.cpp`. Module skeleton:
+
+```cpp
+class ClockManager {
+public:
+    void begin();                     // sets a hardcoded initial time
+    void getCurrentTime(int& hours, int& minutes) const;
+
+private:
+    static const int STARTING_HOUR = 12;
+    static const int STARTING_MINUTE = 0;
+};
+```
+
+`begin()` calls `M5.Rtc.setTime({STARTING_HOUR, STARTING_MINUTE, 0})`.
+`getCurrentTime()` calls `M5.Rtc.getTime(&timeStruct)` and writes the
+hours/minutes into the out-parameters.
+
+Display the time as a new info row on the Stats screen, formatted as
+`HH:MM`. Use the existing `printText()` helper. No new font, no new
+colour.
+
+**Verification path:** power on the device, see `12:00` on the Stats
+screen, wait a minute, watch it tick to `12:01`.
+
+**Stretch within this bonus:**
+
+- **Setting the initial time via buttons.** Long-press Button A on the
+  Stats screen to enter "set time" mode; B/C increment hours/minutes;
+  A confirms.
+- **NVS-persisted time.** Save the last-known time on every minute
+  rollover so the pet remembers what time it was last on.
+- **Overnight decay logic.** The original Task 15 maximal scope —
+  apply accumulated decay during off-time. Requires Unix-timestamp
+  math, capping logic, and the NVS-persisted time stretch above.
+- **NTP time sync.** Requires Task 17 + WiFi-client mode (not the AP
+  mode Task 17 actually delivers). Adds a real-world clock without
+  manual time-set UI.
+
+**New concepts introduced:**
+
+- I²C peripheral access via the `M5.Rtc` wrapper (one-line API call,
+  no protocol details exposed)
+- Time as a struct (`m5::rtc_time_t` with hours/minutes/seconds fields)
+- Out-parameters (`int& hours`) — or skip this by returning a small
+  struct; pedagogical choice when implementing.
+
+**Files touched:** new `lib/Clock/clock_manager.h` and `.cpp`,
+`src/main.cpp` (instantiate and call `begin()`),
+`lib/Display/display_manager.cpp` (info row on Stats), `CLAUDE.md`
+(architecture map row for the new Clock module).
+
+---
+
+### Bonus Feature 2 — Web Dashboard (Static Stats Page)
+
+**Builds on:** Task 17 (Wireless Access Point Primitive).
+
+**Why this is a bonus rather than a critical-path task:**
+
+A web server adds another module of new concepts on top of Task 17 —
+HTTP request/response, route registration, named callback functions,
+`String` HTML building. The Task 14b audit decided to keep the
+critical path at "the pet broadcasts WiFi" and let the dashboard be
+an opt-in follow-on for students curious about how their phone's
+browser actually talks to their pet.
+
+**Foundation scope:**
+
+Extend `lib/Wireless/wireless_manager.h` (or add a new file
+`web_dashboard.h`) with a `WebServer server(80)` instance. Register
+one route handler:
+
+```cpp
+void handleRoot() {
+    String html = "<!DOCTYPE html><html><body>";
+    html += "<h1>Pet Stats</h1>";
+    html += "<p>Hungry: " + String(pet.getHungry()) + "</p>";
+    html += "<p>Happy: "  + String(pet.getHappy())  + "</p>";
+    html += "<p>Energy: " + String(pet.getEnergised()) + "</p>";
+    // ... rest of the stats ...
+    html += "</body></html>";
+    server.send(200, "text/html", html);
+}
+
+void WirelessManager::beginDashboard(Pet& pet) {
+    server.on("/", handleRoot);
+    server.begin();
+}
+```
+
+`server.handleClient()` runs once per `loop()` in `main.cpp`.
+
+**Verification path:** phone connects to `PetPet-XXXX`, opens
+`http://192.168.4.1/` in a browser, sees the pet's stats as plain
+HTML. Refresh manually to see updated values.
+
+**Stretch within this bonus:** the next three bonus features (3, 4,
+5) all build on this one.
+
+**New concepts introduced:**
+
+- HTTP request/response (one route, one response — minimal slug)
+- Named callback registration (`server.on(path, handler)`), which
+  mirrors `addEventListener("click", handler)` from Programming II
+- `String` concatenation in C++ (new — Programming II only uses
+  JavaScript strings)
+- "Server" vs. "client" mental model
+
+**Important pedagogical note:** the C++ Arduino lambda form
+`server.on("/", []() { ... })` is everywhere on the web but is **not
+allowed** in this project (see `CLAUDE.md` — "No clever syntax").
+Always use named handler functions.
+
+**Files touched:** `lib/Wireless/wireless_manager.h` and `.cpp` (extend),
+`src/main.cpp` (call `server.handleClient()` in loop), no new modules.
+
+---
+
+### Bonus Feature 3 — Pet-to-Pet Stat Swap (ESP-NOW)
+
+**Builds on:** Task 6 (IMU shake detection) + Task 17 (Wireless AP, for
+the radio being initialised). Note that ESP-NOW does not actually
+require WiFi to be connected — it just needs the radio to be on. Task
+17's `softAP` mode is sufficient.
+
+**REQUIRES TWO M5StickC Plus 2 DEVICES.** This bonus cannot be tested
+in a single-device setup. It is the most demanding bonus in terms of
+hardware availability, but also the highest-impact in terms of "wow
+factor" — two students can demo "hey, our pets just said hi" to each
+other.
+
+**Why this is a bonus rather than a critical-path task:**
+
+Two reasons. First, the second-device requirement makes it unsuitable
+as a mandatory task. Second, ESP-NOW introduces three new concepts
+(MAC addresses, peer-to-peer protocol, struct-as-bytes serialisation)
+that do not compose with the rest of the curriculum — students who
+finish the critical path may find this content rewarding, but it is
+not foundational.
+
+**Foundation scope:**
+
+New `lib/Wireless/peer_link.h` and `.cpp` (or extend
+`WirelessManager`). Module skeleton:
+
+```cpp
+struct PetGreeting {
+    uint8_t senderMac[6];     // 6 bytes
+    uint8_t happinessGift;    // 1 byte — how much happy to give the receiver
+};
+
+class PeerLink {
+public:
+    void begin();                                  // esp_now_init, register callback
+    void addPeer(const uint8_t peerMac[6]);        // hardcode the friend's MAC for now
+    void sendGreeting(uint8_t happinessGift);      // esp_now_send to all peers
+    bool greetingReceived() const;                 // one-frame pulse, mirrors wasShaken()
+    uint8_t getLastReceivedGift() const;
+
+private:
+    static void onReceive(const uint8_t* mac, const uint8_t* data, int len);
+    bool flagReceived;
+    uint8_t lastGift;
+};
+```
+
+In `main.cpp`'s loop: when `imu.wasShaken()` AND a peer is configured,
+call `peerLink.sendGreeting(5)` (or whatever amount). On the receiving
+side: if `peerLink.greetingReceived()`, call
+`myPet.setHappy(myPet.getHappy() + peerLink.getLastReceivedGift())`.
+
+**Pairing model:** for the foundation, hardcode each device's peer
+MAC address into the source. Stretch: discover peers automatically by
+broadcasting, or show the device's own MAC on the LCD so the
+opposite student can type it in.
+
+**Verification path (requires two devices):** flash both devices with
+the appropriate peer MAC; shake device A; device B's happiness goes
+up; and vice versa. Both students see "the other pet said hi."
+
+**Stretch within this bonus:**
+
+- **Gift items.** Send different gift types (food, toy, medicine) and
+  apply different effects on the receiver.
+- **Visible peer list on the LCD.** Show which peers are configured.
+- **Automatic peer discovery.** Periodic broadcast packet that all
+  devices respond to.
+
+**New concepts introduced:**
+
+- MAC address (six bytes, displayed as `XX:XX:XX:XX:XX:XX`)
+- Peer-to-peer vs. client-server mental model
+- Struct-as-bytes serialisation (sending `sizeof(PetGreeting)` raw
+  bytes — students need to understand that this only works because
+  both devices have the *same* struct definition)
+- Callback registration with a C-style function pointer
+  (`esp_now_register_recv_cb`)
+
+**Files touched:** new `lib/Wireless/peer_link.h` and `.cpp` (or
+extension of `WirelessManager`), `src/main.cpp` (instantiate, wire
+shake → send, wire received → pet.setHappy), `CLAUDE.md`
+(architecture map row).
+
+---
+
+### Bonus Feature 4 — Live-Refreshing Dashboard
+
+**Builds on:** Bonus Feature 2 (Web Dashboard).
+
+**Why this is a bonus:**
+
+Bonus Feature 2 lands a static HTML page that the user must manually
+refresh to see updated stats. That is fine as a teaching milestone but
+not what a real dashboard feels like. This bonus adds client-side
+JavaScript that polls the server every two seconds and updates the
+page in place. Introduces two new concepts (browser-side JavaScript
+running on the M5Stick-served page, JSON as a data-exchange format)
+without changing the server's architecture much.
+
+**Foundation scope:**
+
+Add a second route — `/stats.json` — that returns the pet's current
+state as JSON:
+
+```cpp
+void handleStatsJson() {
+    String json = "{";
+    json += "\"hungry\":"   + String(pet.getHungry()) + ",";
+    json += "\"happy\":"    + String(pet.getHappy())  + ",";
+    json += "\"energised\":"+ String(pet.getEnergised());
+    // ... etc ...
+    json += "}";
+    server.send(200, "application/json", json);
+}
+```
+
+Update the HTML page from Bonus 2 to include a small inline JS block
+that calls `fetch('/stats.json')` every 2 seconds and overwrites the
+DOM elements. Students have already seen `fetch` and DOM manipulation
+in Programming II's DOM section, so this is curriculum-aligned.
+
+**Stretch within this bonus:** WebSocket-based push instead of polling
+(introduces a new protocol and is a lot of new code for marginal
+benefit on the M5Stick).
+
+**New concepts introduced:**
+
+- JSON as a data-exchange format (Programming II students have seen
+  JS objects but may not have used JSON for transport)
+- Client-side JavaScript embedded in C++ served HTML (a tricky
+  "two-languages-in-one-file" experience worth discussing explicitly)
+- Polling vs. event-driven update models
+
+**Files touched:** `lib/Wireless/wireless_manager.cpp` (or
+`web_dashboard.cpp`) — add `/stats.json` route, update the root HTML
+to include the JS polling block.
+
+---
+
+### Bonus Feature 5 — Phone-Controlled Actions
+
+**Builds on:** Bonus Feature 2 (Web Dashboard).
+
+**Why this is a bonus:**
+
+The dashboard from Bonus 2 is read-only. This bonus makes it
+interactive — phone-side buttons for Feed, Play, Sleep, Bathe, Heal
+that trigger the corresponding `Pet::feed()`, `Pet::play()`, etc.
+methods on the device. Demonstrates that an HTTP server can do more
+than serve pages; it can be a control surface.
+
+**Foundation scope:**
+
+Add five new routes — `/feed`, `/play`, `/sleep`, `/bathe`, `/heal` —
+each of which calls the corresponding pet method and redirects back
+to `/`:
+
+```cpp
+void handleFeed() {
+    pet.feed();
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+```
+
+Update the root HTML to include `<a>` links (or `<form>` POST buttons)
+for each action.
+
+**Stretch within this bonus:**
+
+- **Auth.** The dashboard is open to anyone on the AP — a "kid mode"
+  password gate would teach basic HTTP auth headers.
+- **Action history.** Server stores the last N actions and shows them
+  on the page.
+
+**New concepts introduced:**
+
+- HTTP request methods (GET vs. POST — GET via `<a>` is the easier
+  intro; POST via `<form>` is more "correct" and a good stretch).
+- HTTP redirects (303 See Other).
+- The idea that a server can have side effects on hardware state.
+
+**Files touched:** same as Bonus 4 — extend the dashboard module with
+five new routes and update the HTML.
+
+---
+
+### Bonus Feature 6 — Voice Memos
+
+**Builds on:** Task 16 (Microphone Input — Detect & React).
+
+**Why this is a bonus:**
+
+This is the **original Task 16 scope** before the Task 14b audit
+right-sized it. Full record + playback needs DMA-style audio buffer
+handling, double-buffering, sample-rate matching against the
+`M5.Speaker` output rate, and a UI for browsing recordings — three
+modules of new concepts in one feature. Better as a bonus that
+students can attempt after they have already shipped the simpler
+"detect and react" foundation.
+
+**Foundation scope:**
+
+Extend `lib/Microphone/microphone_manager.h` and `.cpp`:
+
+```cpp
+class MicrophoneManager {
+public:
+    // ... existing detect-and-react API ...
+
+    // Recording
+    void beginRecording();                // long-press Button A enters this
+    void updateRecording();               // call once per loop while recording
+    void endRecording();                  // releasing Button A exits
+
+    // Playback (uses M5.Speaker, not Microphone — left here for locality)
+    void playLastRecording();
+    bool hasRecording() const;
+
+private:
+    int16_t* recordingBuffer;             // heap allocated — see Hardware Gotcha 1
+    size_t recordingCapacity;             // max samples
+    size_t recordingLength;               // actual samples captured
+};
+```
+
+Record on long-press of Button A from the Main screen. Allocate
+`recordingBuffer` on the heap with capacity for ~5 seconds at 16 kHz
+(~160 KB — a huge slug of memory; must be heap, never stack — see
+Hardware Gotcha 1). Read samples in `updateRecording()` while the
+button is held. Play back through `M5.Speaker` when a "Play Memo"
+action is selected from the menu.
+
+**Stretch within this bonus:**
+
+- **Multiple memos.** Slot 1, slot 2, slot 3 — store in heap, browse
+  with B/C.
+- **NVS persistence.** Save recordings across power-off.
+- **Pitch-shifted playback.** Pet "speaks" the memo at a higher pitch
+  for comedic effect.
+- **Memo-triggered reactions.** Pet plays back the memo when it is
+  hungry / lonely.
+
+**New concepts introduced:**
+
+- Long-press button detection (held vs. edge — students have only
+  used edge detection so far)
+- Large heap allocations (~160 KB) and the importance of freeing them
+- Sample-rate matching between mic and speaker
+- Double-buffering (only needed at the stretch level — the foundation
+  can record once, then play once)
+
+**Critical pedagogical warning:**
+
+This bonus is **the most heap-intensive feature in the project.** It
+makes Hardware Gotcha 1 (audio buffers must use the heap) into a
+concrete problem the student will hit if they ignore it. Use it as
+the canonical "this is why we use `malloc()` and `free()`" lesson.
+
+**Files touched:** `lib/Microphone/microphone_manager.h` and `.cpp`
+(extend), `lib/Actions/action_menu.cpp` (add "Record" and "Play"
+actions, or repurpose long-press), `src/main.cpp` (wire long-press
+detection on Button A).

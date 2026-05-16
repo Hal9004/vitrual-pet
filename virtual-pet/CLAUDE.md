@@ -48,11 +48,13 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
 Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
 
-**Next task on the queue:** **Task 14b — Roadmap Simplification Audit**: walk Tasks 15–18 and right-size each one to a minimum teachable foundation that students can expand from (e.g. "basic microphone input" instead of full voice memos; "scan for nearby BLE devices" instead of full wireless communication). This pass is **roadmap maintenance only** — no code in `lib/` or `src/` changes; the deliverable is amended task descriptions in `DEV_ROADMAP.md`. While doing 14b, also add the new **Task 14c — Gameplay Balance Tuning** to the complexity queue (covers shake debouncing, `play()` energy cost, and idle decay rate revision — discovered during 14a's device test).
+**Next task on the queue:** **Task 16 — Microphone Input (Detect & React)**: re-create the `lib/Microphone/` module (the stub was deleted by Task 14a) and add a loud-noise detector that mirrors `ImuManager::wasShaken()`. On detection, the pet's happiness goes up by 5 and a new `SpeakerManager::playSurpriseChirp()` melody fires. Heap-allocated sample buffer per `update()` (Hardware Gotcha 1 — this is the canonical lesson for that gotcha). Full design in `DEV_ROADMAP.md` → `### Task 16`.
 
-**Just completed:** Task 14a — Code Simplification Audit. Removed dead `ActionMenu` legacy methods, collapsed the `printText(String)` overload, fixed `Pet::reset()` to use the `DEFAULT_*` constants (fixed a cleanliness=60 drift bug), inlined `ActionMenu::executePetAction`, collapsed `clearScreen` to a default-param method, and removed the unused `STATE_EVOLVING` placeholder. Output: `DEV_ROADMAP.md` Appendix A — module coupling map for Task 19 to consume later.
+**Just completed:** Task 14b — Roadmap Simplification Audit. Right-sized Tasks 15–18: Task 15 (RTC) moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)"; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 (Remote Dashboard) moved to Bonus Feature 2. Expanded Task 14c (Gameplay Balance Tuning) into a full section. Added Task 14d (Sprite Display Simplification) to the queue, scheduled before Task 13a (Sprite Animation). Added `DEV_ROADMAP.md` Appendix B with six bonus features (RTC Clock, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos), each with full design + code skeleton.
 
-**Deferred:** Sprite Animation (Task 13a) — paused. Return to it after Level 6/7 features (Tasks 15–18) are in. Animation becomes the last Level 5 task before the pre-template simplification at Task 19.
+**Execution order from here:** Task 16 → Task 17 → Task 14c → Task 14d → Task 13a → Task 19.
+
+**Deferred:** Sprite Animation (Task 13a) — paused. Return to it after Task 14d (Sprite Display Simplification) locks in the single 80×80 sprite size; Task 13a is the last Level 5 task before the pre-template simplification at Task 19.
 
 ## Hardware Gotchas
 
