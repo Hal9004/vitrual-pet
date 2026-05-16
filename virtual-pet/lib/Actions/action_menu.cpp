@@ -52,56 +52,31 @@ RelevantStat ActionMenu::getRelevantStat() const {
     return actions[currentActionIndex].relevantStat;
 }
 
-void ActionMenu::executePetAction(Pet& pet, ActionType actionType) {
-    // Each case calls the matching method on the Pet object.
-    // SAVE and BACK do not appear here because they are handled separately
-    // in confirmAction() — Save writes to storage, Back switches screens.
-    switch (actionType) {
-        case ActionType::FEED:
-            pet.feed();
-            break;
-        case ActionType::PLAY:
-            pet.play();
-            break;
-        case ActionType::SLEEP:
-            pet.sleep();
-            break;
-        case ActionType::BATHE:
-            pet.bathe();
-            break;
-        case ActionType::HEAL:
-            pet.heal();
-            break;
-        default:
-            break;
-    }
-}
-
 void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage) {
     Action selectedAction = getSelectedAction();
 
-    // Each case executes the action and plays its matching sound.
-    // Save is included here alongside the care actions so all action handling
-    // lives in one place and every case follows the same visible pattern.
+    // Each case calls the matching Pet method directly and plays its sound.
+    // Save and Back are special cases: Save writes to storage instead of changing
+    // a pet stat, and Back is normally handled by NavigationManager before we get here.
     switch (selectedAction.type) {
         case ActionType::FEED:
-            executePetAction(pet, selectedAction.type);
+            pet.feed();
             speaker.playFeedSound();
             break;
         case ActionType::PLAY:
-            executePetAction(pet, selectedAction.type);
+            pet.play();
             speaker.playPlaySound();
             break;
         case ActionType::SLEEP:
-            executePetAction(pet, selectedAction.type);
+            pet.sleep();
             speaker.playSleepSound();
             break;
         case ActionType::BATHE:
-            executePetAction(pet, selectedAction.type);
+            pet.bathe();
             speaker.playBatheSound();
             break;
         case ActionType::HEAL:
-            executePetAction(pet, selectedAction.type);
+            pet.heal();
             speaker.playHealSound();
             break;
         case ActionType::SAVE:

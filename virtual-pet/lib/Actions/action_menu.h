@@ -49,10 +49,6 @@ private:
     Action actions[NUM_ACTIONS];
     int currentActionIndex;
 
-    // Calls the correct Pet method for a given action type.
-    // Centralising this avoids repeating the same switch in multiple places.
-    void executePetAction(Pet& pet, ActionType actionType);
-
 public:
     ActionMenu();
 
