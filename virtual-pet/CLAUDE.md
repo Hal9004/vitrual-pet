@@ -40,21 +40,28 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Imu` | `lib/Imu/imu_manager.h/.cpp` | MPU6886 accelerometer — detects shake gestures. Call `update()` once per loop, query `wasShaken()` |
 | `Timer` | `lib/Timer/time_manager.h/.cpp` | All automatic stat changes over time (hunger increase, happiness decay). Add new decay rules here |
 | `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts (Task 8 — implemented) |
-| `Microphone` | `lib/Microphone/microphone_manager.h/.cpp` | Voice memo record/playback — not yet implemented |
+| `Microphone` | (out of scope) | Module moved to bonus during the curriculum realignment. See `CURRICULUM_REALIGNMENT.md`. The original stub files were deleted during Task 14a and are not being re-created in the active queue |
 | `Storage` | `lib/Storage/storage_manager.h/.cpp` | NVS persistence via Arduino `Preferences` — saves and loads all pet stats |
 
 ## Current Progress
 
-Read `DEV_ROADMAP.md` for the full 17-task complexity queue and detailed implementation guides.
-Read `COURSE_CHECKLIST.md` for a quick view of which checklist items are done vs. pending.
+> **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
+> Read it first to understand the four-phase plan that takes this repo from "engineer-facing
+> reference implementation" to "frozen curriculum reference + a separate teaching repo."
 
-**Next task on the queue:** **Task 16 — Microphone Input (Detect & React)**: re-create the `lib/Microphone/` module (the stub was deleted by Task 14a) and add a loud-noise detector that mirrors `ImuManager::wasShaken()`. On detection, the pet's happiness goes up by 5 and a new `SpeakerManager::playSurpriseChirp()` melody fires. Heap-allocated sample buffer per `update()` (Hardware Gotcha 1 — this is the canonical lesson for that gotcha). Full design in `DEV_ROADMAP.md` → `### Task 16`.
+Also read `DEV_ROADMAP.md` for task-level detail and `COURSE_CHECKLIST.md` for per-feature status.
 
-**Just completed:** Task 14b — Roadmap Simplification Audit. Right-sized Tasks 15–18: Task 15 (RTC) moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)"; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 (Remote Dashboard) moved to Bonus Feature 2. Expanded Task 14c (Gameplay Balance Tuning) into a full section. Added Task 14d (Sprite Display Simplification) to the queue, scheduled before Task 13a (Sprite Animation). Added `DEV_ROADMAP.md` Appendix B with six bonus features (RTC Clock, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos), each with full design + code skeleton.
+**Next task on the queue:** **Task 19 — Pre-Template Simplification.** Walk every module and simplify against the Pedagogical Rules above. Full design in `DEV_ROADMAP.md` → Part 2 (Complexity Queue) and Appendix A (Module Coupling Map). Branch: `task/19-pre-template-simplification`.
 
-**Execution order from here:** Task 16 → Task 17 → Task 14c → Task 14d → Task 13a → Task 19.
+**Execution order from here (Phase 1 of the realignment):**
+Task 19 → Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
 
-**Deferred:** Sprite Animation (Task 13a) — paused. Return to it after Task 14d (Sprite Display Simplification) locks in the single 80×80 sprite size; Task 13a is the last Level 5 task before the pre-template simplification at Task 19.
+**Just completed:** Step 1.0 of the curriculum realignment — created `CURRICULUM_REALIGNMENT.md`, moved Tasks 16 (Microphone) and 17 (Wireless AP) to bonus/out-of-scope, replaced Phase 6 template-extraction steps with the new Task 20/21/22 sequence, and added the post-Task-22 "move to new repo" note. Branch: `docs/curriculum-realignment`. Tasks 16 and 17 detail sections remain in `DEV_ROADMAP.md` as design reference only.
+
+**Out of scope** (for the learning lab, but kept as design notes / bonus):
+Task 16 (Microphone), Task 17 (Wireless AP), Task 18 (Remote Dashboard), Task 9a (Evolution), Task 15 (RTC).
+
+**Open questions tracked in `CURRICULUM_REALIGNMENT.md`:** mood threshold values (for Task 20), other cleanup candidates (for Task 19 — capture as discovered).
 
 ## Hardware Gotchas
 

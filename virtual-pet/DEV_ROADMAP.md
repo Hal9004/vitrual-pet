@@ -42,7 +42,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 | Menu UI (visual indicators for selected actions) | ✅ Done | `display_manager.cpp:96–108` → `drawMenuIndicator()` |
 | Motion Play (MPU6886 accelerometer for Play mode) | ✅ Done | `lib/Imu/imu_manager.h/.cpp` → `ImuManager`. `wasShaken()` called in `src/main.cpp` → triggers `myPet.play()` |
 | Sound Feedback (buzzer melodies) | ✅ Done | `lib/Speaker/speaker_manager.h/.cpp` — melodies for all 5 actions, death, reset, hunger alert, sickness alert |
-| Microphone Input (Detect & React) | ❌ Missing | Right-sized from the original "Voice Memos" during the Task 14b audit. New foundation: detect a loud noise (clap/voice/whistle), pet reacts with a small happiness boost and a buzzer chirp. Record/playback becomes Bonus Feature 6. The `lib/Microphone/microphone_manager.*` stub files were deleted during Task 14a; Task 16 re-creates the module from scratch. See Task 16 section |
+| Microphone Input (Detect & React) | 🔁 Moved to Bonus | Moved to Appendix B during the curriculum realignment (see `CURRICULUM_REALIGNMENT.md`). Out of scope for the learning lab — Level 6 heap allocation is too dense for cold students and the feature is not promised in the course outline. Task 16 detail section below preserved as design reference only |
 
 ### Phase 4: Environmental & Advanced Features
 
@@ -57,7 +57,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 | Checklist Item | Status | Where It Lives |
 |---|---|---|
-| Wireless Access Point Primitive | ❌ Missing | Right-sized from the original "Wireless Communication (BLE/WiFi)" during the Task 14b audit. New foundation: device broadcasts its own WiFi hotspot and displays the SSID + IP on the LCD. No web server, no second-device communication. See Task 17 section |
+| Wireless Access Point Primitive | 🔁 Moved to Bonus | Moved to Appendix B during the curriculum realignment (see `CURRICULUM_REALIGNMENT.md`). Out of scope for the learning lab — networking becomes an optional extension path in Sessions 7–8 of the lab, not a core task. Task 17 detail section below preserved as design reference only |
 | Remote Dashboard (Web/App stat checking) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. The web server pattern adds another module of new concepts (HTTP routes, named callbacks, `String` HTML building) on top of Task 17 — better as a follow-on bonus that students opt into. See Appendix B — Bonus Feature 2 |
 | Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation (Task 13a) is deferred — picked back up after Tasks 15–18. |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
@@ -65,6 +65,11 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 ---
 
 ## Part 2 — Complexity Queue
+
+> **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
+> Execution order for the remaining in-repo work:
+> **19 → 14c → 14d → 13a → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
+> Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
 
@@ -121,19 +126,20 @@ LEVEL 5 — ASSET PIPELINE
      New features (RTC, voice memos, networking) wait until this pass is done.
 
 LEVEL 6 — COMPLEX HARDWARE
- 15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1. Right-sized out of the critical path during Task 14b: without overnight-decay logic, a clock widget does not integrate with any other module)
- 16. Microphone Input (Detect & React)  (see Task 16 section. Right-sized from the original "Voice Memos" during Task 14b: detect a loud noise → pet happiness +5 + buzzer chirp. Record/playback = Bonus Feature 6.)
+ 15. RTC overnight logic               🔁 Moved to Bonus (see Appendix B — Bonus Feature 1)
+ 16. Microphone Input (Detect & React) 🔁 Moved to Bonus (curriculum realignment — see CURRICULUM_REALIGNMENT.md; design notes preserved in Task 16 section below)
 
 LEVEL 7 — NETWORKING
- 17. Wireless Access Point Primitive   (see Task 17 section. Right-sized from "Wireless Communication (BLE/WiFi)" during Task 14b: device hosts its own WiFi hotspot and shows SSID + IP on the LCD. Web server, two-device comms, and BLE all become Bonus Features in Appendix B.)
- 18. Remote Dashboard                  🔁 Moved to Bonus (see Appendix B — Bonus Feature 2. The web server pattern is its own slug of new concepts and is better as a follow-on bonus than a mandatory task.)
+ 17. Wireless Access Point Primitive   🔁 Moved to Bonus (curriculum realignment — see CURRICULUM_REALIGNMENT.md; design notes preserved in Task 17 section below)
+ 18. Remote Dashboard                  🔁 Moved to Bonus (see Appendix B — Bonus Feature 2)
 
-PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is complete)
+PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
 
-⚠️  SIMPLIFICATION PASS REQUIRED BEFORE ANY TEMPLATES ARE CREATED
-     This codebase will be used as a teaching template for young children.
-     Before templates are extracted, every module must be walked through and
-     simplified with the following questions in mind:
+⚠️  SIMPLIFICATION PASS REQUIRED BEFORE TEMPLATING WORK
+     This codebase will be promoted to a separate teaching repo
+     (`virtual-pet-learning-lab`). Before that promotion happens, every module
+     must be walked through and simplified with the pedagogical rules in
+     CLAUDE.md in mind:
        — Can this logic be written in fewer, clearer steps?
        — Are all variable and function names fully descriptive?
        — Does every function have a one-sentence comment explaining what it does AND why?
@@ -141,25 +147,52 @@ PHASE 6 — STUDENT TEMPLATE CREATION (after fully functioning Tamagotchi is com
        — Would a student with no prior C++ experience be able to read this and follow along?
      Simplicity is more important than elegance. If in doubt, expand it.
 
- 19. Simplification pass — walk every module and simplify for teaching
+ 19. Pre-Template Simplification        ✅ Next — walk every module and simplify for teaching
      — Review all .h and .cpp files against the pedagogical rules in CLAUDE.md.
        Expand any compact or clever code into readable step-by-step form.
        Ensure every function has a comment. Remove any patterns that would
        confuse a beginner without prior C++ experience.
- 20. Codebase review against lesson plan
-     — Walk every module against the course checklist and confirm the reference
-       implementation is clean, documented, and complete.
- 21. Create skeleton templates per module
-     — Strip core logic from each .cpp file, leaving function signatures, comments,
-       and example implementations where needed to give students enough scaffolding.
-       Students write their own logic inside the provided structure.
- 22. Validate templates compile and are teachable
-     — Each skeleton should compile without errors and give a student of the target
-       skill level enough context to complete it without being lost.
- 23. Organise templates by complexity level
-     — One template set per Level (1–7) so teachers can assign tasks matched to
-       each student's experience. Beginner students get Level 1–2 skeletons;
-       advanced students get Level 4–7.
+ 14c. Gameplay Balance Tuning           — runs after Task 19
+     — Lock decay rates and stat thresholds so the pet feels balanced. Must
+       happen before Task 20 so mood thresholds map onto tuned stat values.
+ 14d. Sprite Display Simplification     — runs after Task 14c
+     — Pick a single sprite size (likely 80×80) for the whole project. Remove
+       the sprite from the Stats screen. Compress the Interact screen's free
+       space at y=181–220 to fit the larger sprite. Locks the sprite size
+       before animation work starts.
+ 13a. Sprite Animation                  — runs after Task 14d
+     — 2-frame loop using M5Canvas double-buffering, driven by millis().
+       Implements `lib/Display/animation_manager.h/.cpp`. This is the worked
+       example students extend in Session 6 of the lab.
+ 20. Mood Sprite System (new)           — runs after Task 13a
+     — Add `MoodSprite` enum (NEUTRAL / HAPPY / UNWELL / HUNGRY).
+       Add `Pet::computeMood()` mapping stats → mood with prioritised thresholds.
+       Add 4 sprite assets in `lib/Display/sprites/`.
+       `DisplayManager::drawPetSprite()` picks the sprite from
+       `pet.computeMood()`. Verify on device.
+ 21. Curriculum Scaffolding Refactor (new) — runs after Task 20
+     — Add `#define ENABLE_*` flags so the codebase can be configured for any
+       session's day-start state:
+         ENABLE_ACTION_MENU     (Session 2)
+         ENABLE_IMU_PLAY        (Session 3)
+         ENABLE_SOUND           (Session 4)
+         ENABLE_PERSISTENCE     (Session 5)
+         ENABLE_MULTISCREEN     (Session 6)
+         ENABLE_MOOD_SPRITES    (Session 6)
+       Every flag combination must compile + flash cleanly. This is the test
+       that the scaffolding actually works.
+ 22. Doc Sweep (new)                    — runs after Task 21
+     — With code in final form: rewrite COURSE_CHECKLIST.md against the
+       10-session arc; purge IDEAS.md of items now in core scope; update
+       CLAUDE.md next-task pointer to "Define Session 1 lesson plan"; audit
+       USEFUL_NOTES.md for accuracy.
+
+➡️  AFTER TASK 22 — Work moves to `virtual-pet-learning-lab`
+     - This repo is frozen as the curriculum reference.
+     - Author writes Session 1's lesson plan in `LESSON_PLANS/SESSION_01.md`
+       inside THIS repo (Phase 2 of the realignment), then promotes it.
+     - The new repo is initialised from this repo's cleaned-up `main`.
+     - See `CURRICULUM_REALIGNMENT.md` Phases 2–4 for the full plan.
 ```
 
 ---
@@ -881,6 +914,12 @@ After all commits, test on device — confirm the parity check passes and a norm
 
 ### Task 16 — Microphone Input (Detect & React)
 
+> 🔁 **STATUS: Moved to Bonus during the curriculum realignment.**
+> Out of scope for the learning lab — Level 6 heap allocation is too dense for
+> cold students and the feature is not promised in the course outline.
+> This entire section is preserved as design reference only. Do not begin work on
+> this task as part of the active queue. See `CURRICULUM_REALIGNMENT.md`.
+
 **Why this task:**
 
 The M5StickC Plus 2 ships with a built-in microphone, but the original "Voice Memos" scope (record + browse + playback) needed DMA buffers, double-buffering, sample-rate matching against the buzzer, and a UI for browsing recordings — three modules' worth of new concepts in one task. The Task 14b audit right-sized this to a foundation students can complete in one session: **the pet reacts when it hears a loud noise.** Clap at the pet, it perks up. Recording and playback become Bonus Feature 6 for students who finish early.
@@ -951,6 +990,12 @@ After all commits, test on device — confirm: clap → pet happiness +5 + chirp
 ---
 
 ### Task 17 — Wireless Access Point Primitive
+
+> 🔁 **STATUS: Moved to Bonus during the curriculum realignment.**
+> Out of scope for the learning lab — networking becomes an optional extension
+> path in Sessions 7–8, not a core task.
+> This entire section is preserved as design reference only. Do not begin work on
+> this task as part of the active queue. See `CURRICULUM_REALIGNMENT.md`.
 
 **Why this task:**
 
