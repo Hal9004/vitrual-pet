@@ -1201,14 +1201,13 @@ graph LR
     Storage[StorageManager]
     Display[DisplayManager]
     Nav[NavigationManager]
-    Menu[ActionMenu - hotspot]
+    Menu[ActionMenu - Hotspot 1, kept]
 
     Timer --> Pet
     Storage --> Pet
     Display --> Layout
     Nav --> Layout
     Nav --> Button
-    Nav --> Menu
 
     Menu --> Pet
     Menu --> Display
@@ -1216,8 +1215,6 @@ graph LR
     Menu --> Button
     Menu --> Speaker
     Menu --> Storage
-
-    Display -. forward-decl .-> Menu
 
     Main --> Pet
     Main --> Display
@@ -1245,15 +1242,15 @@ Layer 1 — Single-dependency managers
 ═══════════════════════════════════════════════════
    TimerManager     ──►  Pet
    StorageManager   ──►  Pet
-   DisplayManager   ──►  screen_layout   (+ forward-decl ActionMenu ↩ Hotspot 2)
+   DisplayManager   ──►  screen_layout
 
 
 Layer 2 — Coordinator
 ═══════════════════════════════════════════════════
-   NavigationManager  ──►  screen_layout, ButtonHandler, ActionMenu
+   NavigationManager  ──►  screen_layout, ButtonHandler
 
 
-Layer 3 — HOTSPOT  ★ (six internal dependencies)
+Layer 3 — HOTSPOT  ★ (six internal dependencies, Hotspot 1 — kept)
 ═══════════════════════════════════════════════════
    ActionMenu  ──►  Pet, DisplayManager, screen_layout,
                     ButtonHandler, SpeakerManager, StorageManager
