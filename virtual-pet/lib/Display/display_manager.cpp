@@ -66,7 +66,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 }
 
 // -----------------------------------------------------------------------
-// SCREEN_MAIN render
+// Main screen render
 // Shows the pet face filling the centre of the screen, with a two-tab nav
 // bar at the bottom so the player can enter Stats or Interact.
 // -----------------------------------------------------------------------
@@ -103,7 +103,7 @@ void DisplayManager::drawMainNavBar() {
 }
 
 // -----------------------------------------------------------------------
-// SCREEN_STATS render
+// Stats screen render
 // Preserves the original layout exactly: stat bars at the top, face below.
 // A "B/C: Back" hint replaces the old action menu indicator at the bottom.
 // -----------------------------------------------------------------------
@@ -127,7 +127,7 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 }
 
 // -----------------------------------------------------------------------
-// SCREEN_INTERACT render
+// Interact screen render
 // Shows the pet face in the top half, a single contextual stat bar in the
 // middle (the stat the selected action affects), and the action menu
 // indicator at the very bottom — the same indicator style as before.

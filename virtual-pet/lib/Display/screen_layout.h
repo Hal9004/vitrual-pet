@@ -25,14 +25,19 @@ struct StatBarZone {
 // -----------------------------------------------------------------------
 // ScreenState — which top-level screen the player is currently viewing.
 //
-// An enum (enumeration) is a named list of integer constants. Using an enum
+// An enum (enumeration) is a named list of integer constants. Using one
 // instead of raw numbers (0, 1, 2) makes the code self-documenting: the
 // reader can see SCREEN_STATS and immediately know what it means, rather
 // than having to remember that "1 means stats".
 //
-// This enum lives here (in screen_layout.h) because deciding *which* screen
-// to show is a display concern. Any file that needs to know the current
-// screen can include this header.
+// Each value is prefixed with SCREEN_ so it does not collide with other
+// names elsewhere in the project. Without the prefix a plain enum value
+// like STATS would sit in the global namespace and could clash with any
+// other constant of the same name.
+//
+// This enum lives here (in screen_layout.h) because deciding *which*
+// screen to show is a display concern. Any file that needs to know the
+// current screen can include this header.
 // -----------------------------------------------------------------------
 enum ScreenState {
     SCREEN_MAIN,       // Pet face + bottom nav bar ("Stats" | "Interact")

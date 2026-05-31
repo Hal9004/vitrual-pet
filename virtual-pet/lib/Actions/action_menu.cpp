@@ -4,13 +4,13 @@ ActionMenu::ActionMenu() : currentActionIndex(0) {
     // Each entry carries the action type, display name, description, and
     // which pet stat it affects. The relevantStat field lets the Interact
     // screen highlight the correct bar without needing a separate lookup.
-    actions[0] = {ActionType::FEED,  "Feed",  "Give food to pet",    STAT_HUNGER};
-    actions[1] = {ActionType::PLAY,  "Play",  "Play with pet",        STAT_HAPPINESS};
-    actions[2] = {ActionType::SLEEP, "Sleep", "Let pet rest",         STAT_ENERGY};
-    actions[3] = {ActionType::BATHE, "Bathe", "Clean the pet",        STAT_CLEANLINESS};
-    actions[4] = {ActionType::HEAL,  "Heal",  "Treat pet illness",    STAT_SICKNESS};
-    actions[5] = {ActionType::SAVE,  "Save",  "Save pet progress",    STAT_NONE};
-    actions[6] = {ActionType::BACK,  "Back",  "Return to main screen",STAT_NONE};
+    actions[0] = {ACTION_FEED,  "Feed",  "Give food to pet",    STAT_HUNGER};
+    actions[1] = {ACTION_PLAY,  "Play",  "Play with pet",        STAT_HAPPINESS};
+    actions[2] = {ACTION_SLEEP, "Sleep", "Let pet rest",         STAT_ENERGY};
+    actions[3] = {ACTION_BATHE, "Bathe", "Clean the pet",        STAT_CLEANLINESS};
+    actions[4] = {ACTION_HEAL,  "Heal",  "Treat pet illness",    STAT_SICKNESS};
+    actions[5] = {ACTION_SAVE,  "Save",  "Save pet progress",    STAT_NONE};
+    actions[6] = {ACTION_BACK,  "Back",  "Return to main screen",STAT_NONE};
 }
 
 void ActionMenu::update(const ButtonHandler& buttons) {
@@ -43,7 +43,7 @@ bool ActionMenu::isBackSelected() const {
     // Returns true when the player has scrolled to the Back entry.
     // main.cpp checks this before calling confirmAction() so the navigation
     // manager can switch screens without executing a pet action.
-    return actions[currentActionIndex].type == ActionType::BACK;
+    return actions[currentActionIndex].type == ACTION_BACK;
 }
 
 RelevantStat ActionMenu::getRelevantStat() const {
@@ -59,31 +59,31 @@ void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager
     // Save and Back are special cases: Save writes to storage instead of changing
     // a pet stat, and Back is normally handled by NavigationManager before we get here.
     switch (selectedAction.type) {
-        case ActionType::FEED:
+        case ACTION_FEED:
             pet.feed();
             speaker.playFeedSound();
             break;
-        case ActionType::PLAY:
+        case ACTION_PLAY:
             pet.play();
             speaker.playPlaySound();
             break;
-        case ActionType::SLEEP:
+        case ACTION_SLEEP:
             pet.sleep();
             speaker.playSleepSound();
             break;
-        case ActionType::BATHE:
+        case ACTION_BATHE:
             pet.bathe();
             speaker.playBatheSound();
             break;
-        case ActionType::HEAL:
+        case ACTION_HEAL:
             pet.heal();
             speaker.playHealSound();
             break;
-        case ActionType::SAVE:
+        case ACTION_SAVE:
             storage.save(pet);
             speaker.playSaveSound();
             break;
-        case ActionType::BACK:
+        case ACTION_BACK:
             // Back is handled by the NavigationManager before confirmAction() is called.
             // If we somehow reach here, do nothing — there is no pet action to run.
             return;

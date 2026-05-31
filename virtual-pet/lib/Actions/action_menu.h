@@ -19,17 +19,18 @@
 // Available Actions: Feed, Play, Sleep, Bathe, Heal, Save, Back
 
 // ActionType names every possible action the player can select.
-// Using an enum class (scoped enum) means we must write ActionType::FEED
-// rather than just FEED — this prevents name collisions with other enums
-// or variables in the project.
-enum class ActionType {
-    FEED,
-    PLAY,
-    SLEEP,
-    BATHE,
-    HEAL,
-    SAVE,
-    BACK  // Returns the player to the Main screen without doing anything
+// Each value is prefixed with ACTION_ so it does not collide with other
+// names elsewhere in the project. Without the prefix a plain enum value
+// like SAVE or BACK could clash with a constant of the same name in
+// another library or header.
+enum ActionType {
+    ACTION_FEED,
+    ACTION_PLAY,
+    ACTION_SLEEP,
+    ACTION_BATHE,
+    ACTION_HEAL,
+    ACTION_SAVE,
+    ACTION_BACK    // Returns the player to the Main screen without doing anything
 };
 
 // Action bundles everything DisplayManager needs to know about one menu entry:

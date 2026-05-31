@@ -19,7 +19,7 @@ private:
     static const int SCREEN_HEIGHT = 240;
 
     // -----------------------------------------------------------------------
-    // SCREEN_STATS zone constants — these match the original layout exactly.
+    // Stats screen zone constants — these match the original layout exactly.
     // Stats bars sit above the face so the player can see all five values.
     // -----------------------------------------------------------------------
     static constexpr ScreenZone TITLE_ZONE    = {  0,   5, 135, 19 };
@@ -36,7 +36,7 @@ private:
     static constexpr StatBarZone SICK_BAR_ZONE   = { 114, 124 };
 
     // -----------------------------------------------------------------------
-    // SCREEN_MAIN zone constants — no stat bars, so the face gets more room.
+    // Main screen zone constants — no stat bars, so the face gets more room.
     // The bottom nav bar lets the player pick Stats or Interact.
     // -----------------------------------------------------------------------
     static constexpr int         MAIN_FACE_CENTER_Y = 110;
@@ -44,7 +44,7 @@ private:
     static constexpr ScreenZone  MAIN_NAV_ZONE      = {  5, 213, 125, 22 };
 
     // -----------------------------------------------------------------------
-    // SCREEN_INTERACT zone constants — face sits at the top, contextual stat
+    // Interact screen zone constants — face sits at the top, contextual stat
     // bar in the middle, and the action menu indicator at the very bottom.
     // -----------------------------------------------------------------------
     static constexpr int         INTERACT_FACE_CENTER_Y = 90;
