@@ -85,7 +85,7 @@ void Pet::play() {
     setState(STATE_PLAYING);                 // Signal that the pet is now playing
     setHappy(happy + 25);                    // Significantly increase happiness
     setTired(tired + 20);                    // Increase tiredness
-    setEnergised(energised - 20);            // Use energy
+    setEnergised(energised - 5);             // Use a little energy (kept low so repeated play is not an instant-kill)
     setHungry(hungry + 15);                  // Playing makes them hungry
 }
 
