@@ -94,6 +94,16 @@ void renderCurrentScreen() {
     );
 }
 
+// -------------------------------------------------------------------------
+// Where the program starts.
+// This is an embedded device, so there is no main() that we write ourselves.
+// When the M5StickC powers on, the ESP32's Arduino core runs its own start-up
+// code and then calls the two functions below for us:
+//   • setup() runs ONCE — use it to initialise the hardware and load saved data.
+//   • loop()  runs FOREVER — the core calls it over and over, as fast as it can.
+// Together, setup() + loop() are this program's main(): the one-time set-up,
+// then an endless cycle of "read inputs, update the pet, draw the screen".
+// -------------------------------------------------------------------------
 void setup() {
     M5.begin();
 
