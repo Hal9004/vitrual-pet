@@ -1,7 +1,17 @@
 #include <Arduino.h>
 #include "pet.h"
 
-// Constructor - Initialize pet with neutral values
+// Pet()
+// Constructs a brand-new pet in a healthy, awake-and-content starting state
+// so the device looks alive the very first time it boots — the user should
+// not have to do anything before the pet appears on screen with sensible
+// stats. The starting values come from the DEFAULT_* constants in pet.h so
+// the constructor, StorageManager::load(), and reset() can never drift out
+// of agreement about what "a new pet" means.
+//
+// The colon-introduced list (`: hungry(...), tired(...), ...`) is a member
+// initialiser list — it sets each field before the constructor body runs.
+// It is the canonical C++ way to give member variables their initial values.
 Pet::Pet()
     : hungry(DEFAULT_HUNGRY), tired(DEFAULT_TIRED), happy(DEFAULT_HAPPY),
       sick(DEFAULT_SICK), sad(DEFAULT_SAD), cleanliness(DEFAULT_CLEANLINESS),
@@ -19,13 +29,23 @@ const char* Pet::getPetName() const {
 }
 
 // Getters
-int Pet::getHungry() const { return hungry; }
-int Pet::getTired() const { return tired; }
-int Pet::getHappy() const { return happy; }
-int Pet::getSick() const { return sick; }
-int Pet::getSad() const { return sad; }
+// One read-only accessor per stat. The stat variables themselves are private,
+// so this is the only way for other modules (DisplayManager, StorageManager,
+// TimerManager) to see them. Keeping the variables private prevents an outside
+// module from writing to them directly and bypassing the constrainValue()
+// guarantee that all stats stay in 0..100. Anything that wants to *change* a
+// stat must go through the matching setter below.
+//
+// The `const` at the end of each declaration is C++'s way of promising that
+// the method does not modify the object — useful both as documentation and
+// because the compiler enforces it.
+int Pet::getHungry() const      { return hungry; }
+int Pet::getTired() const       { return tired; }
+int Pet::getHappy() const       { return happy; }
+int Pet::getSick() const        { return sick; }
+int Pet::getSad() const         { return sad; }
 int Pet::getCleanliness() const { return cleanliness; }
-int Pet::getEnergised() const { return energised; }
+int Pet::getEnergised() const   { return energised; }
 
 // Setters
 // Each setter stores the new value after passing it through constrainValue()
@@ -246,12 +266,17 @@ bool Pet::checkSicknessAlert() {
     return false;
 }
 
-// Get dominant mood (returns which condition is highest)
+// getDominantMood()
+// Picks which mood the screen should display. Each stat is treated as a vote
+// for one mood (hunger ↔ "Hungry", happy ↔ "Happy", and so on), and the
+// largest stat wins. Returns the index of that stat in a fixed order so
+// DisplayManager can look up the label and colour without needing to know
+// anything about which stats Pet has.
 int Pet::getDominantMood() const {
     int conditions[] = {hungry, tired, happy, sick, sad, cleanliness, energised};
     int maxValue = 0;
     int maxIndex = 0;
-    
+
     for (int i = 0; i < 7; i++) {
         if (conditions[i] > maxValue) {
             maxValue = conditions[i];

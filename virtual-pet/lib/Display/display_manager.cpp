@@ -86,9 +86,13 @@ void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
     }
 }
 
-// Draws the two-tab bar at the bottom of the Main screen.
-// Both tabs are always drawn the same way — no highlight state needed.
-// B switches to Interact; C switches to Stats (handled in NavigationManager).
+// drawMainNavBar()
+// Draws the two-tab bar at the bottom of the Main screen. The nav bar is the
+// user's entry point into the rest of the app — without it the user would
+// have no visible cue that B and C take them to the Interact and Stats
+// screens. Both tabs are drawn the same way (no highlight state) because
+// the Main screen has no concept of "selected tab"; a single press jumps
+// straight to the chosen screen.
 void DisplayManager::drawMainNavBar() {
     int tabWidth = MAIN_NAV_ZONE.width / 2;
 
@@ -163,9 +167,16 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
     }
 }
 
-// Draws a single stat bar in the INTERACT_STAT_ZONE area.
-// The label, current value, and colour all come from the relevantStat field
-// of the currently selected action — so the bar changes as the player scrolls.
+// drawContextualStatBar()
+// Draws a single stat bar in the INTERACT_STAT_ZONE area — only the one stat
+// that the currently selected action affects. The label, current value, and
+// colour all come from the relevantStat parameter, so the bar changes as the
+// user scrolls through actions.
+//
+// Why a single stat instead of all five? The Interact screen exists for the
+// user to choose an action and see its consequence. Showing only the stat
+// that will change keeps the focus on the cause-and-effect link between the
+// selected action and the pet's response.
 void DisplayManager::drawContextualStatBar(int happiness, int hunger, int energy,
                                            int cleanliness, int sick, RelevantStat relevantStat) {
     // Clear the area first so the previous bar does not bleed through
