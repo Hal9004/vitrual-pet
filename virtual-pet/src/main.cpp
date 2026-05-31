@@ -31,6 +31,69 @@ ImuManager      imu;      // Reads accelerometer data and detects shake gestures
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
 StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 
+// handleDeathScreen() — the only interaction once the pet has died: pressing
+// Button A starts a new game. reset() restores the stats and plays the restart
+// fanfare itself; clearing storage stops the dead pet reloading on the next boot.
+void handleDeathScreen() {
+    if (buttons.wasButtonAPressed()) {
+        myPet.reset(speaker);
+        storage.clear();
+    }
+}
+
+// updateLivePet() — one frame of normal gameplay while the pet is alive: run the
+// automatic stat timers, cycle the menu when the Interact screen is showing, let
+// navigation switch screens, confirm a chosen action, and play on a shake gesture.
+void updateLivePet() {
+    // Run all automatic stat changes (hunger increase, happiness decay, energy drain).
+    // The rules for what changes and how fast live in TimerManager, not here.
+    timers.update(myPet);
+
+    // Only cycle through menu actions when the Interact screen is visible.
+    // Calling menu.update() on other screens would silently change the selected
+    // action while the user cannot even see the menu.
+    if (navManager.getCurrentScreen() == SCREEN_INTERACT) {
+        menu.update(buttons);
+    }
+
+    // Update navigation — reads button input and switches screens if needed.
+    // This must run AFTER menu.update() so the latest "is Back highlighted?"
+    // value is what NavigationManager sees. We pass that single fact as a
+    // bool rather than handing over the whole menu object — NavigationManager
+    // does not need to know what an ActionMenu is.
+    navManager.update(buttons, menu.isBackSelected());
+
+    // shouldConfirmAction() is true for exactly one frame when the user pressed A
+    // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
+    // logic out of NavigationManager, which only handles screen transitions.
+    if (navManager.shouldConfirmAction()) {
+        menu.confirmAction(myPet, display, speaker, storage);
+    }
+
+    // A shake gesture triggers play from any screen.
+    // wasShaken() fires only on the first frame of a gesture so play() is called once.
+    if (imu.wasShaken()) {
+        myPet.play();
+    }
+}
+
+// renderCurrentScreen() — draws the whole screen for this frame. DisplayManager
+// takes plain values (not manager objects), so we pull the handful of stats and
+// menu fields it needs and hand them over. NavigationManager decides which screen
+// to draw, and isInDeadState() tells it whether to show the death screen.
+void renderCurrentScreen() {
+    Action selectedAction = menu.getSelectedAction();
+    display.renderDisplay(
+        myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
+        myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
+        selectedAction.name,
+        selectedAction.relevantStat,
+        menu.getCurrentActionIndex(),
+        myPet.isInDeadState(), myPet.getPetName(),
+        navManager.getCurrentScreen()
+    );
+}
+
 void setup() {
     M5.begin();
 
@@ -76,70 +139,20 @@ void loop() {
     buttons.update(); // Detect which buttons were pressed this frame
     imu.update();     // Read fresh accelerometer data and update shake detection
 
-    // Run the state machine — sets STATE_DEAD when hunger or energy hit a fatal
-    // level, and plays the pet's own hunger/sickness/death sounds when a stat
-    // crosses its warning threshold.
-    // This must run before the dead check below so the dead state is always up to date.
-    // We hand it the speaker so the pet can play its own alert and death sounds.
+    // Run the state machine — sets STATE_DEAD when a stat hits a fatal level, and
+    // plays the pet's own hunger/sickness/death sounds when a stat crosses its
+    // warning threshold. Runs first so the dead check below is always up to date.
     myPet.updateState(speaker);
 
-    bool petIsDead = (myPet.getState() == STATE_DEAD);
-
-    if (petIsDead) {
-        // Button A restarts the game. Clear saved data so the dead state is not
-        // reloaded on the next boot. reset() plays the restart fanfare itself.
-        if (buttons.wasButtonAPressed()) {
-            myPet.reset(speaker);
-            storage.clear();
-        }
+    // Once dead, the only interaction is "press A to restart"; while alive, run
+    // the full game tick. Each branch lives in its own helper so this loop reads
+    // as a short outline of the frame.
+    if (myPet.isInDeadState()) {
+        handleDeathScreen();
     } else {
-        // Run all automatic stat changes (hunger increase, happiness decay, energy drain).
-        // The rules for what changes and how fast live in TimerManager, not here.
-        timers.update(myPet);
-
-        // Only cycle through menu actions when the Interact screen is visible.
-        // Calling menu.update() on other screens would silently change the selected
-        // action while the user cannot even see the menu.
-        if (navManager.getCurrentScreen() == SCREEN_INTERACT) {
-            menu.update(buttons);
-        }
-
-        // Update navigation — reads button input and switches screens if needed.
-        // This must run AFTER menu.update() so the latest "is Back highlighted?"
-        // value is what NavigationManager sees. We pass that single fact as a
-        // bool rather than handing over the whole menu object — NavigationManager
-        // does not need to know what an ActionMenu is.
-        navManager.update(buttons, menu.isBackSelected());
-
-        // shouldConfirmAction() is true for exactly one frame when the user pressed A
-        // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
-        // logic out of NavigationManager, which only handles screen transitions.
-        if (navManager.shouldConfirmAction()) {
-            menu.confirmAction(myPet, display, speaker, storage);
-        }
-
-        // A shake gesture triggers play from any screen.
-        // wasShaken() fires only on the first frame of a gesture so play() is called once.
-        if (imu.wasShaken()) {
-            myPet.play();
-        }
+        updateLivePet();
     }
 
-    // Render at the end of every frame with the fully updated state.
-    // NavigationManager tells DisplayManager which screen to draw.
-    //
-    // We extract the three pieces of action-menu information DisplayManager
-    // actually uses (name, relevant stat, current index) and pass them as
-    // primitives. DisplayManager has no idea what an ActionMenu is — this
-    // keeps the dependency between the two modules one-directional.
-    Action selectedAction = menu.getSelectedAction();
-    display.renderDisplay(
-        myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
-        myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
-        selectedAction.name,
-        selectedAction.relevantStat,
-        menu.getCurrentActionIndex(),
-        petIsDead, myPet.getPetName(),
-        navManager.getCurrentScreen()
-    );
+    // Draw the fully updated state at the end of every frame.
+    renderCurrentScreen();
 }

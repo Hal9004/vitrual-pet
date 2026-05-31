@@ -98,6 +98,10 @@ public:
     // Returns the current behavioural state of the pet
     PetState getState() const;
 
+    // Returns true when the pet is in the dead state — lets callers ask the
+    // game-over question without comparing against the STATE_DEAD enum value.
+    bool isInDeadState() const;
+
     // Changes the pet's current behavioural state
     void setState(PetState newState);
 

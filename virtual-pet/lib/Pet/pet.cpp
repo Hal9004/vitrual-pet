@@ -109,6 +109,14 @@ PetState Pet::getState() const {
     return currentState;
 }
 
+// isInDeadState()
+// Returns true when the state machine is in STATE_DEAD. main.cpp uses this to
+// decide between the death screen and the normal game tick, without needing to
+// know the PetState enum values.
+bool Pet::isInDeadState() const {
+    return currentState == STATE_DEAD;
+}
+
 // setState()
 // Changes the pet's current behaviour. All state transitions go through here
 // so there is always one place to look when debugging unexpected state changes.
