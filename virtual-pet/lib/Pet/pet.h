@@ -1,6 +1,8 @@
 #ifndef PET_H
 #define PET_H
 
+#include "../Speaker/speaker_manager.h"
+
 // PetState — the list of behaviours the pet can currently be doing.
 // Only one state is active at a time.
 enum PetState {
@@ -29,13 +31,8 @@ private:
 
     const char* petName;  // Display name shown in the title zone; default is "Pixel"
 
-    // Alert flags — set by updateState() when a warning threshold is crossed.
-    // main.cpp reads these via checkDeathAlert() / checkHungerAlert() / checkSicknessAlert() and plays the sound.
-    bool deathSoundReady;
-    bool hungerAlertReady;
-    bool sicknessAlertReady;
-
     // Timestamps used to rate-limit the alerts — same millis() pattern as TimerManager.
+    // The pet plays each alert at most once per interval (see updateState()).
     unsigned long lastHungerAlertTime;
     unsigned long lastSicknessAlertTime;
 
@@ -95,17 +92,6 @@ public:
     // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
     bool isDead() const;
 
-    // Returns true once on the first frame of death, then resets the flag.
-    // Call this each loop and play the death sound when it returns true.
-    bool checkDeathAlert();
-
-    // Returns true once when a hunger alert is ready, then resets the flag.
-    // Call this each loop and play the alert sound when it returns true.
-    bool checkHungerAlert();
-
-    // Returns true once when a sickness alert is ready, then resets the flag.
-    bool checkSicknessAlert();
-
     // Returns the pet's display name for use in the title zone
     const char* getPetName() const;
 
@@ -115,11 +101,13 @@ public:
     // Changes the pet's current behavioural state
     void setState(PetState newState);
 
-    // Runs once per loop — checks the current state and applies any behaviour that belongs to it
-    void updateState();
+    // Runs once per loop — checks the current state and applies any behaviour that
+    // belongs to it, playing the pet's own alert and death sounds through the given speaker.
+    void updateState(SpeakerManager& speaker);
 
-    // Restores all stats to their starting values so the game can begin again
-    void reset();
+    // Restores all stats to their starting values so the game can begin again,
+    // playing the restart fanfare through the given speaker.
+    void reset(SpeakerManager& speaker);
 
 };
 

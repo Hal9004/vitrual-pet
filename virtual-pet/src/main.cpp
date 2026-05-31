@@ -31,32 +31,6 @@ ImuManager      imu;      // Reads accelerometer data and detects shake gestures
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
 StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 
-// playPendingAlertSounds() — checks every pet alert flag once per frame and
-// plays the matching speaker melody. Bundles the repeated check+play pattern
-// so loop() reads as a single line instead of three near-identical blocks.
-//
-// This helper lives in main.cpp because alert coordination is exactly
-// main.cpp's job — Pet does not know about SpeakerManager (it just sets
-// flags), and SpeakerManager does not know about Pet (it just plays sounds).
-// main.cpp is the file that owns both globals and is the right place to
-// bridge them.
-//
-// Each Pet::checkXAlert() method follows a read-and-clear pattern: it
-// returns true at most once per alert event and then resets the flag, so it
-// is safe to call every frame without re-triggering a sound that has
-// already played.
-void playPendingAlertSounds() {
-    if (myPet.checkHungerAlert()) {
-        speaker.playHungerAlertSound();
-    }
-    if (myPet.checkSicknessAlert()) {
-        speaker.playSicknessAlertSound();
-    }
-    if (myPet.checkDeathAlert()) {
-        speaker.playDeathSound();
-    }
-}
-
 void setup() {
     M5.begin();
 
@@ -103,25 +77,20 @@ void loop() {
     imu.update();     // Read fresh accelerometer data and update shake detection
 
     // Run the state machine — sets STATE_DEAD when hunger or energy hit a fatal
-    // level, and raises the hunger/sickness/death alert flags when a stat
+    // level, and plays the pet's own hunger/sickness/death sounds when a stat
     // crosses its warning threshold.
     // This must run before the dead check below so the dead state is always up to date.
-    myPet.updateState();
-
-    // Play any alert sounds the state machine just raised this frame.
-    // Doing this once, in one place, replaces three separate check/play blocks
-    // that used to live inline in the dead and alive branches below.
-    playPendingAlertSounds();
+    // We hand it the speaker so the pet can play its own alert and death sounds.
+    myPet.updateState(speaker);
 
     bool petIsDead = (myPet.getState() == STATE_DEAD);
 
     if (petIsDead) {
         // Button A restarts the game. Clear saved data so the dead state is not
-        // reloaded on the next boot, then play the reset fanfare.
+        // reloaded on the next boot. reset() plays the restart fanfare itself.
         if (buttons.wasButtonAPressed()) {
-            myPet.reset();
+            myPet.reset(speaker);
             storage.clear();
-            speaker.playResetSound();
         }
     } else {
         // Run all automatic stat changes (hunger increase, happiness decay, energy drain).
