@@ -1,5 +1,4 @@
 #include "display_manager.h"
-#include "../Actions/action_menu.h"
 
 DisplayManager::DisplayManager()
     : lastRenderedScreen(SCREEN_MAIN),
@@ -23,8 +22,13 @@ void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t colo
 // renderDisplay() — the one call loop() makes every frame.
 // It decides whether to show the death screen or one of the three live screens,
 // then delegates to the appropriate private render method.
+//
+// Action-menu information arrives as three primitives (name, relevant stat,
+// current index) rather than as an ActionMenu reference. This keeps
+// DisplayManager unaware of ActionMenu — the caller does the extraction.
 void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness,
-                                   int sick, int moodIndex, const ActionMenu& menu,
+                                   int sick, int moodIndex, const char* selectedActionName,
+                                   RelevantStat relevantStat, int currentActionIndex,
                                    bool petIsDead, const char* petName,
                                    ScreenState screenState) {
     // --- Death state ---
@@ -55,7 +59,8 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
             renderStatsScreen(happiness, hunger, energy, cleanliness, sick, moodIndex, petName);
             break;
         case SCREEN_INTERACT:
-            renderInteractScreen(happiness, hunger, energy, cleanliness, sick, moodIndex, menu, petName);
+            renderInteractScreen(happiness, hunger, energy, cleanliness, sick, moodIndex,
+                                 selectedActionName, relevantStat, currentActionIndex, petName);
             break;
     }
 }
@@ -128,7 +133,8 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 // indicator at the very bottom — the same indicator style as before.
 // -----------------------------------------------------------------------
 void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy, int cleanliness,
-                                          int sick, int moodIndex, const ActionMenu& menu,
+                                          int sick, int moodIndex, const char* selectedActionName,
+                                          RelevantStat relevantStat, int currentActionIndex,
                                           const char* petName) {
     bool screenChanged   = (lastRenderedScreen != SCREEN_INTERACT);
     bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
@@ -138,10 +144,10 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
         drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_48X48_TEST_WIDTH, SPRITE_48X48_TEST_HEIGHT, sprite_48x48_test[0]);
         showPetMoodText(moodIndex, INTERACT_MOOD_Y);
-        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, menu.getRelevantStat());
-        drawMenuIndicator(menu, MENU_ZONE.x, MENU_ZONE.y);
+        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
+        drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
 
-        lastMenuActionIndex = menu.getCurrentActionIndex();
+        lastMenuActionIndex = currentActionIndex;
         lastFullRedrawTime  = millis();
         lastRenderedScreen  = SCREEN_INTERACT;
         return;
@@ -150,10 +156,10 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
     // Fast path: when the player presses B or C to cycle actions, only redraw
     // the contextual stat bar and the menu indicator — not the whole screen.
     // This prevents the face from flickering on every button press.
-    if (menu.getCurrentActionIndex() != lastMenuActionIndex) {
-        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, menu.getRelevantStat());
-        drawMenuIndicator(menu, MENU_ZONE.x, MENU_ZONE.y);
-        lastMenuActionIndex = menu.getCurrentActionIndex();
+    if (currentActionIndex != lastMenuActionIndex) {
+        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
+        drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
+        lastMenuActionIndex = currentActionIndex;
     }
 }
 
@@ -197,13 +203,13 @@ void DisplayManager::drawContextualStatBar(int happiness, int hunger, int energy
 
 // drawMenuIndicator() — the compact action name box at the very bottom.
 // Used on the Interact screen. Clears its area before drawing.
-void DisplayManager::drawMenuIndicator(const ActionMenu& menu, int x, int y) {
-    Action selectedAction = menu.getSelectedAction();
-
+// Takes the action name as a plain string — no ActionMenu reference needed —
+// so this helper has no knowledge of the menu's internals.
+void DisplayManager::drawMenuIndicator(const char* selectedActionName, int x, int y) {
     fillRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_BLACK);
     M5.Lcd.drawRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
     printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
-    printText(selectedAction.name, x + 50, y + 4, TFT_YELLOW, 1);
+    printText(selectedActionName, x + 50, y + 4, TFT_YELLOW, 1);
 }
 
 // showPetMoodText() — draws just the mood label at the given Y position.

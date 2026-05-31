@@ -137,10 +137,19 @@ void loop() {
 
     // Render at the end of every frame with the fully updated state.
     // NavigationManager tells DisplayManager which screen to draw.
+    //
+    // We extract the three pieces of action-menu information DisplayManager
+    // actually uses (name, relevant stat, current index) and pass them as
+    // primitives. DisplayManager has no idea what an ActionMenu is — this
+    // keeps the dependency between the two modules one-directional.
+    Action selectedAction = menu.getSelectedAction();
     display.renderDisplay(
         myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
         myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
-        menu, petIsDead, myPet.getPetName(),
+        selectedAction.name,
+        selectedAction.relevantStat,
+        menu.getCurrentActionIndex(),
+        petIsDead, myPet.getPetName(),
         navManager.getCurrentScreen()
     );
 }

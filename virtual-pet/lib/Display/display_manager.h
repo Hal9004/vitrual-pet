@@ -7,10 +7,10 @@
 #include "sprites/48x48_test.h"   // 48x48 sprite — used on the Interact screen
 #include "sprites/64x64_test.h"   // 64x64 sprite — used on the Main screen
 
-// Forward declaration — lets us reference ActionMenu in function signatures
-// without including action_menu.h here. The full include lives in the .cpp file.
-// This avoids a circular include: action_menu.h already includes display_manager.h.
-class ActionMenu;
+// DisplayManager only deals in primitive values (ints, strings, enums).
+// It never receives whole manager objects, so it does not need to know
+// what an ActionMenu or a Pet is. Whoever calls renderDisplay is
+// responsible for pulling the values out and passing them in.
 
 class DisplayManager {
 private:
@@ -73,7 +73,14 @@ private:
     // -----------------------------------------------------------------------
     void renderMainScreen(int moodIndex, const char* petName);
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
-    void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const ActionMenu& menu, const char* petName);
+    // The Interact screen needs three pieces of information about the action menu
+    // (the action name to display, which stat bar to highlight, and the current
+    // index so it can detect when the player has scrolled). We pass these as
+    // primitives so DisplayManager does not need to know what an ActionMenu is.
+    void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
+                              int moodIndex, const char* selectedActionName,
+                              RelevantStat relevantStat, int currentActionIndex,
+                              const char* petName);
 
     // Draws the two-tab nav bar at the bottom of the Main screen.
     // The highlighted tab (mainNavIndex) gets a filled background.
@@ -105,11 +112,14 @@ public:
     void printCenteredText(const char* text, int y, uint32_t color = TFT_WHITE, uint8_t size = 2);
 
     // renderDisplay() — the single call that loop() makes every frame.
-    // screenState and mainNavIndex come from NavigationManager.
+    // screenState comes from NavigationManager.
     // petIsDead bypasses the normal screen routing and shows the death screen.
+    // selectedActionName, relevantStat, and currentActionIndex are extracted
+    // from ActionMenu by the caller — keeping DisplayManager unaware of it.
     void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
-                       int moodIndex, const ActionMenu& menu, bool petIsDead,
-                       const char* petName, ScreenState screenState);
+                       int moodIndex, const char* selectedActionName,
+                       RelevantStat relevantStat, int currentActionIndex,
+                       bool petIsDead, const char* petName, ScreenState screenState);
 
     // Pet display helpers — used internally and by the three private render methods
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
@@ -119,8 +129,9 @@ public:
     void showDeathScreen();
 
     // drawMenuIndicator() — draws the compact action name overlay at the bottom.
-    // Used on the Interact screen.
-    void drawMenuIndicator(const ActionMenu& menu, int x, int y);
+    // Used on the Interact screen. Takes the action name as a plain string so
+    // this helper has no knowledge of ActionMenu's internals.
+    void drawMenuIndicator(const char* selectedActionName, int x, int y);
 
     // drawStatusBar() — draws a single labelled progress bar.
     void drawStatusBar(int value, int maxValue, int x, int y, int width, uint32_t color);
