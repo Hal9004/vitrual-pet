@@ -22,8 +22,15 @@ void ImuManager::update() {
 
     M5.Imu.getAccel(&accelX, &accelY, &accelZ);
 
+    // Total acceleration as a single number, using Pythagoras in 3D:
+    // the length of the (accelX, accelY, accelZ) vector. A still device
+    // reads about 1.0 G (the constant pull of gravity); a hard shake
+    // pushes the magnitude well above that.
     float magnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
 
+    // True for every frame the device is currently shaking hard enough.
+    // This is the "is shaking" check. Converting it into a one-shot
+    // "just started shaking" event happens in wasShaken() below.
     currentShakeDetected = (magnitude > SHAKE_THRESHOLD);
 }
 
