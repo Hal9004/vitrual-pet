@@ -54,7 +54,7 @@ Also read `DEV_ROADMAP.md` for task-level detail and `COURSE_CHECKLIST.md` for p
 **Next task on the queue:** **Task 19 — Pre-Template Simplification.** Walk every module and simplify against the Pedagogical Rules above. Full design in `DEV_ROADMAP.md` → Part 2 (Complexity Queue) and Appendix A (Module Coupling Map). Branch: `task/19-pre-template-simplification`.
 
 **Execution order from here (Phase 1 of the realignment):**
-Task 19 → Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
+Task 19 → Task 19b (Pet-Owns-Sound Refactor) → Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
 
 **Just completed:** Step 1.0 of the curriculum realignment — created `CURRICULUM_REALIGNMENT.md`, moved Tasks 16 (Microphone) and 17 (Wireless AP) to bonus/out-of-scope, replaced Phase 6 template-extraction steps with the new Task 20/21/22 sequence, and added the post-Task-22 "move to new repo" note. Branch: `docs/curriculum-realignment`. Tasks 16 and 17 detail sections remain in `DEV_ROADMAP.md` as design reference only.
 

@@ -152,7 +152,19 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        Expand any compact or clever code into readable step-by-step form.
        Ensure every function has a comment. Remove any patterns that would
        confuse a beginner without prior C++ experience.
- 14c. Gameplay Balance Tuning           — runs after Task 19
+ 19b. Pet-Owns-Sound Refactor           — runs after Task 19
+     — Move alert-sound coordination out of main.cpp and into Pet::updateState()
+       so the pet plays its own alert sounds as the state machine raises them.
+       Pet gains a SpeakerManager reference (via a setSpeaker() called once
+       in setup() after speaker.init()). The five alert-coordination members
+       (hungerAlertReady, sicknessAlertReady, deathSoundReady, lastHungerAlertTime,
+       lastSicknessAlertTime) and the three checkXAlert() methods are deleted.
+       main.cpp's playPendingAlertSounds() helper goes with them — the call
+       site collapses to nothing. Adds the Pet → SpeakerManager dependency that
+       Appendix A explicitly recommended against, so this lives on its own
+       branch and gets independent device testing.
+       Branch: task/19b-pet-owns-sound.
+ 14c. Gameplay Balance Tuning           — runs after Task 19b
      — Lock decay rates and stat thresholds so the pet feels balanced. Must
        happen before Task 20 so mood thresholds map onto tuned stat values.
  14d. Sprite Display Simplification     — runs after Task 14c
