@@ -32,7 +32,7 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 
 | Module | File(s) | Responsibility |
 |---|---|---|
-| `Pet` | `lib/Pet/pet.h/.cpp` | All pet stats (0–100) and manual care actions (feed, play, sleep, bathe, heal) |
+| `Pet` | `lib/Pet/pet.h/.cpp` | All pet stats (0–100) and manual care actions (feed, play, sleep, bathe, heal). Plays its own alert/death/reset sounds — `updateState()` and `reset()` take a `SpeakerManager&` |
 | `Display` | `lib/Display/display_manager.h/.cpp` | Everything drawn to the screen. Single unified render call to prevent flicker |
 | `Display` | `lib/Display/animation_manager.h/.cpp` | Sprite/bitmap animation — not yet implemented |
 | `Button` | `lib/Button/button_handler.h/.cpp` | Edge-detection for buttons A, B, C. Call `update()` once per loop |
@@ -51,12 +51,12 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 
 Also read `DEV_ROADMAP.md` for task-level detail and `COURSE_CHECKLIST.md` for per-feature status.
 
-**Next task on the queue:** **Task 19b — Pet-Owns-Sound Refactor.** Move alert-sound coordination out of `main.cpp` and into `Pet::updateState()` so the pet plays its own alert sounds. Deletes the flag/poll mechanism from Pet (`hungerAlertReady`, `sicknessAlertReady`, `deathSoundReady`, the two `lastXAlertTime` timestamps, and the three `checkXAlert()` methods) along with the `playPendingAlertSounds()` helper that Task 19 added to `main.cpp`. Adds a Pet → SpeakerManager dependency (likely via a `setSpeaker()` called once in `setup()`). Full design in `DEV_ROADMAP.md` → Part 2 (Complexity Queue). Branch: `task/19b-pet-owns-sound`.
+**Next task on the queue:** **Task 14c — Gameplay Balance Tuning.** Lock decay rates and stat thresholds so the pet feels balanced (target idle time-to-fatal 8–15 min per cause), and add a `millis()` cooldown to `ImuManager::wasShaken()` so Play mode stops being an instant-kill. Pure constant tuning + one new IMU field — no architectural changes. Must land before Task 20 so mood thresholds map onto tuned stat values. Full design in `DEV_ROADMAP.md` → Task 14c section. Branch: `task/14c-balance-tuning`.
 
 **Execution order from here (Phase 1 of the realignment):**
-Task 19 → Task 19b (Pet-Owns-Sound Refactor) → Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
+Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
 
-**Just completed:** Task 19 — Pre-Template Simplification. Walked every module against the pedagogical rules and verified on device. Replaced `Pet::constrainValues()` with a per-value `constrainValue(int)` helper and routed all Pet stat mutation through the setters; converted `ScreenState` and `ActionType` from `enum class` to plain enums with `SCREEN_*` / `ACTION_*` prefixes; extracted `playPendingAlertSounds()` helper in `main.cpp` (Hotspot 3 surface, deeper restructure deferred to Task 19b); applied Hotspot 2 (DisplayManager takes primitives) and Hotspot 5 (NavigationManager takes `backSelected` bool) from Appendix A; added what+why comments across modules; renamed "player" → "user" throughout. Branch: `task/19-pre-template-simplification`.
+**Just completed:** Task 19b — Pet-Owns-Sound Refactor. Moved alert-sound coordination out of `main.cpp` and into `Pet`. `Pet::updateState()` and `Pet::reset()` now take a `SpeakerManager&` and play the pet's own hunger/sickness/death/reset sounds directly (the reference-parameter pattern that `ActionMenu::confirmAction()` already uses — no stored pointer, no `setSpeaker()`, no new beginner concepts). Deleted the three alert ready-flags, the three `checkXAlert()` poll methods, and `main.cpp`'s `playPendingAlertSounds()` bridge; the two `lastXAlertTime` timestamps were kept as Pet's own rate-limit state (the 15s alert nag is unchanged). Also de-cluttered `loop()`: added `Pet::isInDeadState()` and extracted `handleDeathScreen()` / `updateLivePet()` / `renderCurrentScreen()` so `loop()` reads as a short outline, plus a comment block noting that `setup()`/`loop()` are this program's `main()` on the ESP32. Verified on device. Branch: `task/19b-pet-owns-sound`.
 
 **Out of scope** (for the learning lab, but kept as design notes / bonus):
 Task 16 (Microphone), Task 17 (Wireless AP), Task 18 (Remote Dashboard), Task 9a (Evolution), Task 15 (RTC).

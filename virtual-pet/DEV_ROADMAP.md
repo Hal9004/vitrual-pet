@@ -68,7 +68,8 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 
 > **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
 > Execution order for the remaining in-repo work:
-> **19 → 14c → 14d → 13a → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
+> **14c → 14d → 13a → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
+> (Tasks 19 and 19b are done.)
 > Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
@@ -161,18 +162,28 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
      DisplayManager; renamed "player" → "user" throughout all comments.
      No behavioural change.
      Branch: task/19-pre-template-simplification.
- 19b. Pet-Owns-Sound Refactor           — runs after Task 19
-     — Move alert-sound coordination out of main.cpp and into Pet::updateState()
-       so the pet plays its own alert sounds as the state machine raises them.
-       Pet gains a SpeakerManager reference (via a setSpeaker() called once
-       in setup() after speaker.init()). The five alert-coordination members
-       (hungerAlertReady, sicknessAlertReady, deathSoundReady, lastHungerAlertTime,
-       lastSicknessAlertTime) and the three checkXAlert() methods are deleted.
-       main.cpp's playPendingAlertSounds() helper goes with them — the call
-       site collapses to nothing. Adds the Pet → SpeakerManager dependency that
-       Appendix A explicitly recommended against, so this lives on its own
-       branch and gets independent device testing.
-       Branch: task/19b-pet-owns-sound.
+ 19b. Pet-Owns-Sound Refactor           ✅ Done — moved alert-sound coordination
+       out of main.cpp and into Pet. Pet::updateState() and Pet::reset() now take
+       a SpeakerManager& parameter and play the pet's own hunger/sickness/death/
+       reset sounds directly.
+       — NOTE: implemented via a reference PARAMETER, not the stored setSpeaker()
+         reference originally specced. A stored reference can't be set after
+         construction (Pet is a global built before setup()), which would force a
+         pointer; the parameter approach matches the existing
+         ActionMenu::confirmAction(Pet&, DisplayManager&, SpeakerManager&,
+         StorageManager&) pattern and introduces no pointer/nullptr/-> concepts
+         for the beginner audience. So there is no setSpeaker() and no stored member.
+       — Deleted the three ready-flags (hungerAlertReady, sicknessAlertReady,
+         deathSoundReady), the three checkXAlert() methods, and main.cpp's
+         playPendingAlertSounds() helper.
+       — KEPT the two lastXAlertTime timestamps as Pet's own rate-limit state.
+         The original deletion list conflated them with the poll mechanism; the
+         15-second alert nag is unchanged.
+       — Also de-cluttered loop(): added Pet::isInDeadState() and extracted
+         handleDeathScreen()/updateLivePet()/renderCurrentScreen() so loop() reads
+         as a short outline; added a comment block noting setup()/loop() are this
+         program's main() on the ESP32 (Arduino style kept — no Game/App class).
+       — Verified on device. Branch: task/19b-pet-owns-sound.
  14c. Gameplay Balance Tuning           — runs after Task 19b
      — Lock decay rates and stat thresholds so the pet feels balanced. Must
        happen before Task 20 so mood thresholds map onto tuned stat values.
@@ -1162,10 +1173,13 @@ describe live coupling concerns:
   in Task 19. DisplayManager now operates entirely on primitives.
 - **Hotspot 5** (`NavigationManager::update` two-manager fan-in) — fixed in
   Task 19. NavigationManager takes a `bool backSelected`.
-- **Hotspot 3** (`Pet` alert-coordination state) — surface-fixed in Task 19
-  (call-site repetition compressed into a `playPendingAlertSounds()` helper
-  in `main.cpp`); the deeper structural rework is registered as **Task 19b**
-  in Part 2.
+- **Hotspot 3** (`Pet` alert-coordination state) — resolved in Task 19b. Pet
+  now plays its own alert/death/reset sounds: `updateState()` and `reset()` take
+  a `SpeakerManager&` and call it directly. The flag/poll bridge (three
+  ready-flags, three `checkXAlert()` methods, and `main.cpp`'s
+  `playPendingAlertSounds()`) is gone, and `loop()` was de-cluttered into named
+  helpers at the same time. This adds a `Pet ──► Speaker` edge — shown in the
+  diagram below — passed by reference rather than stored, so no member dependency.
 
 The two remaining sections — **Hotspot 1** (`ActionMenu::confirmAction`
 fan-in) and **Hotspot 4** (`main.cpp`'s six-value fan-out at the render
@@ -1190,19 +1204,20 @@ graph LR
     Main([main.cpp])
 
     subgraph Foundations
-        Pet[Pet]
         Button[ButtonHandler]
         IMU[ImuManager]
         Speaker[SpeakerManager]
         Layout[screen_layout]
     end
 
+    Pet[Pet]
     Timer[TimerManager]
     Storage[StorageManager]
     Display[DisplayManager]
     Nav[NavigationManager]
     Menu[ActionMenu - Hotspot 1, kept]
 
+    Pet --> Speaker
     Timer --> Pet
     Storage --> Pet
     Display --> Layout
@@ -1235,11 +1250,12 @@ If your viewer does not render Mermaid, the same graph in flat layered form:
 ```
 Layer 0 — Foundations (no internal dependencies)
 ═══════════════════════════════════════════════════
-   Pet      ButtonHandler   ImuManager   SpeakerManager   screen_layout
+   ButtonHandler   ImuManager   SpeakerManager   screen_layout
 
 
 Layer 1 — Single-dependency managers
 ═══════════════════════════════════════════════════
+   Pet              ──►  SpeakerManager   (updateState()/reset() take it by reference)
    TimerManager     ──►  Pet
    StorageManager   ──►  Pet
    DisplayManager   ──►  screen_layout
@@ -1261,9 +1277,9 @@ Layer 4 — Orchestrator
    main.cpp  ──►  owns one instance of every manager and Pet
 ```
 
-Five modules are foundations. `ActionMenu` sits at the opposite end with six
-internal dependencies. The other four mid-tier modules sit between with one
-to three.
+Four modules are foundations. `ActionMenu` sits at the opposite end with six
+internal dependencies. The other mid-tier modules sit between with one
+to three (`Pet` now among them, depending only on `SpeakerManager`).
 
 ### A.2 — Vocabulary and three categories of fix
 
