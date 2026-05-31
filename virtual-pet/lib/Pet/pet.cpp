@@ -111,7 +111,7 @@ PetState Pet::getState() const {
 
 // isInDeadState()
 // Returns true when the state machine is in STATE_DEAD. main.cpp uses this to
-// decide between the death screen and the normal game tick, without needing to
+// decide between the death screen and the normal update tick, without needing to
 // know the PetState enum values.
 bool Pet::isInDeadState() const {
     return currentState == STATE_DEAD;
@@ -127,7 +127,7 @@ void Pet::setState(PetState newState) {
 // updateState()
 // Runs once per loop. Checks the current state and applies any behaviour that
 // belongs to it, and plays the pet's own alert and death sounds through the
-// given speaker. Add new states here as the game grows.
+// given speaker. Add new states here as the program grows.
 void Pet::updateState(SpeakerManager& speaker) {
     // Death overrides every other state — if any critical stat is fatal, stop here.
     // The death sound plays only on the first frame of death (when transitioning
@@ -203,7 +203,7 @@ void Pet::updateState(SpeakerManager& speaker) {
 // isDead()
 // Checks whether any critical stat has reached a fatal level.
 // Hunger at 100 means the pet has starved. Energy or happiness at 0 means
-// the pet has given up. Any one of these ends the game.
+// the pet has given up. Any one of these ends the pet's life.
 bool Pet::isDead() const {
     if (hungry >= 100) {
         return true;
