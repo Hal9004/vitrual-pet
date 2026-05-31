@@ -69,7 +69,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 > **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
 > Execution order for the remaining in-repo work:
 > **14c → 14d → 13a → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
-> (Tasks 19 and 19b are done.)
+> (Tasks 19, 19b, and 14c are done — next up is 14d.)
 > Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
@@ -109,7 +109,7 @@ LEVEL 5 — ASSET PIPELINE
  14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
 14b. Roadmap Simplification Audit      ✅ Done (right-sized Tasks 15–18 toward minimum teachable foundations. Task 15 RTC moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)" with happiness +5 and a buzzer chirp; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 Remote Dashboard moved to Bonus Feature 2. Expanded Task 14c into a full section. Added Task 14d (Sprite Display Simplification) to lock in single 80×80 sprite size before animation. Added Appendix B with six bonus features (RTC, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos). Branch: refactor/14b-roadmap-simplification.)
-14c. Gameplay Balance Tuning           (see Task 14c section. Deferred — runs after Task 17 lands. Pure constant tuning + one new IMU cooldown — no architectural changes.)
+14c. Gameplay Balance Tuning           ✅ Done (see Task 14c section. Rebalanced the five decay rates — fatal stats now ~10–11 min — plus a 2000 ms shake cooldown and play() cost 20→5. Added an in-file `#define FAST_TEST` toggle keeping a quick-testing value set alongside the shipped set. Branch: task/14c-balance-tuning.)
 14d. Sprite Display Simplification     (see Task 14d section. Deferred — runs after Task 14c, before Task 13a. Picks 80×80 as the single sprite size for the whole project, removes the sprite from the Stats screen, compresses the Interact screen's free space at y=181–220 to fit the larger sprite. Locks in the sprite size before animation work starts.)
 
 ⚠️  INITIAL SIMPLIFICATION PASS REQUIRED BEFORE ANY NEW FEATURES
@@ -184,9 +184,11 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
          as a short outline; added a comment block noting setup()/loop() are this
          program's main() on the ESP32 (Arduino style kept — no Game/App class).
        — Verified on device. Branch: task/19b-pet-owns-sound.
- 14c. Gameplay Balance Tuning           — runs after Task 19b
-     — Lock decay rates and stat thresholds so the pet feels balanced. Must
-       happen before Task 20 so mood thresholds map onto tuned stat values.
+ 14c. Gameplay Balance Tuning           ✅ Done — ran after Task 19b
+     — Rebalanced decay rates (fatal stats ~10–11 min, within 2×), added a
+       2000 ms shake cooldown, cut play() cost 20→5, and added an in-file
+       #define FAST_TEST toggle (quick-test set kept beside the shipped set).
+       Done before Task 20 so mood thresholds map onto tuned stat values.
  14d. Sprite Display Simplification     — runs after Task 14c
      — Pick a single sprite size (likely 80×80) for the whole project. Remove
        the sprite from the Stats screen. Compress the Interact screen's free
@@ -886,6 +888,20 @@ After all commits, the roadmap should read end-to-end as a coherent teaching pla
 ---
 
 ### Task 14c — Gameplay Balance Tuning
+
+> **✅ Done (branch `task/14c-balance-tuning`).** As-built: every stat moves 1 point
+> per interval. **Shipped set** — hunger 9000 ms, happiness 9000 ms, energy 8000 ms
+> (the three fatal stats reach a fatal level in ~10–11 min, within 2× of each other),
+> cleanliness 10000 ms, sickness 10000 ms (secondary, non-fatal). `Pet::play()` energy
+> cost 20 → 5. `ImuManager` shake cooldown = 2000 ms, implemented in `update()` so
+> `wasShaken()` stays a `const` query (only new private fields added — no signature
+> change). **Deviation from "What this sub-task is NOT" below:** a *compile-time* test
+> convenience was added — `time_manager.cpp` keeps two complete value sets selected by
+> an in-file `#define FAST_TEST` (quick set ~1 min to fatal, left commented for the
+> shipped build). This is not a runtime difficulty setting and touches no
+> `platformio.ini`; both sets are kept on purpose as a worked balancing example.
+> Fast build verified on device. Executed early (after Task 19b, not after Task 17 as
+> originally slotted) because Tasks 16/17 moved out of the active queue.
 
 **Why this sub-task:**
 
