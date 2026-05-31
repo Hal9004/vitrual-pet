@@ -3,12 +3,15 @@
 
 #include "../Display/screen_layout.h"
 #include "../Button/button_handler.h"
-#include "../Actions/action_menu.h"
 
 // NavigationManager owns which screen the player is currently viewing and
 // handles all screen-switching input. By moving this logic into its own
 // module, loop() stays short — it just delegates here instead of containing
 // a growing switch statement that would need to change for every new screen.
+//
+// NavigationManager has no knowledge of ActionMenu. The one fact it needs
+// from the menu — whether "Back" is currently highlighted — is passed in
+// as a plain bool by the caller. This keeps the two modules independent.
 class NavigationManager {
 private:
     ScreenState currentScreen;
@@ -20,14 +23,17 @@ private:
     // the buttons do on that screen, nothing more.
     void handleMainScreenInput(const ButtonHandler& buttons);
     void handleStatsScreenInput(const ButtonHandler& buttons);
-    void handleInteractScreenInput(const ButtonHandler& buttons, const ActionMenu& menu);
+    void handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected);
 
 public:
     NavigationManager();
 
     // update() — call once per loop. Resets the confirm flag, then routes
     // button input to the handler for whichever screen is currently active.
-    void update(const ButtonHandler& buttons, const ActionMenu& menu);
+    // backSelected tells us whether the Interact-screen menu is currently
+    // highlighting the "Back" entry, so handleInteractScreenInput knows
+    // whether A means "go back to Main" or "confirm this action."
+    void update(const ButtonHandler& buttons, bool backSelected);
 
     // getCurrentScreen() — returns the screen the player is currently viewing.
     ScreenState getCurrentScreen() const;

@@ -7,7 +7,7 @@ NavigationManager::NavigationManager()
     // Start on the Main screen.
 }
 
-void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& menu) {
+void NavigationManager::update(const ButtonHandler& buttons, bool backSelected) {
     // Reset the confirm flag at the start of every frame so that it is only
     // true for the single loop iteration in which the player pressed A.
     // If we did not reset it here, confirmAction() would fire every frame
@@ -22,7 +22,7 @@ void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& m
             handleStatsScreenInput(buttons);
             break;
         case SCREEN_INTERACT:
-            handleInteractScreenInput(buttons, menu);
+            handleInteractScreenInput(buttons, backSelected);
             break;
     }
 }
@@ -45,12 +45,12 @@ void NavigationManager::handleStatsScreenInput(const ButtonHandler& buttons) {
     }
 }
 
-void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, const ActionMenu& menu) {
+void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected) {
     // B and C are NOT handled here — loop() calls menu.update(buttons) first
     // so they cycle through actions rather than triggering a screen switch.
     // This handler only cares about A: either go back to Main or confirm an action.
     if (buttons.wasButtonAPressed()) {
-        if (menu.isBackSelected()) {
+        if (backSelected) {
             currentScreen = SCREEN_MAIN;
         } else {
             confirmActionRequested = true;

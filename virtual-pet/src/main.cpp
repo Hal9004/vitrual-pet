@@ -117,9 +117,11 @@ void loop() {
         }
 
         // Update navigation — reads button input and switches screens if needed.
-        // This must run AFTER menu.update() so NavigationManager can read the
-        // latest selected action when deciding whether A means "Back" or "Confirm".
-        navManager.update(buttons, menu);
+        // This must run AFTER menu.update() so the latest "is Back highlighted?"
+        // value is what NavigationManager sees. We pass that single fact as a
+        // bool rather than handing over the whole menu object — NavigationManager
+        // does not need to know what an ActionMenu is.
+        navManager.update(buttons, menu.isBackSelected());
 
         // shouldConfirmAction() is true for exactly one frame when the player pressed A
         // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
