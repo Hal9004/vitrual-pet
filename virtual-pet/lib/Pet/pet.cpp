@@ -28,54 +28,61 @@ int Pet::getCleanliness() const { return cleanliness; }
 int Pet::getEnergised() const { return energised; }
 
 // Setters
-void Pet::setHungry(int value) { hungry = value; constrainValues(); }
-void Pet::setTired(int value) { tired = value; constrainValues(); }
-void Pet::setHappy(int value) { happy = value; constrainValues(); }
-void Pet::setSick(int value) { sick = value; constrainValues(); }
-void Pet::setSad(int value) { sad = value; constrainValues(); }
-void Pet::setCleanliness(int value) { cleanliness = value; constrainValues(); }
-void Pet::setEnergised(int value) { energised = value; constrainValues(); }
+// Each setter stores the new value after passing it through constrainValue()
+// so callers never have to constrain their own input — pet.setHappy(150) silently
+// becomes 100, and pet.setHappy(-5) silently becomes 0. Constraining inside
+// the setter (and not in a separate "constrainAll" sweep) means each setter
+// only touches the one stat it owns.
+void Pet::setHungry(int value)      { hungry      = constrainValue(value); }
+void Pet::setTired(int value)       { tired       = constrainValue(value); }
+void Pet::setHappy(int value)       { happy       = constrainValue(value); }
+void Pet::setSick(int value)        { sick        = constrainValue(value); }
+void Pet::setSad(int value)         { sad         = constrainValue(value); }
+void Pet::setCleanliness(int value) { cleanliness = constrainValue(value); }
+void Pet::setEnergised(int value)   { energised   = constrainValue(value); }
 
 // Pet care actions
+// Each action changes the pet's state, then adjusts several stats by routing
+// every change through the matching setter. Going through the setters — even
+// from inside the class — means the setters remain the only place where stat
+// values are written. If we ever change how setters work (extra constraints,
+// logging, change events), the action methods inherit those changes for free
+// without needing to be edited.
+
 void Pet::feed() {
-    setState(STATE_EATING);    // Signal that the pet is now eating
-    hungry = hungry - 30;      // Reduce hunger
-    happy = happy + 10;        // Slightly increase happiness
-    energised = energised - 5; // Small energy cost
-    constrainValues();
+    setState(STATE_EATING);                  // Signal that the pet is now eating
+    setHungry(hungry - 30);                  // Reduce hunger
+    setHappy(happy + 10);                    // Slightly increase happiness
+    setEnergised(energised - 5);             // Small energy cost
 }
 
 void Pet::sleep() {
-    setState(STATE_SLEEPING);  // Signal that the pet is now sleeping
-    tired = tired - 40;        // Reduce tiredness significantly
-    energised = energised + 30; // Restore energy
-    hungry = hungry + 10;      // Wake up hungry
-    constrainValues();
+    setState(STATE_SLEEPING);                // Signal that the pet is now sleeping
+    setTired(tired - 40);                    // Reduce tiredness significantly
+    setEnergised(energised + 30);            // Restore energy
+    setHungry(hungry + 10);                  // Wake up hungry
 }
 
 void Pet::play() {
-    setState(STATE_PLAYING);        // Signal that the pet is now playing
-    happy = happy + 25;             // Significantly increase happiness
-    tired = tired + 20;             // Increase tiredness
-    energised = energised - 20;     // Use energy
-    hungry = hungry + 15;           // Playing makes them hungry
-    constrainValues();
+    setState(STATE_PLAYING);                 // Signal that the pet is now playing
+    setHappy(happy + 25);                    // Significantly increase happiness
+    setTired(tired + 20);                    // Increase tiredness
+    setEnergised(energised - 20);            // Use energy
+    setHungry(hungry + 15);                  // Playing makes them hungry
 }
 
 void Pet::bathe() {
-    setState(STATE_BATHING);            // Signal that the pet is now being cleaned
-    cleanliness = cleanliness + 30;     // Improve cleanliness
-    tired = tired + 10;                 // Bathing is tiring
-    energised = energised - 10;         // Uses some energy
-    constrainValues();
+    setState(STATE_BATHING);                 // Signal that the pet is now being cleaned
+    setCleanliness(cleanliness + 30);        // Improve cleanliness
+    setTired(tired + 10);                    // Bathing is tiring
+    setEnergised(energised - 10);            // Uses some energy
 }
 
 void Pet::heal() {
-    setState(STATE_HEALING);    // Signal that the pet is now receiving treatment
-    sick = sick - 50;           // Reduce sickness
-    tired = tired + 20;         // Medicine makes pet tired
-    happy = happy - 5;          // Unpleasant experience
-    constrainValues();
+    setState(STATE_HEALING);                 // Signal that the pet is now receiving treatment
+    setSick(sick - 50);                      // Reduce sickness
+    setTired(tired + 20);                    // Medicine makes pet tired
+    setHappy(happy - 5);                     // Unpleasant experience
 }
 
 // getState()
@@ -254,18 +261,17 @@ int Pet::getDominantMood() const {
     return maxIndex; // 0=hungry, 1=tired, 2=happy, 3=sick, 4=sad, 5=clean, 6=energised
 }
 
-// Constrain all values between 0-100
-void Pet::constrainValues() {
-    auto constrainStat = [](int& value) {
-        if (value < 0) value = 0;
-        if (value > 100) value = 100;
-    };
-
-    constrainStat(hungry);
-    constrainStat(tired);
-    constrainStat(happy);
-    constrainStat(sick);
-    constrainStat(sad);
-    constrainStat(cleanliness);
-    constrainStat(energised);
+// constrainValue()
+// Takes a single number and returns it forced into the legal 0..100 range.
+// Called only by the setters. Every other route to stat mutation (the action
+// methods feed/sleep/play/bathe/heal) goes through the setters, so this one
+// helper is enough to guarantee no stat ever escapes 0..100.
+//
+// Returns the constrained value rather than modifying in place, so each
+// setter reads as one self-contained line: hand in a number, store the
+// constrained number back.
+int Pet::constrainValue(int value) const {
+    if (value < 0)   { return 0; }
+    if (value > 100) { return 100; }
+    return value;
 }

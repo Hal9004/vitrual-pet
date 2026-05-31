@@ -47,6 +47,15 @@ private:
     static const unsigned long HUNGER_ALERT_INTERVAL   = 15000;
     static const unsigned long SICKNESS_ALERT_INTERVAL = 15000;
 
+    // constrainValue() — forces a single stat value into the legal 0..100 range.
+    // Returns the constrained value rather than modifying in place. Used by every
+    // setter so callers can hand in any number and trust the stored value to
+    // be in range — `pet.setHappy(150)` silently becomes 100, `pet.setHappy(-5)`
+    // silently becomes 0.
+    // Private because all stat mutation routes through the setters, and the
+    // setters are the only thing that needs this helper.
+    int constrainValue(int value) const;
+
 public:
     // Starting values for a brand-new pet — used by the constructor and by
     // StorageManager::load() so both share a single source of truth.
@@ -117,9 +126,6 @@ public:
 
     // Restores all stats to their starting values so the game can begin again
     void reset();
-
-    // Clamp values between 0-100
-    void constrainValues();
 
 };
 
