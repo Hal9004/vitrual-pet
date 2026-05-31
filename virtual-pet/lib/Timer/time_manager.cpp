@@ -1,40 +1,67 @@
 #include <Arduino.h>
 #include "time_manager.h"
 
-// How many milliseconds between each hunger increase.
-// 3000 ms = 3 seconds. Change this number to make hunger grow faster or slower.
-const unsigned long HUNGER_INCREASE_INTERVAL = 3000;
+// ---------------------------------------------------------------------------
+// GAMEPLAY BALANCE — two complete sets of decay rates.
+//
+// The pet has three fatal stats: hunger (dies at 100), energy and happiness
+// (die at 0). These constants decide how fast each one moves, and therefore how
+// long the pet survives if you ignore it. Getting them right is "balancing" the
+// game — too fast and the pet is impossible to keep alive, too slow and nothing
+// you do seems to matter.
+//
+// We keep TWO sets so you can switch between them at build time:
+//
+//   * The SHIPPED set (the #else branch) is the real game. An untouched pet
+//     takes about 10–11 minutes to reach a fatal stat — long enough that caring
+//     for it feels meaningful, short enough to demo in one sitting.
+//
+//   * The QUICK-TEST set (the #ifdef FAST_TEST branch) speeds everything up so
+//     the pet reaches a fatal stat in about a minute. Build with the FAST_TEST
+//     flag (see the m5stick-c-fasttest environment in platformio.ini) when you
+//     are developing and don't want to wait ten minutes to watch the pet die.
+//
+// Both sets are kept on purpose: comparing the two numbers side by side is the
+// clearest way to see how the same game can feel completely different just by
+// changing these intervals. This is a compile-time choice — only ONE set ends up
+// in the firmware — not a setting the player can change while the game runs.
+//
+// In BOTH sets every stat moves by 1 point per interval, so each interval reads
+// directly as "lose 1 point every N milliseconds" and the time to cross the full
+// 0–100 range is simply (100 × interval).
+// ---------------------------------------------------------------------------
+#ifdef FAST_TEST
 
-// How many points hunger goes up each interval.
-const int HUNGER_INCREASE_AMOUNT = 2;
-
-// How many milliseconds between each happiness decrease.
-// 5000 ms = 5 seconds.
-const unsigned long HAPPINESS_DECAY_INTERVAL = 5000;
-
-// How many points happiness drops each interval.
+// --- QUICK-TEST set: a fatal stat is reached in roughly one minute. ---
+const unsigned long HUNGER_INCREASE_INTERVAL = 1000;        // hunger +1 every 1 s
+const int HUNGER_INCREASE_AMOUNT = 1;
+const unsigned long HAPPINESS_DECAY_INTERVAL = 1000;        // happiness -1 every 1 s
 const int HAPPINESS_DECAY_AMOUNT = 1;
-
-// How many milliseconds between each energy drain.
-// 8000 ms = 8 seconds.
-const unsigned long ENERGY_DRAIN_INTERVAL = 8000;
-
-// How many points energy drops each interval.
+const unsigned long ENERGY_DRAIN_INTERVAL = 1000;           // energy -1 every 1 s
 const int ENERGY_DRAIN_AMOUNT = 1;
-
-// How many milliseconds between each cleanliness decrease.
-// 10000 ms = 10 seconds.
-const unsigned long CLEANLINESS_DECAY_INTERVAL = 10000;
-
-// How many points cleanliness drops each interval.
+const unsigned long CLEANLINESS_DECAY_INTERVAL = 1500;      // cleanliness -1 every 1.5 s (secondary)
 const int CLEANLINESS_DECAY_AMOUNT = 1;
-
-// How many milliseconds between each sickness increase (when cleanliness is low).
-// 12000 ms = 12 seconds.
-const unsigned long SICKNESS_ACCUMULATION_INTERVAL = 12000;
-
-// How many points sick rises each interval.
+const unsigned long SICKNESS_ACCUMULATION_INTERVAL = 1500;  // sickness +1 every 1.5 s (secondary)
 const int SICKNESS_ACCUMULATION_AMOUNT = 1;
+
+#else
+
+// --- SHIPPED set: a fatal stat is reached in roughly 10–11 minutes. ---
+const unsigned long HUNGER_INCREASE_INTERVAL = 9000;        // hunger +1 every 9 s
+const int HUNGER_INCREASE_AMOUNT = 1;
+const unsigned long HAPPINESS_DECAY_INTERVAL = 9000;        // happiness -1 every 9 s
+const int HAPPINESS_DECAY_AMOUNT = 1;
+const unsigned long ENERGY_DRAIN_INTERVAL = 8000;           // energy -1 every 8 s
+const int ENERGY_DRAIN_AMOUNT = 1;
+// Cleanliness and sickness are secondary: neither is directly fatal. Cleanliness
+// only matters once it drops below CLEANLINESS_DANGER_THRESHOLD, which then lets
+// sickness build up. They are tuned slightly slower than the three fatal stats.
+const unsigned long CLEANLINESS_DECAY_INTERVAL = 10000;     // cleanliness -1 every 10 s
+const int CLEANLINESS_DECAY_AMOUNT = 1;
+const unsigned long SICKNESS_ACCUMULATION_INTERVAL = 10000; // sickness +1 every 10 s
+const int SICKNESS_ACCUMULATION_AMOUNT = 1;
+
+#endif
 
 // Cleanliness must fall below this value before sickness starts accumulating.
 const int CLEANLINESS_DANGER_THRESHOLD = 30;
