@@ -10,7 +10,9 @@ ImuManager::ImuManager()
       accelY(0.0f),
       accelZ(0.0f),
       prevShakeDetected(false),
-      currentShakeDetected(false) {
+      currentShakeDetected(false),
+      lastShakeTime(0),
+      shakeReportedThisFrame(false) {
 }
 
 // update()
@@ -29,17 +31,30 @@ void ImuManager::update() {
     float magnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
 
     // True for every frame the device is currently shaking hard enough.
-    // This is the "is shaking" check. Converting it into a one-shot
-    // "just started shaking" event happens in wasShaken() below.
+    // This is the "is shaking" check; the lines below turn it into a single,
+    // rate-limited "report a shake now" pulse.
     currentShakeDetected = (magnitude > SHAKE_THRESHOLD);
+
+    // A shake "starts" only on the frame it crosses the threshold from below.
+    bool shakeJustStarted = currentShakeDetected && !prevShakeDetected;
+
+    // Even then, only report it if the cooldown has elapsed since the last report —
+    // this stops one continuous shake (or rapid repeats) from triggering play()
+    // over and over and draining the pet's stats in a couple of seconds.
+    if (shakeJustStarted && (millis() - lastShakeTime > SHAKE_COOLDOWN_INTERVAL)) {
+        shakeReportedThisFrame = true;
+        lastShakeTime = millis();
+    } else {
+        shakeReportedThisFrame = false;
+    }
 }
 
 // wasShaken()
-// Returns true only on the single frame when a shake starts — the magnitude
-// crossed the threshold this frame but was below it the previous frame.
-// This prevents a sustained shake from triggering play() on every loop iteration.
+// Returns the one-frame "a shake was just reported" pulse that update() computed.
+// It is true on exactly the frame a fresh shake passes the cooldown, so the caller
+// can play() once per gesture. This is a plain read of state, so it stays const.
 bool ImuManager::wasShaken() const {
-    return currentShakeDetected && !prevShakeDetected;
+    return shakeReportedThisFrame;
 }
 
 // getAccelX()

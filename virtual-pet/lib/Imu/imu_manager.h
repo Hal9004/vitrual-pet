@@ -26,6 +26,12 @@ private:
     // A gentle shake typically peaks at 2.0–3.0 G; 1.8 is a comfortable trigger point.
     static constexpr float SHAKE_THRESHOLD = 1.8f;
 
+    // Smallest gap (in milliseconds) between two reported shakes. One real shake
+    // gesture lasts many loop frames, so without this cooldown a single waggle would
+    // report over and over and call play() dozens of times, draining the pet in
+    // seconds. 2000 ms means "one shake = one play"; shake again after 2 s to play again.
+    static constexpr unsigned long SHAKE_COOLDOWN_INTERVAL = 2000;
+
     // Raw acceleration components read from the MPU6886 (units: G-force)
     float accelX;
     float accelY;
@@ -33,9 +39,15 @@ private:
 
     // Edge-detection state: mirrors the pattern used in ButtonHandler.
     // prevShakeDetected holds the shake state from the last frame so that
-    // wasShaken() can fire only on the frame the shake starts, not every frame.
+    // a shake is only "starting" on the frame it crosses the threshold, not every frame.
     bool prevShakeDetected;
     bool currentShakeDetected;
+
+    // Cooldown state. lastShakeTime is the millis() timestamp of the last reported
+    // shake; shakeReportedThisFrame is the one-frame pulse that wasShaken() hands back.
+    // update() does all the work and sets this flag; wasShaken() just reads it.
+    unsigned long lastShakeTime;
+    bool shakeReportedThisFrame;
 
 public:
     // Constructor — initialises all values to safe defaults before first update()
@@ -47,8 +59,10 @@ public:
     void update();
 
     // wasShaken()
-    // Returns true only on the single frame when a shake is first detected —
-    // magnitude exceeded SHAKE_THRESHOLD this frame but not the previous frame.
+    // Returns true only on the single frame when a fresh shake is reported — the
+    // magnitude crossed SHAKE_THRESHOLD this frame AND the cooldown has elapsed since
+    // the last reported shake. The actual decision is made in update(); this is a
+    // plain read-only query, so it stays const.
     bool wasShaken() const;
 
     // Getters so other modules can read raw acceleration if needed
