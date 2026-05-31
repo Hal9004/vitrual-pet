@@ -1,30 +1,35 @@
 #include <Arduino.h>
 #include "time_manager.h"
 
+// Uncomment the next line to build the QUICK-TEST version, where the pet's stats
+// decay fast enough to reach a fatal level in about a minute. Leave it commented
+// for the real, balanced behaviour. (See the two sets of values below.)
+// #define FAST_TEST
+
 // ---------------------------------------------------------------------------
-// GAMEPLAY BALANCE — two complete sets of decay rates.
+// STAT BALANCE — two complete sets of decay rates.
 //
 // The pet has three fatal stats: hunger (dies at 100), energy and happiness
 // (die at 0). These constants decide how fast each one moves, and therefore how
-// long the pet survives if you ignore it. Getting them right is "balancing" the
-// game — too fast and the pet is impossible to keep alive, too slow and nothing
-// you do seems to matter.
+// long the pet survives if you ignore it. Getting them right is "balancing" how
+// the pet behaves — too fast and the pet is impossible to keep alive, too slow
+// and nothing you do seems to matter.
 //
-// We keep TWO sets so you can switch between them at build time:
+// We keep TWO sets and pick one with the FAST_TEST switch at the top of this file:
 //
-//   * The SHIPPED set (the #else branch) is the real game. An untouched pet
-//     takes about 10–11 minutes to reach a fatal stat — long enough that caring
-//     for it feels meaningful, short enough to demo in one sitting.
+//   * The SHIPPED set (the #else branch) is the real, balanced behaviour. An
+//     untouched pet takes about 10–11 minutes to reach a fatal stat — long enough
+//     that caring for it feels meaningful, short enough to demo in one sitting.
 //
 //   * The QUICK-TEST set (the #ifdef FAST_TEST branch) speeds everything up so
-//     the pet reaches a fatal stat in about a minute. Build with the FAST_TEST
-//     flag (see the m5stick-c-fasttest environment in platformio.ini) when you
-//     are developing and don't want to wait ten minutes to watch the pet die.
+//     the pet reaches a fatal stat in about a minute. Uncomment the
+//     "#define FAST_TEST" line above when you are developing and don't want to
+//     wait ten minutes to watch the pet die; comment it out again before shipping.
 //
 // Both sets are kept on purpose: comparing the two numbers side by side is the
-// clearest way to see how the same game can feel completely different just by
-// changing these intervals. This is a compile-time choice — only ONE set ends up
-// in the firmware — not a setting the player can change while the game runs.
+// clearest way to see how the same program can behave completely differently just
+// by changing these intervals. This is a compile-time choice — only ONE set ends
+// up in the firmware — not a setting that can change while the program runs.
 //
 // In BOTH sets every stat moves by 1 point per interval, so each interval reads
 // directly as "lose 1 point every N milliseconds" and the time to cross the full
