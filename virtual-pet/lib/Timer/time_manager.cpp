@@ -119,7 +119,7 @@ void TimerManager::applyCleanlinessDecay(Pet& pet) {
 
 // applySicknessAccumulation()
 // Increases sick only when cleanliness has fallen below CLEANLINESS_DANGER_THRESHOLD.
-// A dirty pet gradually becomes unwell — the player must bathe it to stop this.
+// A dirty pet gradually becomes unwell — the user must bathe it to stop this.
 void TimerManager::applySicknessAccumulation(Pet& pet) {
     unsigned long currentTime = millis();
 

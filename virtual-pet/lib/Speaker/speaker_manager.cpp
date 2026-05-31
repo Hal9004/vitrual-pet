@@ -120,7 +120,7 @@ void SpeakerManager::playHungerAlertSound() {
 
 // playSicknessAlertSound()
 // Two short beeps at D4 — a lower, more ominous pitch than the hunger alert
-// so the player can tell the two warnings apart by ear without looking at the screen.
+// so the user can tell the two warnings apart by ear without looking at the screen.
 void SpeakerManager::playSicknessAlertSound() {
     M5.Speaker.tone(294, 100);  // D4
     delay(120);

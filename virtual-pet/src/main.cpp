@@ -24,7 +24,7 @@
 Pet             myPet;    // Holds all of the pet's stats and care actions.
 DisplayManager  display;  // Draws everything to the screen.
 ButtonHandler   buttons;  // Reads and tracks button presses.
-ActionMenu      menu;     // Manages the list of actions the player can choose.
+ActionMenu      menu;     // Manages the list of actions the user can choose.
 NavigationManager navManager; // Tracks which screen is active and routes button input.
 TimerManager    timers;   // Handles all automatic stat changes over time.
 ImuManager      imu;      // Reads accelerometer data and detects shake gestures.
@@ -130,7 +130,7 @@ void loop() {
 
         // Only cycle through menu actions when the Interact screen is visible.
         // Calling menu.update() on other screens would silently change the selected
-        // action while the player cannot even see the menu.
+        // action while the user cannot even see the menu.
         if (navManager.getCurrentScreen() == SCREEN_INTERACT) {
             menu.update(buttons);
         }
@@ -142,7 +142,7 @@ void loop() {
         // does not need to know what an ActionMenu is.
         navManager.update(buttons, menu.isBackSelected());
 
-        // shouldConfirmAction() is true for exactly one frame when the player pressed A
+        // shouldConfirmAction() is true for exactly one frame when the user pressed A
         // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
         // logic out of NavigationManager, which only handles screen transitions.
         if (navManager.shouldConfirmAction()) {

@@ -8,7 +8,7 @@
 #include "../Speaker/speaker_manager.h"
 #include "../Storage/storage_manager.h"
 
-// ActionMenu manages the list of things the player can do with their pet.
+// ActionMenu manages the list of things the user can do with their pet.
 // It tracks which action is highlighted and executes the action when confirmed.
 //
 // Button Mapping (when the Interact screen is active):
@@ -18,7 +18,7 @@
 //
 // Available Actions: Feed, Play, Sleep, Bathe, Heal, Save, Back
 
-// ActionType names every possible action the player can select.
+// ActionType names every possible action the user can select.
 // Each value is prefixed with ACTION_ so it does not collide with other
 // names elsewhere in the project. Without the prefix a plain enum value
 // like SAVE or BACK could clash with a constant of the same name in
@@ -30,7 +30,7 @@ enum ActionType {
     ACTION_BATHE,
     ACTION_HEAL,
     ACTION_SAVE,
-    ACTION_BACK    // Returns the player to the Main screen without doing anything
+    ACTION_BACK    // Returns the user to the Main screen without doing anything
 };
 
 // Action bundles everything DisplayManager needs to know about one menu entry:
@@ -56,7 +56,7 @@ public:
     // update() — call once per loop when the Interact screen is active.
     // Reads Button B (next) and Button C (previous) to cycle through actions.
     // Only call this when the Interact screen is visible — otherwise the
-    // selection would change even while the player is on a different screen.
+    // selection would change even while the user is on a different screen.
     void update(const ButtonHandler& buttons);
 
     // getSelectedAction() — returns the full Action struct for the highlighted entry.
@@ -65,7 +65,7 @@ public:
     // getCurrentActionIndex() — returns the numeric position of the selected action (0–6).
     int getCurrentActionIndex() const;
 
-    // isBackSelected() — returns true when the player has scrolled to "Back".
+    // isBackSelected() — returns true when the user has scrolled to "Back".
     // main.cpp uses this to switch screens instead of calling confirmAction().
     bool isBackSelected() const;
 

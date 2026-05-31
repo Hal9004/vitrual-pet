@@ -215,7 +215,7 @@ bool Pet::isDead() const {
 // Uses the DEFAULT_* constants so the constructor, StorageManager::load(),
 // and reset() all share one source of truth — change a starting value in
 // pet.h and every code path agrees.
-// Called when the player chooses to restart after the pet has died.
+// Called when the user chooses to restart after the pet has died.
 void Pet::reset() {
     hungry      = DEFAULT_HUNGRY;
     tired       = DEFAULT_TIRED;

@@ -68,7 +68,7 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 // -----------------------------------------------------------------------
 // Main screen render
 // Shows the pet face filling the centre of the screen, with a two-tab nav
-// bar at the bottom so the player can enter Stats or Interact.
+// bar at the bottom so the user can enter Stats or Interact.
 // -----------------------------------------------------------------------
 void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
     bool screenChanged   = (lastRenderedScreen != SCREEN_MAIN);
@@ -157,7 +157,7 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
         return;
     }
 
-    // Fast path: when the player presses B or C to cycle actions, only redraw
+    // Fast path: when the user presses B or C to cycle actions, only redraw
     // the contextual stat bar and the menu indicator — not the whole screen.
     // This prevents the face from flickering on every button press.
     if (currentActionIndex != lastMenuActionIndex) {
@@ -350,7 +350,7 @@ void DisplayManager::showActionFeedback(const char* action) {
 
 // showDeathScreen() — clears the screen and shows game-over text.
 // Forces lastFullRedrawTime to 0 so the normal screen redraws immediately
-// the moment the player restarts.
+// the moment the user restarts.
 void DisplayManager::showDeathScreen() {
     clearScreen(TFT_BLACK);
 

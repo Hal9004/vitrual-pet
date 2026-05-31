@@ -6,7 +6,7 @@
 // StorageManager
 // Handles saving and loading pet stats to NVS (Non-Volatile Storage) using the
 // Arduino Preferences library. Stats written here survive a power-off or reset.
-// Call load() once in setup() and save() whenever the player selects the Save action.
+// Call load() once in setup() and save() whenever the user selects the Save action.
 class StorageManager {
 private:
     // The NVS namespace groups all virtual-pet keys together so they do not
@@ -16,7 +16,7 @@ private:
 
 public:
     // Writes all seven pet stats to NVS so they survive a power-off.
-    // Call this when the player confirms the Save action.
+    // Call this when the user confirms the Save action.
     void save(const Pet& pet);
 
     // Reads all seven pet stats from NVS and applies them to the pet.

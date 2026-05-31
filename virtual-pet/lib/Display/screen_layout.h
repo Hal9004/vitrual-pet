@@ -23,7 +23,7 @@ struct StatBarZone {
 };
 
 // -----------------------------------------------------------------------
-// ScreenState — which top-level screen the player is currently viewing.
+// ScreenState — which top-level screen the user is currently viewing.
 //
 // An enum (enumeration) is a named list of integer constants. Using one
 // instead of raw numbers (0, 1, 2) makes the code self-documenting: the

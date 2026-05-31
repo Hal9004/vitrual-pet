@@ -9,7 +9,7 @@ NavigationManager::NavigationManager()
 
 void NavigationManager::update(const ButtonHandler& buttons, bool backSelected) {
     // Reset the confirm flag at the start of every frame so that it is only
-    // true for the single loop iteration in which the player pressed A.
+    // true for the single loop iteration in which the user pressed A.
     // If we did not reset it here, confirmAction() would fire every frame
     // after the first press — feeding the pet repeatedly without extra presses.
     confirmActionRequested = false;

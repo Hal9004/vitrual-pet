@@ -20,7 +20,7 @@ private:
 
     // -----------------------------------------------------------------------
     // Stats screen zone constants — these match the original layout exactly.
-    // Stats bars sit above the face so the player can see all five values.
+    // Stats bars sit above the face so the user can see all five values.
     // -----------------------------------------------------------------------
     static constexpr ScreenZone TITLE_ZONE    = {  0,   5, 135, 19 };
     static constexpr ScreenZone STATS_ZONE    = {  5,  26, 125, 98 };
@@ -37,7 +37,7 @@ private:
 
     // -----------------------------------------------------------------------
     // Main screen zone constants — no stat bars, so the face gets more room.
-    // The bottom nav bar lets the player pick Stats or Interact.
+    // The bottom nav bar lets the user pick Stats or Interact.
     // -----------------------------------------------------------------------
     static constexpr int         MAIN_FACE_CENTER_Y = 110;
     static constexpr int         MAIN_MOOD_Y        = 155;
@@ -75,7 +75,7 @@ private:
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
     // The Interact screen needs three pieces of information about the action menu
     // (the action name to display, which stat bar to highlight, and the current
-    // index so it can detect when the player has scrolled). We pass these as
+    // index so it can detect when the user has scrolled). We pass these as
     // primitives so DisplayManager does not need to know what an ActionMenu is.
     void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
                               int moodIndex, const char* selectedActionName,

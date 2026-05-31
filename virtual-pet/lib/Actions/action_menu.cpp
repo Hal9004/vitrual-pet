@@ -40,7 +40,7 @@ int ActionMenu::getCurrentActionIndex() const {
 }
 
 bool ActionMenu::isBackSelected() const {
-    // Returns true when the player has scrolled to the Back entry.
+    // Returns true when the user has scrolled to the Back entry.
     // main.cpp checks this before calling confirmAction() so the navigation
     // manager can switch screens without executing a pet action.
     return actions[currentActionIndex].type == ACTION_BACK;
@@ -89,9 +89,9 @@ void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager
             return;
     }
 
-    // Show the action name on screen so the player can see what just happened.
+    // Show the action name on screen so the user can see what just happened.
     display.showActionFeedback(selectedAction.name);
 
-    // Hold the feedback message long enough for the player to read it.
+    // Hold the feedback message long enough for the user to read it.
     delay(1000);
 }
