@@ -51,12 +51,12 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 
 Also read `DEV_ROADMAP.md` for task-level detail and `COURSE_CHECKLIST.md` for per-feature status.
 
-**Next task on the queue:** **Task 19 — Pre-Template Simplification.** Walk every module and simplify against the Pedagogical Rules above. Full design in `DEV_ROADMAP.md` → Part 2 (Complexity Queue) and Appendix A (Module Coupling Map). Branch: `task/19-pre-template-simplification`.
+**Next task on the queue:** **Task 19b — Pet-Owns-Sound Refactor.** Move alert-sound coordination out of `main.cpp` and into `Pet::updateState()` so the pet plays its own alert sounds. Deletes the flag/poll mechanism from Pet (`hungerAlertReady`, `sicknessAlertReady`, `deathSoundReady`, the two `lastXAlertTime` timestamps, and the three `checkXAlert()` methods) along with the `playPendingAlertSounds()` helper that Task 19 added to `main.cpp`. Adds a Pet → SpeakerManager dependency (likely via a `setSpeaker()` called once in `setup()`). Full design in `DEV_ROADMAP.md` → Part 2 (Complexity Queue). Branch: `task/19b-pet-owns-sound`.
 
 **Execution order from here (Phase 1 of the realignment):**
 Task 19 → Task 19b (Pet-Owns-Sound Refactor) → Task 14c (Gameplay Balance) → Task 14d (Sprite Display Simplification) → Task 13a (Sprite Animation) → Task 20 (Mood Sprite System) → Task 21 (Curriculum Scaffolding Refactor) → Task 22 (Doc Sweep) → move to `virtual-pet-learning-lab` repo (Phases 2–4 of the realignment).
 
-**Just completed:** Step 1.0 of the curriculum realignment — created `CURRICULUM_REALIGNMENT.md`, moved Tasks 16 (Microphone) and 17 (Wireless AP) to bonus/out-of-scope, replaced Phase 6 template-extraction steps with the new Task 20/21/22 sequence, and added the post-Task-22 "move to new repo" note. Branch: `docs/curriculum-realignment`. Tasks 16 and 17 detail sections remain in `DEV_ROADMAP.md` as design reference only.
+**Just completed:** Task 19 — Pre-Template Simplification. Walked every module against the pedagogical rules and verified on device. Replaced `Pet::constrainValues()` with a per-value `constrainValue(int)` helper and routed all Pet stat mutation through the setters; converted `ScreenState` and `ActionType` from `enum class` to plain enums with `SCREEN_*` / `ACTION_*` prefixes; extracted `playPendingAlertSounds()` helper in `main.cpp` (Hotspot 3 surface, deeper restructure deferred to Task 19b); applied Hotspot 2 (DisplayManager takes primitives) and Hotspot 5 (NavigationManager takes `backSelected` bool) from Appendix A; added what+why comments across modules; renamed "player" → "user" throughout. Branch: `task/19-pre-template-simplification`.
 
 **Out of scope** (for the learning lab, but kept as design notes / bonus):
 Task 16 (Microphone), Task 17 (Wireless AP), Task 18 (Remote Dashboard), Task 9a (Evolution), Task 15 (RTC).

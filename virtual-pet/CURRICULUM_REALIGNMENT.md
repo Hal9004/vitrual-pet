@@ -110,7 +110,7 @@ Step-by-step:
 |---|---|---|---|
 | 0 | (branch hygiene) | n/a | ✅ done — `task/16-microphone-detect-react` deleted; on `docs/curriculum-realignment` |
 | 1.0 | (docs surgery + create this file) | `docs/curriculum-realignment` | 🟡 in progress |
-| 1.1 | Task 19 — Pre-Template Simplification | `task/19-pre-template-simplification` | pending |
+| 1.1 | Task 19 — Pre-Template Simplification | `task/19-pre-template-simplification` | ✅ done |
 | 1.1b | Task 19b — Pet-Owns-Sound Refactor | `task/19b-pet-owns-sound` | pending |
 | 1.2 | Task 14c — Gameplay Balance Tuning | `task/14c-balance-tuning` | pending |
 | 1.3 | Task 14d — Sprite Display Simplification | `task/14d-sprite-simplification` | pending |

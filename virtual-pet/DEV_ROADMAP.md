@@ -147,11 +147,20 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        — Would a student with no prior C++ experience be able to read this and follow along?
      Simplicity is more important than elegance. If in doubt, expand it.
 
- 19. Pre-Template Simplification        ✅ Next — walk every module and simplify for teaching
-     — Review all .h and .cpp files against the pedagogical rules in CLAUDE.md.
-       Expand any compact or clever code into readable step-by-step form.
-       Ensure every function has a comment. Remove any patterns that would
-       confuse a beginner without prior C++ experience.
+ 19. Pre-Template Simplification        ✅ Done — walked every module against the
+     pedagogical rules in CLAUDE.md and verified on device. Highlights:
+     replaced `Pet::constrainValues()` with a per-value `constrainValue(int)`
+     helper and routed all Pet stat mutation through the setters; converted
+     `ScreenState` and `ActionType` from `enum class` to plain enums with
+     `SCREEN_*` / `ACTION_*` prefixes; extracted `playPendingAlertSounds()`
+     helper in `main.cpp` (Hotspot 3 surface, no flag/poll change yet);
+     applied two Category-1 coupling fixes from Appendix A (Hotspot 2:
+     DisplayManager takes primitives instead of a `const ActionMenu&`;
+     Hotspot 5: NavigationManager takes a `bool backSelected`); added
+     what+why comments to under-documented functions in Pet and
+     DisplayManager; renamed "player" → "user" throughout all comments.
+     No behavioural change.
+     Branch: task/19-pre-template-simplification.
  19b. Pet-Owns-Sound Refactor           — runs after Task 19
      — Move alert-sound coordination out of main.cpp and into Pet::updateState()
        so the pet plays its own alert sounds as the state machine raises them.
