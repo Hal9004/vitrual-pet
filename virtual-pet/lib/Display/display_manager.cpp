@@ -286,10 +286,10 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
 // is positioned at faceCenterY so each screen can choose where the face sits.
 //
 // Why pass the sprite data and dimensions in as parameters?
-// Each screen wants a different sprite size: Stats uses a tiny 32x32, Interact
-// uses 48x48, and Main uses 64x64. Passing the sprite data and its width/height
-// in lets this single function draw any sprite without needing a switch on
-// screen state. The caller decides which sprite to use.
+// Every screen draws the same 80x80 sprite, so the width and height are the same
+// at each call site. They are passed in rather than hard-coded so a future screen
+// could supply a different size without changing this function, and so the caller
+// stays in charge of which sprite is drawn.
 //
 // Why is moodIndex unused for now?
 // Eventually each mood (happy, sad, hungry, etc.) will have its own sprite.

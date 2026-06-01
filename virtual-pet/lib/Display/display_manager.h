@@ -139,9 +139,9 @@ public:
 
     // drawPetSprite() — draws a bitmap sprite as the pet's face. The sprite is
     // centred horizontally on the screen, with its vertical centre at faceCenterY.
-    // Each screen passes its own sprite dimensions and pixel data, so this single
-    // function works for the small Stats-screen sprite, the medium Interact-screen
-    // sprite, and the large Main-screen sprite without needing a per-screen branch.
+    // Every screen uses the same 80x80 sprite; the width/height and pixel data are
+    // still passed in so a different size could be supplied later without changing
+    // this function.
     // moodIndex is reserved for a future task that will pick a mood-specific sprite.
     void drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight, const uint16_t* spriteData);
 };
