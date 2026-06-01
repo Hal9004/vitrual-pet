@@ -42,17 +42,21 @@ private:
     // -----------------------------------------------------------------------
     static constexpr int         MAIN_FACE_CENTER_Y = 110;
     static constexpr int         MAIN_MOOD_Y        = 155;
-    static constexpr ScreenZone  MAIN_NAV_ZONE      = {  5, 213, 125, 22 };
+    // Nav bar shares the same Y/height as MENU_ZONE so the bottom bar does not
+    // appear to move when switching between the Main, Stats, and Interact screens.
+    static constexpr ScreenZone  MAIN_NAV_ZONE      = {  5, 220, 125, 20 };
 
     // -----------------------------------------------------------------------
-    // Interact screen zone constants — face sits at the top, contextual stat
-    // bar in the middle, and the action menu indicator at the very bottom.
+    // Interact screen zone constants. The face and mood text are positioned to
+    // match the Main screen exactly (MAIN_FACE_CENTER_Y / MAIN_MOOD_Y) so the
+    // pet does not appear to jump when switching screens. The contextual stat
+    // bar and the action menu indicator then fill the region below the mood.
     // -----------------------------------------------------------------------
-    static constexpr int         INTERACT_FACE_CENTER_Y = 90;
-    static constexpr int         INTERACT_MOOD_Y        = 128;
-    static constexpr int         INTERACT_STAT_LABEL_Y  = 156;
-    static constexpr int         INTERACT_STAT_BAR_Y    = 168;
-    static constexpr ScreenZone  INTERACT_STAT_ZONE     = {  5, 153, 125, 28 };
+    static constexpr int         INTERACT_FACE_CENTER_Y = 110;  // = MAIN_FACE_CENTER_Y
+    static constexpr int         INTERACT_MOOD_Y        = 155;  // = MAIN_MOOD_Y
+    static constexpr int         INTERACT_STAT_LABEL_Y  = 177;
+    static constexpr int         INTERACT_STAT_BAR_Y    = 190;
+    static constexpr ScreenZone  INTERACT_STAT_ZONE     = {  5, 174, 125, 30 };
 
     // Geometry constants shared across all screens
     static const int STAT_BAR_HEIGHT = 10;

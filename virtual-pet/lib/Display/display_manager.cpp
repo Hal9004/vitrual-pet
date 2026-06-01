@@ -146,7 +146,7 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
     if (screenChanged || intervalElapsed) {
         clearScreen();
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_48X48_TEST_WIDTH, SPRITE_48X48_TEST_HEIGHT, sprite_48x48_test[0]);
+        drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT, sprite_80x80_test[0]);
         showPetMoodText(moodIndex, INTERACT_MOOD_Y);
         drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
         drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
