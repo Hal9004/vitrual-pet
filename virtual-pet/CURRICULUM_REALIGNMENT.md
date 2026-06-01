@@ -112,8 +112,8 @@ Step-by-step:
 | 1.0 | (docs surgery + create this file) | `docs/curriculum-realignment` | 🟡 in progress |
 | 1.1 | Task 19 — Pre-Template Simplification | `task/19-pre-template-simplification` | ✅ done |
 | 1.1b | Task 19b — Pet-Owns-Sound Refactor | `task/19b-pet-owns-sound` | ✅ done |
-| 1.2 | Task 14c — Gameplay Balance Tuning | `task/14c-balance-tuning` | pending |
-| 1.3 | Task 14d — Sprite Display Simplification | `task/14d-sprite-simplification` | pending |
+| 1.2 | Task 14c — Gameplay Balance Tuning | `task/14c-balance-tuning` | ✅ done |
+| 1.3 | Task 14d — Sprite Display Simplification | `task/14d-sprite-simplification` | ✅ done |
 | 1.4 | Task 13a — Sprite Animation | `task/13a-sprite-animation` | pending |
 | 1.5 | Task 20 — Mood Sprite System (new) | `task/20-mood-sprites` | pending |
 | 1.6 | Task 21 — Curriculum Scaffolding Refactor (new) | `task/21-scaffolding-refactor` | pending |

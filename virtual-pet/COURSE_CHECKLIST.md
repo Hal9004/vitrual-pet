@@ -3,7 +3,7 @@
 ## Phase 1: Foundations & UI
 - [x] Hardware Initialization (M5.begin, LCD, Serial)
 - [x] Asset Pipeline (Converting images/gifs to C++ arrays/sprites) — C++ piskel_converter tool, SPRITE_GUIDE.md student walkthrough, SPRITE_TEST flag in main.cpp. RGB565 values are pre-byte-swapped to match the M5StickC Plus 2 LCD's big-endian SPI byte order (transparent key: 0x1FF8)
-- [x] Basic Sprite Rendering (Drawing the pet to the screen) — `DisplayManager::drawPetSprite()` renders bitmap sprites via `M5.Lcd.pushImage()` with transparent key `0x1FF8`. Three sizes used across the three screens: 64×64 on Main, 48×48 on Interact, 32×32 on Stats. Sprite headers live in `lib/Display/sprites/`; raw Piskel exports in `assets/sprites/raw/`
+- [x] Basic Sprite Rendering (Drawing the pet to the screen) — `DisplayManager::drawPetSprite()` renders bitmap sprites via `M5.Lcd.pushImage()` with transparent key `0x1FF8`. A single 80×80 sprite is used on the Main and Interact screens; the Stats screen is a pure data view with no sprite. Sprite headers live in `lib/Display/sprites/`; raw Piskel exports in `assets/sprites/raw/`
 - [x] Screen Real Estate Management (Layout for stats vs. pet area)
 - [x] Multi-Screen Framework — three screens (Main, Stats, Interact) with `ScreenState` enum and `NavigationManager`. B → Interact, C → Stats from the Main screen.
 - [x] Stats Detail Screen — `SCREEN_STATS` shows all five stat bars + pet face + mood, identical to the original layout.
