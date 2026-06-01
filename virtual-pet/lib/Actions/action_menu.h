@@ -73,8 +73,7 @@ public:
     // DisplayManager uses this to draw the correct contextual bar on the Interact screen.
     RelevantStat getRelevantStat() const;
 
-    // confirmAction() — executes the selected action, plays the matching sound,
-    // and shows a brief feedback message on screen.
+    // confirmAction() — executes the selected action and plays the matching sound.
     // Only call this when isBackSelected() is false — Back is handled separately.
     // StorageManager is needed because the Save action writes directly to NVS.
     void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage);

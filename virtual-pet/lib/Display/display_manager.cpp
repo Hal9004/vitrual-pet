@@ -344,10 +344,6 @@ void DisplayManager::showMessage(const char* message) {
     printCenteredText(message, 160, TFT_WHITE, 1);
 }
 
-void DisplayManager::showActionFeedback(const char* action) {
-    printCenteredText(action, 180, TFT_GREEN, 1);
-}
-
 // showDeathScreen() — clears the screen and shows game-over text.
 // Forces lastFullRedrawTime to 0 so the normal screen redraws immediately
 // the moment the user restarts.

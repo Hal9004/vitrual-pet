@@ -130,7 +130,6 @@ public:
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
     void showPetMood(int moodIndex);
     void showMessage(const char* message);
-    void showActionFeedback(const char* action);
     void showDeathScreen();
 
     // drawMenuIndicator() — draws the compact action name overlay at the bottom.

@@ -88,10 +88,4 @@ void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager
             // If we somehow reach here, do nothing — there is no pet action to run.
             return;
     }
-
-    // Show the action name on screen so the user can see what just happened.
-    display.showActionFeedback(selectedAction.name);
-
-    // Hold the feedback message long enough for the user to read it.
-    delay(1000);
 }
