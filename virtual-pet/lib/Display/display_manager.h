@@ -3,10 +3,7 @@
 
 #include <M5StickCPlus2.h>
 #include "screen_layout.h"
-#include "sprites/newpiskel2.h"   // 32x32 sprite — used on the Stats screen
-#include "sprites/48x48_test.h"   // 48x48 sprite — used on the Interact screen
-#include "sprites/64x64_test.h"   // 64x64 sprite — used on the Main screen
-#include "sprites/80x80_test.h"   // 80x80 sprite — the single shipped size (Task 14d)
+#include "sprites/80x80_test.h"   // 80x80 sprite — the single size used on every screen
 
 // DisplayManager only deals in primitive values (ints, strings, enums).
 // It never receives whole manager objects, so it does not need to know

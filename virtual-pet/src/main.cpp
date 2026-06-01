@@ -17,7 +17,7 @@
 // To return to normal operation, comment out or delete this #define.
 // -------------------------------------------------------------------------
 // #define SPRITE_TEST
-#include "../lib/Display/sprites/newpiskel2.h"
+#include "../lib/Display/sprites/80x80_test.h"
 
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
@@ -112,15 +112,15 @@ void setup() {
     M5.Lcd.fillScreen(TFT_BLACK);
 
     // Calculate the top-left corner that centres the sprite on the screen.
-    int spriteX = (135 - SPRITE_NEWPISKEL2_WIDTH)  / 2;
-    int spriteY = (240 - SPRITE_NEWPISKEL2_HEIGHT) / 2;
+    int spriteX = (135 - SPRITE_80X80_TEST_WIDTH)  / 2;
+    int spriteY = (240 - SPRITE_80X80_TEST_HEIGHT) / 2;
 
     // Draw the sprite. The last argument is the transparent colour key —
     // any pixel matching 0xF81F (magenta) is skipped, letting black show through.
     M5.Lcd.pushImage(spriteX, spriteY,
-                     SPRITE_NEWPISKEL2_WIDTH,
-                     SPRITE_NEWPISKEL2_HEIGHT,
-                     sprite_newpiskel2[0],
+                     SPRITE_80X80_TEST_WIDTH,
+                     SPRITE_80X80_TEST_HEIGHT,
+                     sprite_80x80_test[0],
                      SPRITE_TRANSPARENT_COLOR);
     return; // Skip all normal initialisation.
     #endif
