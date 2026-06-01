@@ -20,12 +20,12 @@ private:
     static const int SCREEN_HEIGHT = 240;
 
     // -----------------------------------------------------------------------
-    // Stats screen zone constants — these match the original layout exactly.
-    // Stats bars sit above the face so the user can see all five values.
+    // Stats screen zone constants. The Stats screen is a pure data view: five
+    // stat bars at the top, then the mood word, then a Back hint at the bottom.
+    // No pet sprite.
     // -----------------------------------------------------------------------
     static constexpr ScreenZone TITLE_ZONE    = {  0,   5, 135, 19 };
     static constexpr ScreenZone STATS_ZONE    = {  5,  26, 125, 98 };
-    static constexpr ScreenZone PET_FACE_ZONE = {  0, 134, 135, 36 };
     static constexpr ScreenZone MOOD_ZONE     = {  0, 180, 135, 18 };
     static constexpr ScreenZone MENU_ZONE     = {  5, 220, 125, 20 };
 

@@ -244,10 +244,10 @@ void DisplayManager::showPetMoodText(int moodIndex, int textY) {
     printCenteredText(moodText, textY, moodColor, 2);
 }
 
-// showPetMood() — convenience wrapper that draws both the face and the mood
-// text at the Stats screen positions. Used by renderStatsScreen().
+// showPetMood() — draws the mood label at the Stats screen position.
+// The Stats screen is a pure data view: five stat bars and this mood word,
+// with no pet sprite. Used by renderStatsScreen().
 void DisplayManager::showPetMood(int moodIndex) {
-    drawPetSprite(moodIndex, PET_FACE_ZONE.y + PET_FACE_ZONE.height / 2, SPRITE_NEWPISKEL2_WIDTH, SPRITE_NEWPISKEL2_HEIGHT, sprite_newpiskel2[0]);
     showPetMoodText(moodIndex, MOOD_ZONE.y);
 }
 
