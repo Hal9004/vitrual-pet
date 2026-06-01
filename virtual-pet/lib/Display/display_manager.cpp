@@ -77,7 +77,7 @@ void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
     if (screenChanged || intervalElapsed) {
         clearScreen();
         printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_64X64_TEST_WIDTH, SPRITE_64X64_TEST_HEIGHT, sprite_64x64_test[0]);
+        drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT, sprite_80x80_test[0]);
         showPetMoodText(moodIndex, MAIN_MOOD_Y);
         drawMainNavBar();
 
