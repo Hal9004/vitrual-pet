@@ -296,6 +296,10 @@ Do not draw animation sequences yet. One clear, well-centred drawing per state i
 deliverable for this task. Multi-frame animation is Task 13a. Getting the single frames
 right first makes the animation work much smoother when you get there.
 
+> **Picking up animation later?** Once you reach Task 13a, see [Part 6 — Animating Your
+> Sprite](#part-6--animating-your-sprite-task-13a) for the multi-frame drawing rules and a
+> full walkthrough of the frame-cycling code.
+
 ---
 
 ## Part 5 — How Your Sprite Appears on Each Screen
@@ -535,3 +539,189 @@ the STATS zone at 1:1. The practical options are:
    still be visible; only the edges are cut off
 3. Scale the sprite down at render time for the STATS screen — more complex code but the
    full image is visible at reduced size
+
+---
+
+## Part 6 — Animating Your Sprite (Task 13a)
+
+Everything above produces a **still** picture: one frame per state, drawn once and held.
+Task 13a brings the pet to life by showing several frames in turn — frame 0, then frame 1,
+then back again — so it bounces, blinks, or breathes. This part covers both halves of that
+work: **drawing** a multi-frame sprite, and the small piece of **code** that decides which
+frame to show at each moment.
+
+### 6.1 — Drawing a multi-frame sprite
+
+A multi-frame sprite is just a normal Piskel drawing with **more than one frame** on the
+timeline (use the **Frames** dropdown at the bottom of the Piskel canvas to add frames).
+The converter already understands this — it reads however many frames you export and emits a
+`sprite_name[FRAME_COUNT][W*H]` array. Nothing about the export or converter step changes.
+
+Three art rules make an animation read well on a small 135×240 screen:
+
+**Rule A — Anchor the silhouette across every frame.**
+This is the [anchor point rule](#the-anchor-point-rule) from Part 1, and it matters even more
+for animation. If the pet's body sits in a different part of the canvas from one frame to the
+next, it will appear to *teleport* instead of move. Keep the body in the same region; move only
+the part that should animate (eyes blinking, a small bob, ears twitching).
+
+**Rule B — Move at least two pixels.**
+At our starting speed of 5 frames per second, a one-pixel change is almost invisible. If you
+want motion to read, move the animated part by **two pixels or more** between frames. Our
+placeholder bounce, for example, shifts the whole body down by two pixels on the second frame.
+
+**Rule C — Loop cleanly.**
+The animation plays forever: after the last frame it jumps straight back to frame 0. Design the
+frames so that jump looks smooth. Two reliable patterns:
+- **Simple loop:** frame 0 → 1 → 2 → 0 → 1 → 2 … Best when the last frame flows naturally back
+  into the first (e.g. a breathing cycle).
+- **Ping-pong:** draw frames that go out and back — 0 → 1 → 2 → 1 → 0 — by exporting the
+  middle frames twice. Best for a back-and-forth motion like a bounce or a wag, because there is
+  no sudden jump at the loop point.
+
+**Frame budget.** Keep to the **8-frames-per-state** ceiling from [Rule 4](#rule-4--flash-memory-budget).
+More frames means smoother motion but more flash used; the maths in Rule 4 shows how quickly it
+adds up.
+
+### 6.2 — How frames cycle at runtime: the `AnimationManager`
+
+Drawing the frames is only half the job. At runtime, *something* has to decide **which frame is
+on screen right now** and change it at a steady speed. That is the entire job of
+`lib/Display/animation_manager.{h,cpp}`. It does **not** draw anything — `DisplayManager` asks it
+"which frame?" and draws that one. Splitting it this way keeps each class doing exactly one job
+(the most important design rule in this codebase).
+
+#### The trap to avoid: `delay()`
+
+The tempting beginner approach is:
+
+```cpp
+drawFrame(0);
+delay(200);
+drawFrame(1);
+delay(200);
+```
+
+**Never do this.** `delay(200)` freezes the *whole* program for 200 ms — buttons stop responding,
+sound stops, the stat timers stop. On a microcontroller running one big `loop()`, `delay()` inside
+the loop is almost always a bug (see Hardware Gotcha #2 in `CLAUDE.md`).
+
+#### The pattern to use: "check the clock"
+
+Instead of *waiting*, we *check the clock* every time around the loop and ask: **"has enough time
+passed since I last changed the frame?"** `millis()` is the clock — it returns the number of
+milliseconds since the device powered on, counting up forever. This is the exact same
+non-blocking pattern the students already met in `TimerManager` (hunger rising over time); here it
+is reused to advance an animation frame.
+
+#### What the class remembers (its member variables)
+
+```cpp
+int frameCount;                     // how many frames the sprite has (e.g. 2)
+unsigned long frameDurationMs;      // how long to show each frame (200 ms = 5 fps)
+int currentFrame;                   // which frame is showing now (0 .. frameCount-1)
+unsigned long lastFrameAdvanceTime; // the millis() value when we last switched frame
+```
+
+- `unsigned long` is used for every time value because `millis()` returns a large, always-positive
+  number — the same type `TimerManager` uses.
+- `currentFrame` is the one piece of state the rest of the program reads; everything else exists
+  to keep it correct.
+
+#### The constructor — setting up
+
+```cpp
+AnimationManager::AnimationManager(int frameCount, unsigned long frameDurationMs)
+    : frameCount(frameCount),
+      frameDurationMs(frameDurationMs),
+      currentFrame(0),
+      lastFrameAdvanceTime(0) {
+}
+```
+
+It is told **how many frames** and **how fast** (with `FRAME_DURATION_MS = 200` as the default, so
+`AnimationManager petAnimation(2);` gives 5 fps automatically). We start on frame 0, and start
+`lastFrameAdvanceTime` at **0** on purpose: on the very first loop `millis()` is already larger
+than 0, so "has 200 ms passed since time 0?" is true immediately and the animation starts right
+away instead of pausing first. `TimerManager` uses the identical trick.
+
+> The `: frameCount(frameCount), …` syntax is a C++ **member initializer list** — the standard way
+> to set member variables when an object is created. The member and the parameter share a name, but
+> the part in parentheses is always the parameter, so there is no ambiguity.
+
+#### `update()` — the heart of it
+
+Called **once every loop**:
+
+```cpp
+void AnimationManager::update() {
+    if (frameCount <= 1) {
+        return;                                    // (A)
+    }
+
+    unsigned long currentTime = millis();          // (B)
+
+    if (currentTime - lastFrameAdvanceTime >= frameDurationMs) {   // (C)
+        currentFrame = (currentFrame + 1) % frameCount;            // (D)
+        lastFrameAdvanceTime = currentTime;                        // (E)
+    }
+}
+```
+
+- **(A) The guard.** A single-frame sprite (a still image) has nothing to cycle through, so we
+  leave immediately. This also prevents a crash on line (D): you can never do `% 0`.
+- **(B) Read the clock once** into a clearly named variable.
+- **(C) The question.** "Current time − the time I last switched ≥ how long a frame should last?"
+  If not, the `if` is false, the body is skipped, and `update()` returns instantly — no waiting.
+- **(D) Advance the frame, with wrap-around.** This is the line to slow down on:
+
+  ```cpp
+  currentFrame = (currentFrame + 1) % frameCount;
+  ```
+
+  `currentFrame + 1` moves to the next frame; `% frameCount` (**modulo** — the remainder after
+  division) wraps it back to 0 after the last frame. With 2 frames: `(0+1)%2 = 1`, then
+  `(1+1)%2 = 0`. Modulo is the clean, idiomatic way to make a counter loop. A good 2-minute
+  exercise: "what does `% 3` give for 0,1,2,3,4,5?" → 0,1,2,0,1,2.
+- **(E) Remember when** we switched, so the next interval is measured from now.
+
+#### The two helpers
+
+```cpp
+int AnimationManager::getCurrentFrame() const {   // which frame should I draw?
+    return currentFrame;
+}
+
+void AnimationManager::reset() {                   // start the animation over
+    currentFrame = 0;
+    lastFrameAdvanceTime = millis();
+}
+```
+
+`getCurrentFrame()` is what `DisplayManager` calls to ask which frame to draw. The `const` promises
+it only *reads* the object, never changes it — a good habit to teach for "getter" functions.
+`reset()` jumps back to frame 0 and restarts the timer; we call it when switching screens so the
+pet does not appear to resume mid-bounce.
+
+#### A worked timeline (good for the whiteboard)
+
+Frame duration = 200 ms, 2 frames. The loop runs hundreds of times per second:
+
+| `millis()` | `update()` asks: passed ≥ 200? | `currentFrame` after |
+|-----------:|-------------------------------|:--------------------:|
+| 5          | 5 − 0 = 5 → no                | 0 |
+| 150        | 150 − 0 = 150 → no            | 0 |
+| 205        | 205 − 0 = 205 → **yes**       | 1  (last = 205) |
+| 300        | 300 − 205 = 95 → no           | 1 |
+| 410        | 410 − 205 = 205 → **yes**     | 0  (last = 410) |
+
+The frame only changes on the rare loops where enough time has passed; every other loop `update()`
+does almost nothing and returns instantly. That is *why* buttons and sound stay responsive while
+the pet animates.
+
+#### The architectural lesson worth emphasising
+
+`AnimationManager` knows about **frame numbers and time** — nothing else. It never touches the
+screen, M5, or pixels; drawing stays in `DisplayManager`. That clean split — "each module has
+exactly one job" — is the single most important design idea in this codebase, and this small class
+is a tidy example to point students to.
