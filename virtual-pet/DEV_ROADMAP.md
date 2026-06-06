@@ -59,7 +59,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 |---|---|---|
 | Wireless Access Point Primitive | 🔁 Moved to Bonus | Moved to Appendix B during the curriculum realignment (see `CURRICULUM_REALIGNMENT.md`). Out of scope for the learning lab — networking becomes an optional extension path in Sessions 7–8 of the lab, not a core task. Task 17 detail section below preserved as design reference only |
 | Remote Dashboard (Web/App stat checking) | 🔁 Moved to Bonus | Right-sized out of the critical path during the Task 14b audit. The web server pattern adds another module of new concepts (HTTP routes, named callbacks, `String` HTML building) on top of Task 17 — better as a follow-on bonus that students opt into. See Appendix B — Bonus Feature 2 |
-| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation (Task 13a) is deferred — picked back up after Tasks 15–18. |
+| Final UI Polish (comments, descriptive names) | ⚠️ Partial | Existing code is reasonably documented. Magic pixel constants have been replaced with named constants. Bitmap sprites are done as of Task 13. Sprite animation is done as of Task 13a (2-frame cycling via `AnimationManager` + M5Canvas double-buffer). |
 | SpeakerManager refactor — playNote() helper | ⏸ Deferred | Every sound method repeats the same tone/delay/stop pattern. A `playNote(frequency, duration)` helper could eliminate the repetition. Intentionally left verbose for now so students can read each melody top to bottom without following abstractions. Revisit during the final polish pass. |
 
 ---
@@ -69,7 +69,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 > **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
 > Execution order for the remaining in-repo work:
 > **14c → 14d → 13a → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
-> (Tasks 19, 19b, 14c, and 14d are done — next up is 13a.)
+> (Tasks 19, 19b, 14c, 14d, and 13a are done — next up is 20.)
 > Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
@@ -105,7 +105,7 @@ LEVEL 5 — ASSET PIPELINE
 11c. Pet interaction screens           ✅ Done (included in 11a — SCREEN_INTERACT shows pet face + contextual stat bar + action menu)
  12. Asset Pipeline (image → C array)  ✅ Done (C++ piskel_converter tool, SPRITE_GUIDE.md, SPRITE_TEST flag in main.cpp, byte-swap fix for M5StickC Plus 2 SPI byte order)
  13. Basic Sprite Rendering            ✅ Done (drawPetSprite via pushImage; three sprite sizes; placeholder circle face removed. Also fixed a converter bug: Piskel exports ABGR8888, not ARGB8888 — the channel extraction had red and blue swapped)
-13a. Sprite Animation                  ⏸ Deferred — return after Level 6/7 features (Tasks 15–18). Multi-frame cycling using existing FRAME_COUNT dimension, millis() timer, optional M5Canvas double-buffer for flicker. Will run as the last Level 5 task before Task 19's pre-template simplification.
+13a. Sprite Animation                  ✅ Done (AnimationManager cycles frames with the non-blocking millis() pattern; all rendering routed through a 135×240 M5Canvas double-buffer, which let the 5s STATUS_UPDATE_INTERVAL throttle be removed — stats now refresh every frame, flicker-free. 80x80_test regenerated as 2 frames; full walkthrough in SPRITE_GUIDE.md Part 6)
  14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
 14b. Roadmap Simplification Audit      ✅ Done (right-sized Tasks 15–18 toward minimum teachable foundations. Task 15 RTC moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)" with happiness +5 and a buzzer chirp; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 Remote Dashboard moved to Bonus Feature 2. Expanded Task 14c into a full section. Added Task 14d (Sprite Display Simplification) to lock in single 80×80 sprite size before animation. Added Appendix B with six bonus features (RTC, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos). Branch: refactor/14b-roadmap-simplification.)
@@ -195,10 +195,11 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        the bottom bar to a shared y=220 so nothing jumps when switching screens.
        Removed the post-action feedback text + delay(1000). Locks the sprite
        size before animation work starts.
- 13a. Sprite Animation                  — runs after Task 14d
+ 13a. Sprite Animation                  ✅ Done — ran after Task 14d
      — 2-frame loop using M5Canvas double-buffering, driven by millis().
        Implements `lib/Display/animation_manager.h/.cpp`. This is the worked
-       example students extend in Session 6 of the lab.
+       example students extend in Session 6 of the lab. The M5Canvas also let
+       the 5s redraw throttle be removed, so stats now update instantly.
  20. Mood Sprite System (new)           — runs after Task 13a
      — Add `MoodSprite` enum (NEUTRAL / HAPPY / UNWELL / HUNGRY).
        Add `Pet::computeMood()` mapping stats → mood with prioritised thresholds.
@@ -716,13 +717,13 @@ In `confirmAction()`, add a `switch` on `selectedAction.type` after `executePetA
 
 ---
 
-### Task 13a — Sprite Animation ⏸ Deferred
+### Task 13a — Sprite Animation ✅ Done
 
 **Execution order note:**
 
-This task is paused. The original ordering was Task 13 → Task 13a → Task 14, but in practice Task 14 (the simplification pass) runs first, then Tasks 15–18 (the right-sized Level 6/7 features), and Task 13a is picked back up immediately before Task 19's pre-template simplification. The numbering is kept as 13a (rather than renumbering to ~18a) because animation is logically a continuation of the Level 5 sprite work, even though its execution slot has moved.
+This task was deferred and picked back up after Task 14d, per the realignment order (14c → 14d → **13a** → 20 → …). The numbering is kept as 13a (rather than renumbering to ~18a) because animation is logically a continuation of the Level 5 sprite work, even though its execution slot moved.
 
-When this task does run, the implementation guidance below remains accurate — the codebase will look slightly different (post-simplification) but `drawPetSprite()` and the sprite header shape will not have changed.
+**What shipped** (branch `task/13a-sprite-animation`): a standalone `AnimationManager` (`lib/Display/animation_manager.h/.cpp`) that cycles frames with the non-blocking `millis()` pattern; all `DisplayManager` rendering routed through a 135×240 16-bit `M5Canvas` double-buffer; the `sprite_80x80_test` asset regenerated as 2 frames (synthetic bounce placeholder — real Piskel art to follow). Because the canvas makes full-screen redraws flicker-free, the 5s `STATUS_UPDATE_INTERVAL` throttle and the Interact fast-path were removed, so the screen now redraws every loop and stats update instantly. Student-facing walkthrough added as `SPRITE_GUIDE.md` Part 6. The implementation guidance below is preserved as the original design reference.
 
 **Why this task at all?**
 
@@ -757,13 +758,14 @@ This is a natural pedagogical follow-on to Task 13 — students learned `pushIma
 
 **Branch and commit strategy:**
 
-Create `task/13a-sprite-animation` from a clean `main` after Task 18 is merged (per the deferred execution order — see the note at the top of this section). Suggested commits:
+Created `task/13a-sprite-animation` after Task 14d (per the realignment order, not after Task 18 as originally written). As-shipped commit sequence — the M5Canvas was made non-optional because removing the redraw throttle depends on it, and the next-task pointer advanced to Task 20 (not Task 19) per the realignment:
 
-1. `chore: add multi-frame Piskel export and converted sprite header for idle state`
-2. `feat: cycle pet sprite through frames using a millis() timer`
-3. `docs: add animation guidance to SPRITE_GUIDE.md`
-4. (optional, only if flicker is visible) `feat: use M5Canvas double-buffer to prevent animation flicker`
-5. `docs: mark Task 13a done and advance next-task pointer to Task 19`
+1. `chore: regenerate 80x80_test as a 2-frame idle sprite`
+2. `feat: render all screens through an off-screen M5Canvas`
+3. `feat: add AnimationManager for non-blocking frame cycling`
+4. `feat: animate the pet sprite and remove the 5s redraw throttle`
+5. `docs: add animation guidance to SPRITE_GUIDE.md`
+6. `docs: mark Task 13a done and advance next-task pointer to Task 20`
 
 After all commits, test on device — the sprite must animate smoothly without affecting button responsiveness, IMU shake detection, sound playback, NVS save/load, or any other timed behaviour. The non-blocking timer is the test that matters: if pressing B during an animation feels laggy, the loop is being blocked somewhere it should not be.
 
