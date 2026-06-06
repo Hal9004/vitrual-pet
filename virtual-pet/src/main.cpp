@@ -88,7 +88,6 @@ void renderCurrentScreen() {
         myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
         selectedAction.name,
         selectedAction.relevantStat,
-        menu.getCurrentActionIndex(),
         myPet.isInDeadState(), myPet.getPetName(),
         navManager.getCurrentScreen()
     );

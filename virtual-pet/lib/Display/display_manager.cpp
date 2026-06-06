@@ -2,8 +2,6 @@
 
 DisplayManager::DisplayManager()
     : lastRenderedScreen(SCREEN_MAIN),
-      lastFullRedrawTime(0),
-      lastMenuActionIndex(-1),
       petWasDeadLastFrame(false) {
 }
 
@@ -59,7 +57,7 @@ void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t colo
 // DisplayManager unaware of ActionMenu — the caller does the extraction.
 void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness,
                                    int sick, int moodIndex, const char* selectedActionName,
-                                   RelevantStat relevantStat, int currentActionIndex,
+                                   RelevantStat relevantStat,
                                    bool petIsDead, const char* petName,
                                    ScreenState screenState) {
     // --- Death state ---
@@ -74,14 +72,28 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     }
 
     // --- Revival: coming back from dead ---
-    // The pet was just reset. Set lastFullRedrawTime to 0 so the normal screen
-    // redraws immediately on the very next frame instead of waiting up to 5 seconds.
+    // The pet was dead last frame but is alive now, so it has just been reset.
+    // Clear the flag; the screen redraws this frame like any other — there is no
+    // throttle to nudge anymore now that every frame redraws.
     if (petWasDeadLastFrame) {
         petWasDeadLastFrame = false;
-        lastFullRedrawTime = 0;
     }
 
-    // --- Normal alive render: dispatch to the correct screen ---
+    // Restart the sprite animation from frame 0 whenever the screen changes, so
+    // the pet does not appear to resume mid-bounce after switching screens.
+    if (screenState != lastRenderedScreen) {
+        petAnimation.reset();
+        lastRenderedScreen = screenState;
+    }
+
+    // Advance the animation if enough time has passed. This is non-blocking:
+    // on most loops it does nothing and returns immediately.
+    petAnimation.update();
+
+    // --- Normal alive render ---
+    // Draw the whole screen fresh to the off-screen canvas, then push it to the
+    // LCD in one shot. Redrawing every loop is what makes the sprite animate and
+    // stat changes appear instantly; the single push keeps it flicker-free.
     switch (screenState) {
         case SCREEN_MAIN:
             renderMainScreen(moodIndex, petName);
@@ -91,9 +103,11 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
             break;
         case SCREEN_INTERACT:
             renderInteractScreen(happiness, hunger, energy, cleanliness, sick, moodIndex,
-                                 selectedActionName, relevantStat, currentActionIndex, petName);
+                                 selectedActionName, relevantStat, petName);
             break;
     }
+
+    pushCanvas();
 }
 
 // -----------------------------------------------------------------------
@@ -102,20 +116,12 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 // bar at the bottom so the user can enter Stats or Interact.
 // -----------------------------------------------------------------------
 void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
-    bool screenChanged   = (lastRenderedScreen != SCREEN_MAIN);
-    bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
-
-    if (screenChanged || intervalElapsed) {
-        clearScreen();
-        printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT, sprite_80x80_test[0]);
-        showPetMoodText(moodIndex, MAIN_MOOD_Y);
-        drawMainNavBar();
-        pushCanvas();
-
-        lastFullRedrawTime = millis();
-        lastRenderedScreen = SCREEN_MAIN;
-    }
+    clearScreen();
+    printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
+    drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+                  sprite_80x80_test[petAnimation.getCurrentFrame()]);
+    showPetMoodText(moodIndex, MAIN_MOOD_Y);
+    drawMainNavBar();
 }
 
 // drawMainNavBar()
@@ -145,22 +151,13 @@ void DisplayManager::drawMainNavBar() {
 // -----------------------------------------------------------------------
 void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, int cleanliness,
                                        int sick, int moodIndex, const char* petName) {
-    bool screenChanged   = (lastRenderedScreen != SCREEN_STATS);
-    bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
+    clearScreen();
+    showPetStatus(happiness, hunger, energy, cleanliness, sick, petName);
+    showPetMood(moodIndex);
 
-    if (screenChanged || intervalElapsed) {
-        clearScreen();
-        showPetStatus(happiness, hunger, energy, cleanliness, sick, petName);
-        showPetMood(moodIndex);
-
-        // Back hint at the bottom instead of the action menu indicator
-        canvas.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
-        printText("B/C: Back", MENU_ZONE.x + 10, MENU_ZONE.y + 4, TFT_CYAN, 1);
-        pushCanvas();
-
-        lastFullRedrawTime = millis();
-        lastRenderedScreen = SCREEN_STATS;
-    }
+    // Back hint at the bottom instead of the action menu indicator
+    canvas.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
+    printText("B/C: Back", MENU_ZONE.x + 10, MENU_ZONE.y + 4, TFT_CYAN, 1);
 }
 
 // -----------------------------------------------------------------------
@@ -171,37 +168,14 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 // -----------------------------------------------------------------------
 void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy, int cleanliness,
                                           int sick, int moodIndex, const char* selectedActionName,
-                                          RelevantStat relevantStat, int currentActionIndex,
-                                          const char* petName) {
-    bool screenChanged   = (lastRenderedScreen != SCREEN_INTERACT);
-    bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
-
-    if (screenChanged || intervalElapsed) {
-        clearScreen();
-        printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-        drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT, sprite_80x80_test[0]);
-        showPetMoodText(moodIndex, INTERACT_MOOD_Y);
-        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
-        drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
-        pushCanvas();
-
-        lastMenuActionIndex = currentActionIndex;
-        lastFullRedrawTime  = millis();
-        lastRenderedScreen  = SCREEN_INTERACT;
-        return;
-    }
-
-    // Fast path: when the user presses B or C to cycle actions, only redraw
-    // the contextual stat bar and the menu indicator — not the whole screen.
-    // The rest of the frame (face, name, mood) is still in the canvas buffer
-    // from the last full redraw, so we just repaint the changed regions and
-    // push the whole canvas again.
-    if (currentActionIndex != lastMenuActionIndex) {
-        drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
-        drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
-        pushCanvas();
-        lastMenuActionIndex = currentActionIndex;
-    }
+                                          RelevantStat relevantStat, const char* petName) {
+    clearScreen();
+    printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
+    drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+                  sprite_80x80_test[petAnimation.getCurrentFrame()]);
+    showPetMoodText(moodIndex, INTERACT_MOOD_Y);
+    drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
+    drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
 }
 
 // drawContextualStatBar()
@@ -383,8 +357,8 @@ void DisplayManager::showMessage(const char* message) {
 }
 
 // showDeathScreen() — clears the screen and shows game-over text.
-// Forces lastFullRedrawTime to 0 so the normal screen redraws immediately
-// the moment the user restarts.
+// Drawn once when the pet dies (see renderDisplay) and then held until the
+// user restarts, at which point the normal screens redraw on the next frame.
 void DisplayManager::showDeathScreen() {
     clearScreen(TFT_BLACK);
 
@@ -393,6 +367,4 @@ void DisplayManager::showDeathScreen() {
     printCenteredText("Press A to", 130, TFT_WHITE, 2);
     printCenteredText("restart", 155, TFT_WHITE, 2);
     pushCanvas();
-
-    lastFullRedrawTime = 0;
 }

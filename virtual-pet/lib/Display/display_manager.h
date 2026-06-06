@@ -4,6 +4,7 @@
 #include <M5StickCPlus2.h>
 #include "screen_layout.h"
 #include "sprites/80x80_test.h"   // 80x80 sprite — the single size used on every screen
+#include "animation_manager.h"   // decides which sprite frame to draw each loop
 
 // DisplayManager only deals in primitive values (ints, strings, enums).
 // It never receives whole manager objects, so it does not need to know
@@ -58,24 +59,26 @@ private:
     // Geometry constants shared across all screens
     static const int STAT_BAR_HEIGHT = 10;
 
-    // Redraw throttle — only redraw the full screen every 5 seconds to avoid
-    // LCD flicker. Fast-changing elements (menu selection, contextual stat bar)
-    // are redrawn immediately in their own update paths.
-    static const unsigned long STATUS_UPDATE_INTERVAL = 5000;
-
-    // State tracked between frames to detect when something changed
-    ScreenState  lastRenderedScreen;   // Detects screen transitions — forces a full redraw
-    unsigned long lastFullRedrawTime;  // Timestamp of the last full redraw
-    int  lastMenuActionIndex;  // Detects action selection changes on Interact screen
-    bool petWasDeadLastFrame;  // Used to force a redraw immediately after revival
+    // State tracked between frames.
+    // We now redraw the whole screen to the off-screen canvas every loop and
+    // push it in one shot, so there is no longer any redraw throttle to manage.
+    // lastRenderedScreen is still useful: it lets us spot when the user has
+    // switched screens so the sprite animation can restart cleanly from frame 0.
+    ScreenState  lastRenderedScreen;   // The screen drawn on the previous frame
+    bool petWasDeadLastFrame;          // Draws the death screen once, then holds it
 
     // Off-screen double-buffer. Every drawing call below targets this canvas
     // instead of the LCD directly; the finished frame is then copied to the
     // screen in one shot by pushCanvas(). Drawing off-screen and pushing once
-    // is what stops the screen flickering — the LCD never shows a half-drawn
-    // frame. The buffer is 135x240 16-bit pixels (~63 KB), allocated once in
-    // init(). See Hardware Gotcha 3 in DEV_ROADMAP.md.
+    // is what lets us redraw every loop — including the animated sprite —
+    // without the screen ever flickering. The buffer is 135x240 16-bit pixels
+    // (~63 KB), allocated once in init(). See Hardware Gotcha 3 in DEV_ROADMAP.md.
     M5Canvas canvas = M5Canvas(&M5.Lcd);
+
+    // Times the pet sprite's frame cycling. Created with the sprite's frame
+    // count so it knows how many frames to loop through; update() is called
+    // each loop and getCurrentFrame() tells drawPetSprite() which frame to draw.
+    AnimationManager petAnimation = AnimationManager(SPRITE_80X80_TEST_FRAME_COUNT);
 
     // pushCanvas() — copies the finished off-screen frame to the LCD in one
     // operation. Called at the end of every render path so the screen only
@@ -88,14 +91,12 @@ private:
     // -----------------------------------------------------------------------
     void renderMainScreen(int moodIndex, const char* petName);
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
-    // The Interact screen needs three pieces of information about the action menu
-    // (the action name to display, which stat bar to highlight, and the current
-    // index so it can detect when the user has scrolled). We pass these as
-    // primitives so DisplayManager does not need to know what an ActionMenu is.
+    // The Interact screen needs two pieces of information about the action menu:
+    // the action name to display, and which stat bar to highlight. We pass these
+    // as primitives so DisplayManager does not need to know what an ActionMenu is.
     void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
                               int moodIndex, const char* selectedActionName,
-                              RelevantStat relevantStat, int currentActionIndex,
-                              const char* petName);
+                              RelevantStat relevantStat, const char* petName);
 
     // Draws the two-tab nav bar at the bottom of the Main screen.
     // The highlighted tab (mainNavIndex) gets a filled background.
@@ -129,11 +130,11 @@ public:
     // renderDisplay() — the single call that loop() makes every frame.
     // screenState comes from NavigationManager.
     // petIsDead bypasses the normal screen routing and shows the death screen.
-    // selectedActionName, relevantStat, and currentActionIndex are extracted
-    // from ActionMenu by the caller — keeping DisplayManager unaware of it.
+    // selectedActionName and relevantStat are extracted from ActionMenu by the
+    // caller — keeping DisplayManager unaware of it.
     void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
                        int moodIndex, const char* selectedActionName,
-                       RelevantStat relevantStat, int currentActionIndex,
+                       RelevantStat relevantStat,
                        bool petIsDead, const char* petName, ScreenState screenState);
 
     // Pet display helpers — used internally and by the three private render methods
