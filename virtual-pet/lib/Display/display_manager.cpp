@@ -59,7 +59,8 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
                                    int sick, int moodIndex, const char* selectedActionName,
                                    RelevantStat relevantStat,
                                    bool petIsDead, const char* petName,
-                                   ScreenState screenState) {
+                                   ScreenState screenState,
+                                   int spriteOffsetX, int spriteOffsetY) {
     // --- Death state ---
     // Draw the death screen once when the pet first dies, then hold it.
     // The petWasDeadLastFrame flag prevents redrawing the death screen every frame.
@@ -96,14 +97,15 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     // stat changes appear instantly; the single push keeps it flicker-free.
     switch (screenState) {
         case SCREEN_MAIN:
-            renderMainScreen(moodIndex, petName);
+            renderMainScreen(moodIndex, petName, spriteOffsetX, spriteOffsetY);
             break;
         case SCREEN_STATS:
             renderStatsScreen(happiness, hunger, energy, cleanliness, sick, moodIndex, petName);
             break;
         case SCREEN_INTERACT:
             renderInteractScreen(happiness, hunger, energy, cleanliness, sick, moodIndex,
-                                 selectedActionName, relevantStat, petName);
+                                 selectedActionName, relevantStat, petName,
+                                 spriteOffsetX, spriteOffsetY);
             break;
     }
 
@@ -115,11 +117,12 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 // Shows the pet face filling the centre of the screen, with a two-tab nav
 // bar at the bottom so the user can enter Stats or Interact.
 // -----------------------------------------------------------------------
-void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
+void DisplayManager::renderMainScreen(int moodIndex, const char* petName,
+                                      int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
     drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
-                  sprite_80x80_test[petAnimation.getCurrentFrame()]);
+                  sprite_80x80_test[petAnimation.getCurrentFrame()], spriteOffsetX, spriteOffsetY);
     showPetMoodText(moodIndex, MAIN_MOOD_Y);
     drawMainNavBar();
 }
@@ -168,11 +171,12 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 // -----------------------------------------------------------------------
 void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy, int cleanliness,
                                           int sick, int moodIndex, const char* selectedActionName,
-                                          RelevantStat relevantStat, const char* petName) {
+                                          RelevantStat relevantStat, const char* petName,
+                                          int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
     drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
-                  sprite_80x80_test[petAnimation.getCurrentFrame()]);
+                  sprite_80x80_test[petAnimation.getCurrentFrame()], spriteOffsetX, spriteOffsetY);
     showPetMoodText(moodIndex, INTERACT_MOOD_Y);
     drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
     drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
@@ -312,9 +316,14 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
 // Pixels matching SPRITE_TRANSPARENT_COLOR (0x1FF8) are skipped by pushImage(),
 // so the screen background shows through and the pet appears to "float"
 // instead of sitting inside a coloured rectangle.
-void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight, const uint16_t* spriteData) {
-    int spriteX = (SCREEN_WIDTH - spriteWidth) / 2;
-    int spriteY = faceCenterY - (spriteHeight / 2);
+void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight,
+                                   const uint16_t* spriteData, int spriteOffsetX, int spriteOffsetY) {
+    // Start from the normal centred position, then add the tilt offset. When the
+    // offset is 0 (tilt disabled, or device held flat) this is exactly the old
+    // centred position, so every screen looks unchanged. The offset is already
+    // clamped by TiltMotion, so adding it here cannot push the pet off screen.
+    int spriteX = (SCREEN_WIDTH - spriteWidth) / 2 + spriteOffsetX;
+    int spriteY = faceCenterY - (spriteHeight / 2) + spriteOffsetY;
 
     canvas.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
 }

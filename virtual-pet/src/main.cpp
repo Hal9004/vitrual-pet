@@ -2,6 +2,7 @@
 #include "M5StickCPlus2.h"
 #include "../lib/Pet/pet.h"
 #include "../lib/Display/display_manager.h"
+#include "../lib/Display/tilt_motion.h"
 #include "../lib/Button/button_handler.h"
 #include "../lib/Actions/action_menu.h"
 #include "../lib/Navigation/navigation_manager.h"
@@ -19,6 +20,16 @@
 // #define SPRITE_TEST
 #include "../lib/Display/sprites/80x80_test.h"
 
+// -------------------------------------------------------------------------
+// TILT_MOVEMENT_ENABLED — on/off switch for the optional tilt-movement demo.
+// When true, the pet sprite slides around the screen to follow how the
+// device is tilted (driven by the accelerometer). When false, the pet is
+// drawn dead-centre exactly as it was before this feature existed.
+// This is a self-contained extra you can switch on to experiment with the
+// accelerometer; flip it to false and rebuild to revert to the plain pet.
+// -------------------------------------------------------------------------
+static const bool TILT_MOVEMENT_ENABLED = true;
+
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
 Pet             myPet;    // Holds all of the pet's stats and care actions.
@@ -28,6 +39,7 @@ ActionMenu      menu;     // Manages the list of actions the user can choose.
 NavigationManager navManager; // Tracks which screen is active and routes button input.
 TimerManager    timers;   // Handles all automatic stat changes over time.
 ImuManager      imu;      // Reads accelerometer data and detects shake gestures.
+TiltMotion      spriteMotion; // Turns live tilt into a smoothed pet-sprite screen offset.
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
 StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 
@@ -83,13 +95,26 @@ void updateLivePet() {
 // to draw, and isInDeadState() tells it whether to show the death screen.
 void renderCurrentScreen() {
     Action selectedAction = menu.getSelectedAction();
+
+    // Work out the sprite offset to draw with. When the tilt demo is on we use
+    // the helper's smoothed values; when it is off we pass 0, 0 so the pet draws
+    // dead-centre exactly as it did before this feature existed. Reading these
+    // into named variables keeps the renderDisplay() call below easy to follow.
+    int spriteOffsetX = 0;
+    int spriteOffsetY = 0;
+    if (TILT_MOVEMENT_ENABLED) {
+        spriteOffsetX = spriteMotion.getOffsetX();
+        spriteOffsetY = spriteMotion.getOffsetY();
+    }
+
     display.renderDisplay(
         myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
         myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
         selectedAction.name,
         selectedAction.relevantStat,
         myPet.isInDeadState(), myPet.getPetName(),
-        navManager.getCurrentScreen()
+        navManager.getCurrentScreen(),
+        spriteOffsetX, spriteOffsetY
     );
 }
 
@@ -147,6 +172,13 @@ void loop() {
     M5.update();      // Read the latest hardware state (buttons, IMU, etc.)
     buttons.update(); // Detect which buttons were pressed this frame
     imu.update();     // Read fresh accelerometer data and update shake detection
+
+    // Feed the latest tilt into the sprite-motion helper so it can ease the pet
+    // toward where the device is leaning. Gated by the demo toggle: when the
+    // feature is off we skip this and the offset the helper reports stays at 0.
+    if (TILT_MOVEMENT_ENABLED) {
+        spriteMotion.update(imu.getAccelX(), imu.getAccelY());
+    }
 
     // Run the state machine — sets STATE_DEAD when a stat hits a fatal level, and
     // plays the pet's own hunger/sickness/death sounds when a stat crosses its

@@ -89,14 +89,18 @@ private:
     // Private render methods — one per screen.
     // Each owns the layout and redraw logic for its screen only.
     // -----------------------------------------------------------------------
-    void renderMainScreen(int moodIndex, const char* petName);
+    // spriteOffsetX/Y slide the pet sprite away from centre to follow the device
+    // tilt. The Stats screen has no pet sprite, so renderStatsScreen() does not
+    // take an offset.
+    void renderMainScreen(int moodIndex, const char* petName, int spriteOffsetX, int spriteOffsetY);
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
     // The Interact screen needs two pieces of information about the action menu:
     // the action name to display, and which stat bar to highlight. We pass these
     // as primitives so DisplayManager does not need to know what an ActionMenu is.
     void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
                               int moodIndex, const char* selectedActionName,
-                              RelevantStat relevantStat, const char* petName);
+                              RelevantStat relevantStat, const char* petName,
+                              int spriteOffsetX, int spriteOffsetY);
 
     // Draws the two-tab nav bar at the bottom of the Main screen.
     // The highlighted tab (mainNavIndex) gets a filled background.
@@ -132,10 +136,14 @@ public:
     // petIsDead bypasses the normal screen routing and shows the death screen.
     // selectedActionName and relevantStat are extracted from ActionMenu by the
     // caller — keeping DisplayManager unaware of it.
+    // spriteOffsetX/Y nudge the pet sprite away from its normal centre so it can
+    // follow the device tilt. They are plain pixel counts; pass 0, 0
+    // to draw the pet dead-centre exactly as before.
     void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
                        int moodIndex, const char* selectedActionName,
                        RelevantStat relevantStat,
-                       bool petIsDead, const char* petName, ScreenState screenState);
+                       bool petIsDead, const char* petName, ScreenState screenState,
+                       int spriteOffsetX, int spriteOffsetY);
 
     // Pet display helpers — used internally and by the three private render methods
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
@@ -157,7 +165,10 @@ public:
     // still passed in so a different size could be supplied later without changing
     // this function.
     // moodIndex is reserved for a future task that will pick a mood-specific sprite.
-    void drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight, const uint16_t* spriteData);
+    // spriteOffsetX/Y are added to the centred position so the pet can slide to
+    // follow the device tilt; pass 0, 0 to draw it dead-centre.
+    void drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight,
+                       const uint16_t* spriteData, int spriteOffsetX, int spriteOffsetY);
 };
 
 #endif
