@@ -8,15 +8,46 @@ DisplayManager::DisplayManager()
 }
 
 void DisplayManager::init() {
+    // Match the canvas pixel format to the LCD: 16-bit RGB565, two bytes per
+    // pixel. This makes the off-screen buffer the same format as the screen,
+    // so pushing it across is a straight copy, and fixes the buffer size at
+    // 135 x 240 x 2 = ~63 KB.
+    canvas.setColorDepth(16);
+
+    // Allocate the off-screen canvas. This must happen here, after M5.begin()
+    // has initialised the LCD, rather than in the constructor. createSprite()
+    // returns the buffer pointer, or nullptr if there was not enough heap for
+    // the ~63 KB buffer — we log that case so a failure is visible on serial
+    // rather than showing up as a mysteriously blank screen.
+    if (canvas.createSprite(SCREEN_WIDTH, SCREEN_HEIGHT) == nullptr) {
+        Serial.println("ERROR: could not allocate display canvas");
+    }
+
+    // Byte-swap note: the sprite pixels in lib/Display/sprites/ are pre-swapped
+    // to match the order the LCD expects from a direct pushImage(). Drawing them
+    // into this canvas and then pushing the canvas may apply the swap a second
+    // time. If the pet's colours look wrong on the device (but the text/bars are
+    // fine, or vice versa), uncomment the line below so the canvas swaps the
+    // sprite bytes back as they are drawn in:
+    //     canvas.setSwapBytes(true);
+
     clearScreen(TFT_BLACK);
+    pushCanvas();
+}
+
+// pushCanvas() — copies the finished off-screen frame to the LCD in one shot.
+// The canvas was constructed with &M5.Lcd as its parent, so pushSprite() knows
+// where to send the pixels.
+void DisplayManager::pushCanvas() {
+    canvas.pushSprite(0, 0);
 }
 
 void DisplayManager::clearScreen(uint32_t color) {
-    M5.Lcd.clear(color);
+    canvas.fillScreen(color);
 }
 
 void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t color) {
-    M5.Lcd.fillRect(x, y, width, height, color);
+    canvas.fillRect(x, y, width, height, color);
 }
 
 // renderDisplay() — the one call loop() makes every frame.
@@ -80,6 +111,7 @@ void DisplayManager::renderMainScreen(int moodIndex, const char* petName) {
         drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT, sprite_80x80_test[0]);
         showPetMoodText(moodIndex, MAIN_MOOD_Y);
         drawMainNavBar();
+        pushCanvas();
 
         lastFullRedrawTime = millis();
         lastRenderedScreen = SCREEN_MAIN;
@@ -97,12 +129,12 @@ void DisplayManager::drawMainNavBar() {
     int tabWidth = MAIN_NAV_ZONE.width / 2;
 
     // Left tab — Stats
-    M5.Lcd.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
+    canvas.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
 
     // Right tab — Interact
     int rightX = MAIN_NAV_ZONE.x + tabWidth;
-    M5.Lcd.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
+    canvas.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
 }
 
@@ -122,8 +154,9 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
         showPetMood(moodIndex);
 
         // Back hint at the bottom instead of the action menu indicator
-        M5.Lcd.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
+        canvas.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
         printText("B/C: Back", MENU_ZONE.x + 10, MENU_ZONE.y + 4, TFT_CYAN, 1);
+        pushCanvas();
 
         lastFullRedrawTime = millis();
         lastRenderedScreen = SCREEN_STATS;
@@ -150,6 +183,7 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
         showPetMoodText(moodIndex, INTERACT_MOOD_Y);
         drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
         drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
+        pushCanvas();
 
         lastMenuActionIndex = currentActionIndex;
         lastFullRedrawTime  = millis();
@@ -159,10 +193,13 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
 
     // Fast path: when the user presses B or C to cycle actions, only redraw
     // the contextual stat bar and the menu indicator — not the whole screen.
-    // This prevents the face from flickering on every button press.
+    // The rest of the frame (face, name, mood) is still in the canvas buffer
+    // from the last full redraw, so we just repaint the changed regions and
+    // push the whole canvas again.
     if (currentActionIndex != lastMenuActionIndex) {
         drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
         drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
+        pushCanvas();
         lastMenuActionIndex = currentActionIndex;
     }
 }
@@ -201,10 +238,10 @@ void DisplayManager::drawContextualStatBar(int happiness, int hunger, int energy
         default:              return;
     }
 
-    M5.Lcd.setTextSize(1);
-    M5.Lcd.setTextColor(TFT_WHITE);
-    M5.Lcd.setCursor(INTERACT_STAT_ZONE.x, INTERACT_STAT_LABEL_Y);
-    M5.Lcd.printf("%s: %d", label, value);
+    canvas.setTextSize(1);
+    canvas.setTextColor(TFT_WHITE);
+    canvas.setCursor(INTERACT_STAT_ZONE.x, INTERACT_STAT_LABEL_Y);
+    canvas.printf("%s: %d", label, value);
     drawStatusBar(value, 100, INTERACT_STAT_ZONE.x, INTERACT_STAT_BAR_Y, INTERACT_STAT_ZONE.width, color);
 }
 
@@ -218,7 +255,7 @@ void DisplayManager::drawContextualStatBar(int happiness, int hunger, int energy
 // so this helper has no knowledge of the menu's internals.
 void DisplayManager::drawMenuIndicator(const char* selectedActionName, int x, int y) {
     fillRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_BLACK);
-    M5.Lcd.drawRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
+    canvas.drawRect(x, y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
     printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
     printText(selectedActionName, x + 50, y + 4, TFT_YELLOW, 1);
 }
@@ -257,27 +294,27 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
                                    int sick, const char* petName) {
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
 
-    M5.Lcd.setTextSize(1);
-    M5.Lcd.setTextColor(TFT_WHITE);
+    canvas.setTextSize(1);
+    canvas.setTextColor(TFT_WHITE);
 
-    M5.Lcd.setCursor(STATS_ZONE.x, HAPPY_BAR_ZONE.labelY);
-    M5.Lcd.printf("Happy: %d", happiness);
+    canvas.setCursor(STATS_ZONE.x, HAPPY_BAR_ZONE.labelY);
+    canvas.printf("Happy: %d", happiness);
     drawStatusBar(happiness, 100, STATS_ZONE.x, HAPPY_BAR_ZONE.barY, STATS_ZONE.width, TFT_GREEN);
 
-    M5.Lcd.setCursor(STATS_ZONE.x, HUNGER_BAR_ZONE.labelY);
-    M5.Lcd.printf("Hunger: %d", hunger);
+    canvas.setCursor(STATS_ZONE.x, HUNGER_BAR_ZONE.labelY);
+    canvas.printf("Hunger: %d", hunger);
     drawStatusBar(hunger, 100, STATS_ZONE.x, HUNGER_BAR_ZONE.barY, STATS_ZONE.width, TFT_RED);
 
-    M5.Lcd.setCursor(STATS_ZONE.x, ENERGY_BAR_ZONE.labelY);
-    M5.Lcd.printf("Energy: %d", energy);
+    canvas.setCursor(STATS_ZONE.x, ENERGY_BAR_ZONE.labelY);
+    canvas.printf("Energy: %d", energy);
     drawStatusBar(energy, 100, STATS_ZONE.x, ENERGY_BAR_ZONE.barY, STATS_ZONE.width, TFT_BLUE);
 
-    M5.Lcd.setCursor(STATS_ZONE.x, CLEAN_BAR_ZONE.labelY);
-    M5.Lcd.printf("Clean: %d", cleanliness);
+    canvas.setCursor(STATS_ZONE.x, CLEAN_BAR_ZONE.labelY);
+    canvas.printf("Clean: %d", cleanliness);
     drawStatusBar(cleanliness, 100, STATS_ZONE.x, CLEAN_BAR_ZONE.barY, STATS_ZONE.width, TFT_CYAN);
 
-    M5.Lcd.setCursor(STATS_ZONE.x, SICK_BAR_ZONE.labelY);
-    M5.Lcd.printf("Sick: %d", sick);
+    canvas.setCursor(STATS_ZONE.x, SICK_BAR_ZONE.labelY);
+    canvas.printf("Sick: %d", sick);
     drawStatusBar(sick, 100, STATS_ZONE.x, SICK_BAR_ZONE.barY, STATS_ZONE.width, TFT_PURPLE);
 }
 
@@ -305,7 +342,7 @@ void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWid
     int spriteX = (SCREEN_WIDTH - spriteWidth) / 2;
     int spriteY = faceCenterY - (spriteHeight / 2);
 
-    M5.Lcd.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
+    canvas.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
 }
 
 // -----------------------------------------------------------------------
@@ -313,35 +350,36 @@ void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWid
 // -----------------------------------------------------------------------
 
 void DisplayManager::printText(const char* text, int x, int y, uint32_t color, uint8_t size) {
-    M5.Lcd.setCursor(x, y);
-    M5.Lcd.setTextColor(color);
-    M5.Lcd.setTextSize(size);
-    M5.Lcd.print(text);
+    canvas.setCursor(x, y);
+    canvas.setTextColor(color);
+    canvas.setTextSize(size);
+    canvas.print(text);
 }
 
 void DisplayManager::printCenteredText(const char* text, int y, uint32_t color, uint8_t size) {
-    M5.Lcd.setTextColor(color);
-    M5.Lcd.setTextSize(size);
+    canvas.setTextColor(color);
+    canvas.setTextSize(size);
 
     int textWidth = strlen(text) * 6 * size;
     int x = (SCREEN_WIDTH - textWidth) / 2;
     if (x < 0) { x = 0; }
 
-    M5.Lcd.setCursor(x, y);
-    M5.Lcd.print(text);
+    canvas.setCursor(x, y);
+    canvas.print(text);
 }
 
 void DisplayManager::drawStatusBar(int value, int maxValue, int x, int y, int width, uint32_t color) {
-    M5.Lcd.drawRect(x, y, width, STAT_BAR_HEIGHT, TFT_WHITE);
+    canvas.drawRect(x, y, width, STAT_BAR_HEIGHT, TFT_WHITE);
 
     int fillWidth = (value * width) / maxValue;
     if (fillWidth > 0) {
-        M5.Lcd.fillRect(x, y, fillWidth, STAT_BAR_HEIGHT, color);
+        canvas.fillRect(x, y, fillWidth, STAT_BAR_HEIGHT, color);
     }
 }
 
 void DisplayManager::showMessage(const char* message) {
     printCenteredText(message, 160, TFT_WHITE, 1);
+    pushCanvas();
 }
 
 // showDeathScreen() — clears the screen and shows game-over text.
@@ -354,6 +392,7 @@ void DisplayManager::showDeathScreen() {
     printCenteredText("has died!", 85, TFT_RED, 2);
     printCenteredText("Press A to", 130, TFT_WHITE, 2);
     printCenteredText("restart", 155, TFT_WHITE, 2);
+    pushCanvas();
 
     lastFullRedrawTime = 0;
 }

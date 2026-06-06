@@ -69,6 +69,19 @@ private:
     int  lastMenuActionIndex;  // Detects action selection changes on Interact screen
     bool petWasDeadLastFrame;  // Used to force a redraw immediately after revival
 
+    // Off-screen double-buffer. Every drawing call below targets this canvas
+    // instead of the LCD directly; the finished frame is then copied to the
+    // screen in one shot by pushCanvas(). Drawing off-screen and pushing once
+    // is what stops the screen flickering — the LCD never shows a half-drawn
+    // frame. The buffer is 135x240 16-bit pixels (~63 KB), allocated once in
+    // init(). See Hardware Gotcha 3 in DEV_ROADMAP.md.
+    M5Canvas canvas = M5Canvas(&M5.Lcd);
+
+    // pushCanvas() — copies the finished off-screen frame to the LCD in one
+    // operation. Called at the end of every render path so the screen only
+    // ever updates as a complete frame.
+    void pushCanvas();
+
     // -----------------------------------------------------------------------
     // Private render methods — one per screen.
     // Each owns the layout and redraw logic for its screen only.
