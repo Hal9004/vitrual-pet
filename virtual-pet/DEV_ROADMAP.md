@@ -1247,6 +1247,8 @@ graph LR
         IMU[ImuManager]
         Speaker[SpeakerManager]
         Layout[screen_layout]
+        Anim[AnimationManager]
+        Tilt[TiltMotion]
     end
 
     Pet[Pet]
@@ -1260,6 +1262,7 @@ graph LR
     Timer --> Pet
     Storage --> Pet
     Display --> Layout
+    Display --> Anim
     Nav --> Layout
     Nav --> Button
 
@@ -1279,6 +1282,7 @@ graph LR
     Main --> IMU
     Main --> Speaker
     Main --> Storage
+    Main --> Tilt
 
     classDef hotspot fill:#f8d4d4,stroke:#a00,stroke-width:2px
     class Menu hotspot
@@ -1290,6 +1294,7 @@ If your viewer does not render Mermaid, the same graph in flat layered form:
 Layer 0 — Foundations (no internal dependencies)
 ═══════════════════════════════════════════════════
    ButtonHandler   ImuManager   SpeakerManager   screen_layout
+   AnimationManager   TiltMotion
 
 
 Layer 1 — Single-dependency managers
@@ -1297,7 +1302,7 @@ Layer 1 — Single-dependency managers
    Pet              ──►  SpeakerManager   (updateState()/reset() take it by reference)
    TimerManager     ──►  Pet
    StorageManager   ──►  Pet
-   DisplayManager   ──►  screen_layout
+   DisplayManager   ──►  screen_layout, AnimationManager   (owns one AnimationManager member)
 
 
 Layer 2 — Coordinator
@@ -1314,11 +1319,14 @@ Layer 3 — HOTSPOT  ★ (six internal dependencies, Hotspot 1 — kept)
 Layer 4 — Orchestrator
 ═══════════════════════════════════════════════════
    main.cpp  ──►  owns one instance of every manager and Pet
+                  (incl. TiltMotion, which it feeds imu.getAccelX/Y())
 ```
 
-Four modules are foundations. `ActionMenu` sits at the opposite end with six
-internal dependencies. The other mid-tier modules sit between with one
-to three (`Pet` now among them, depending only on `SpeakerManager`).
+Six modules are foundations (`ButtonHandler`, `ImuManager`, `SpeakerManager`,
+`screen_layout`, and the two pure-maths helpers `AnimationManager` and
+`TiltMotion`). `ActionMenu` sits at the opposite end with six internal
+dependencies. The other mid-tier modules sit between with one to three
+(`Pet` now among them, depending only on `SpeakerManager`).
 
 ### A.2 — Vocabulary and three categories of fix
 

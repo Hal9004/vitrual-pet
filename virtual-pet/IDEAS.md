@@ -7,6 +7,16 @@ None of these are planned tasks — they are starting points for exploration.
 
 ## IMU-Driven Pet Movement (Play Mechanic Upgrade)
 
+> **✅ Implemented in Task 13b (`TiltMotion`).** This idea shipped as the optional tilt-movement
+> demo: `lib/Display/tilt_motion.{h,cpp}` maps live `imu.getAccelX/Y()` → a low-pass-smoothed,
+> clamped pixel offset that `DisplayManager::drawPetSprite()` applies, gated behind the
+> `TILT_MOVEMENT_ENABLED` flag in `main.cpp`. The actual build differs from the sketch below in
+> two ways: the offset lives in its own `TiltMotion` helper (not in `ImuManager` or a "new
+> `AnimationManager`"), and it slides the **sprite** rather than the old `drawPetFace()` circle.
+> See `SPRITE_GUIDE.md` Part 7 for the student walkthrough. The original sketch is kept below as
+> the historical design note. (The deadzone in "What to revisit" was not added — the low-pass
+> filter already keeps the pet steady at rest.)
+
 **The idea:**
 Replace (or supplement) the current shake-to-play mechanic with tilt-based pet movement.
 The MPU6886 accelerometer gives continuous X/Y tilt data, not just a shake event. That data
