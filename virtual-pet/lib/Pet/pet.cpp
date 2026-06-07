@@ -242,24 +242,33 @@ void Pet::reset(SpeakerManager& speaker) {
     speaker.playResetSound();
 }
 
-// getDominantMood()
-// Picks which mood the screen should display. Each stat is treated as a vote
-// for one mood (hunger ↔ "Hungry", happy ↔ "Happy", and so on), and the
-// largest stat wins. Returns the index of that stat in a fixed order so
-// DisplayManager can look up the label and colour without needing to know
-// anything about which stats Pet has.
-int Pet::getDominantMood() const {
-    int conditions[] = {hungry, tired, happy, sick, sad, cleanliness, energised};
-    int maxValue = 0;
-    int maxIndex = 0;
-
-    for (int i = 0; i < 7; i++) {
-        if (conditions[i] > maxValue) {
-            maxValue = conditions[i];
-            maxIndex = i;
-        }
+// computeMood()
+// Maps the pet's current stats to one of the four visual moods, using a fixed
+// priority order so the sprite always shows the single most important thing.
+// We check the worst problems first: being unwell matters more than being
+// hungry, which matters more than being happy. The first rule that matches
+// wins and we return straight away; if none match, the pet is neutral.
+//
+// Read this as a ladder of "if this is true, stop here": as soon as one
+// condition is met its mood is returned, so the rules below it never run.
+// To change the priority order, reorder these blocks. To add a new mood, add
+// a value to MoodSprite (in screen_layout.h) and a new block here.
+//
+// Note: the four moods deliberately do not cover every danger. A pet can die
+// from low happiness or low energy (see isDead()), but neither has its own
+// mood here, so the face stays NEUTRAL as those stats fall. Adding a "sad" or
+// "tired" mood for those is a natural extension exercise.
+MoodSprite Pet::computeMood() const {
+    if (sick > 50) {
+        return MOOD_UNWELL;
     }
-    return maxIndex; // 0=hungry, 1=tired, 2=happy, 3=sick, 4=sad, 5=clean, 6=energised
+    if (hungry > 70) {
+        return MOOD_HUNGRY;
+    }
+    if (happy > 70) {
+        return MOOD_HAPPY;
+    }
+    return MOOD_NEUTRAL;
 }
 
 // constrainValue()

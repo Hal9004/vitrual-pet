@@ -65,4 +65,32 @@ enum RelevantStat {
     STAT_NONE
 };
 
+// -----------------------------------------------------------------------
+// MoodSprite — the four visual moods the pet's sprite can show.
+//
+// This is different from PetState (in pet.h), which says what the pet is
+// *doing* (eating, sleeping…). MoodSprite says how the pet *looks* right
+// now. Pet::computeMood() reads the stats and returns one of these, and
+// DisplayManager uses it to choose BOTH the sprite picture and the mood
+// word shown under it.
+//
+// It lives here (not in pet.h) for the same reason as the enums above:
+// DisplayManager must be able to name these moods without knowing what a
+// Pet is, and Pet can include this lightweight header to return one — just
+// like the action menu includes this header to use RelevantStat. The rule
+// is to keep the dependency pointing this way: Pet -> screen_layout.h, and
+// Display -> screen_layout.h, but never Display -> Pet.
+//
+// Each value is prefixed with MOOD_ so it cannot clash with names
+// elsewhere in the project. Adding a new mood is three small steps: add a
+// value here, add a rule in Pet::computeMood(), and add a sprite case in
+// DisplayManager::spriteForMood().
+// -----------------------------------------------------------------------
+enum MoodSprite {
+    MOOD_NEUTRAL,
+    MOOD_HAPPY,
+    MOOD_UNWELL,
+    MOOD_HUNGRY
+};
+
 #endif

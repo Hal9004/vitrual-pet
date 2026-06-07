@@ -2,6 +2,7 @@
 #define PET_H
 
 #include "../Speaker/speaker_manager.h"
+#include "../Display/screen_layout.h"  // for the MoodSprite enum returned by computeMood()
 
 // PetState — the list of behaviours the pet can currently be doing.
 // Only one state is active at a time.
@@ -86,8 +87,10 @@ public:
     void bathe();          // Increases cleanliness, decreases tired
     void heal();           // Decreases sick
     
-    // Get the pet's dominant mood state
-    int getDominantMood() const;  // Returns index of highest condition value
+    // Works out the pet's current visual mood from its stats.
+    // Returns a MoodSprite (defined in ../Display/screen_layout.h); the
+    // display uses it to pick the sprite picture and the mood word.
+    MoodSprite computeMood() const;
 
     // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
     bool isDead() const;

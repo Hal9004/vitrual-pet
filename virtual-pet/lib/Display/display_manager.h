@@ -92,13 +92,13 @@ private:
     // spriteOffsetX/Y slide the pet sprite away from centre to follow the device
     // tilt. The Stats screen has no pet sprite, so renderStatsScreen() does not
     // take an offset.
-    void renderMainScreen(int moodIndex, const char* petName, int spriteOffsetX, int spriteOffsetY);
-    void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, int moodIndex, const char* petName);
+    void renderMainScreen(MoodSprite mood, const char* petName, int spriteOffsetX, int spriteOffsetY);
+    void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, MoodSprite mood, const char* petName);
     // The Interact screen needs two pieces of information about the action menu:
     // the action name to display, and which stat bar to highlight. We pass these
     // as primitives so DisplayManager does not need to know what an ActionMenu is.
     void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
-                              int moodIndex, const char* selectedActionName,
+                              MoodSprite mood, const char* selectedActionName,
                               RelevantStat relevantStat, const char* petName,
                               int spriteOffsetX, int spriteOffsetY);
 
@@ -113,7 +113,12 @@ private:
 
     // Draws just the mood label text at the given Y position.
     // Separated from drawPetSprite() so each screen can position the text independently.
-    void showPetMoodText(int moodIndex, int textY);
+    void showPetMoodText(MoodSprite mood, int textY);
+
+    // spriteForMood() — maps a mood to the pixel data for its current frame.
+    // The one place that decides which artwork each mood uses, so adding a new
+    // mood means adding a single case here.
+    const uint16_t* spriteForMood(MoodSprite mood, int frame);
 
 public:
     DisplayManager();
@@ -140,14 +145,14 @@ public:
     // follow the device tilt. They are plain pixel counts; pass 0, 0
     // to draw the pet dead-centre exactly as before.
     void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
-                       int moodIndex, const char* selectedActionName,
+                       MoodSprite mood, const char* selectedActionName,
                        RelevantStat relevantStat,
                        bool petIsDead, const char* petName, ScreenState screenState,
                        int spriteOffsetX, int spriteOffsetY);
 
     // Pet display helpers — used internally and by the three private render methods
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
-    void showPetMood(int moodIndex);
+    void showPetMood(MoodSprite mood);
     void showMessage(const char* message);
     void showDeathScreen();
 
@@ -161,14 +166,14 @@ public:
 
     // drawPetSprite() — draws a bitmap sprite as the pet's face. The sprite is
     // centred horizontally on the screen, with its vertical centre at faceCenterY.
-    // Every screen uses the same 80x80 sprite; the width/height and pixel data are
-    // still passed in so a different size could be supplied later without changing
-    // this function.
-    // moodIndex is reserved for a future task that will pick a mood-specific sprite.
+    // mood selects which artwork to draw: drawPetSprite() asks spriteForMood()
+    // for the right pixels, so the pet's face matches how it is feeling.
+    // Every screen uses the same 80x80 size; width/height are still passed in so
+    // a different size could be supplied later without changing this function.
     // spriteOffsetX/Y are added to the centred position so the pet can slide to
     // follow the device tilt; pass 0, 0 to draw it dead-centre.
-    void drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight,
-                       const uint16_t* spriteData, int spriteOffsetX, int spriteOffsetY);
+    void drawPetSprite(MoodSprite mood, int faceCenterY, int spriteWidth, int spriteHeight,
+                       int spriteOffsetX, int spriteOffsetY);
 };
 
 #endif

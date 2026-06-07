@@ -109,7 +109,7 @@ void renderCurrentScreen() {
 
     display.renderDisplay(
         myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
-        myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
+        myPet.getCleanliness(), myPet.getSick(), myPet.computeMood(),
         selectedAction.name,
         selectedAction.relevantStat,
         myPet.isInDeadState(), myPet.getPetName(),

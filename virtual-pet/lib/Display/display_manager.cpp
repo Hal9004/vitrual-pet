@@ -56,7 +56,7 @@ void DisplayManager::fillRect(int x, int y, int width, int height, uint32_t colo
 // current index) rather than as an ActionMenu reference. This keeps
 // DisplayManager unaware of ActionMenu — the caller does the extraction.
 void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cleanliness,
-                                   int sick, int moodIndex, const char* selectedActionName,
+                                   int sick, MoodSprite mood, const char* selectedActionName,
                                    RelevantStat relevantStat,
                                    bool petIsDead, const char* petName,
                                    ScreenState screenState,
@@ -97,13 +97,13 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
     // stat changes appear instantly; the single push keeps it flicker-free.
     switch (screenState) {
         case SCREEN_MAIN:
-            renderMainScreen(moodIndex, petName, spriteOffsetX, spriteOffsetY);
+            renderMainScreen(mood, petName, spriteOffsetX, spriteOffsetY);
             break;
         case SCREEN_STATS:
-            renderStatsScreen(happiness, hunger, energy, cleanliness, sick, moodIndex, petName);
+            renderStatsScreen(happiness, hunger, energy, cleanliness, sick, mood, petName);
             break;
         case SCREEN_INTERACT:
-            renderInteractScreen(happiness, hunger, energy, cleanliness, sick, moodIndex,
+            renderInteractScreen(happiness, hunger, energy, cleanliness, sick, mood,
                                  selectedActionName, relevantStat, petName,
                                  spriteOffsetX, spriteOffsetY);
             break;
@@ -117,13 +117,13 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
 // Shows the pet face filling the centre of the screen, with a two-tab nav
 // bar at the bottom so the user can enter Stats or Interact.
 // -----------------------------------------------------------------------
-void DisplayManager::renderMainScreen(int moodIndex, const char* petName,
+void DisplayManager::renderMainScreen(MoodSprite mood, const char* petName,
                                       int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-    drawPetSprite(moodIndex, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
-                  sprite_80x80_test[petAnimation.getCurrentFrame()], spriteOffsetX, spriteOffsetY);
-    showPetMoodText(moodIndex, MAIN_MOOD_Y);
+    drawPetSprite(mood, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+                  spriteOffsetX, spriteOffsetY);
+    showPetMoodText(mood, MAIN_MOOD_Y);
     drawMainNavBar();
 }
 
@@ -153,10 +153,10 @@ void DisplayManager::drawMainNavBar() {
 // A "B/C: Back" hint replaces the old action menu indicator at the bottom.
 // -----------------------------------------------------------------------
 void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, int cleanliness,
-                                       int sick, int moodIndex, const char* petName) {
+                                       int sick, MoodSprite mood, const char* petName) {
     clearScreen();
     showPetStatus(happiness, hunger, energy, cleanliness, sick, petName);
-    showPetMood(moodIndex);
+    showPetMood(mood);
 
     // Back hint at the bottom instead of the action menu indicator
     canvas.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
@@ -170,14 +170,14 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 // indicator at the very bottom — the same indicator style as before.
 // -----------------------------------------------------------------------
 void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy, int cleanliness,
-                                          int sick, int moodIndex, const char* selectedActionName,
+                                          int sick, MoodSprite mood, const char* selectedActionName,
                                           RelevantStat relevantStat, const char* petName,
                                           int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-    drawPetSprite(moodIndex, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
-                  sprite_80x80_test[petAnimation.getCurrentFrame()], spriteOffsetX, spriteOffsetY);
-    showPetMoodText(moodIndex, INTERACT_MOOD_Y);
+    drawPetSprite(mood, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+                  spriteOffsetX, spriteOffsetY);
+    showPetMoodText(mood, INTERACT_MOOD_Y);
     drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
     drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
 }
@@ -241,19 +241,19 @@ void DisplayManager::drawMenuIndicator(const char* selectedActionName, int x, in
 // showPetMoodText() — draws just the mood label at the given Y position.
 // Separated from drawPetSprite() so the Main and Interact screens can place
 // the text at different heights without calling the full showPetMood() path.
-void DisplayManager::showPetMoodText(int moodIndex, int textY) {
+void DisplayManager::showPetMoodText(MoodSprite mood, int textY) {
     const char* moodText;
     uint32_t    moodColor;
 
-    switch (moodIndex) {
-        case 0: moodText = "Hungry";    moodColor = TFT_RED;    break;
-        case 1: moodText = "Tired";     moodColor = TFT_BLUE;   break;
-        case 2: moodText = "Happy";     moodColor = TFT_GREEN;  break;
-        case 3: moodText = "Sick";      moodColor = TFT_PURPLE; break;
-        case 4: moodText = "Sad";       moodColor = TFT_ORANGE; break;
-        case 5: moodText = "Clean";     moodColor = TFT_CYAN;   break;
-        case 6: moodText = "Energised"; moodColor = TFT_YELLOW; break;
-        default:moodText = "Neutral";   moodColor = TFT_WHITE;  break;
+    // One label and colour per mood. The cases use the named MoodSprite values
+    // (not raw numbers), so this switch reads as the same four moods that
+    // Pet::computeMood() returns — the word under the pet always matches its face.
+    switch (mood) {
+        case MOOD_HAPPY:  moodText = "Happy";   moodColor = TFT_GREEN;  break;
+        case MOOD_UNWELL: moodText = "Unwell";  moodColor = TFT_PURPLE; break;
+        case MOOD_HUNGRY: moodText = "Hungry";  moodColor = TFT_RED;    break;
+        case MOOD_NEUTRAL:
+        default:          moodText = "Neutral"; moodColor = TFT_WHITE;  break;
     }
 
     printCenteredText(moodText, textY, moodColor, 2);
@@ -262,8 +262,8 @@ void DisplayManager::showPetMoodText(int moodIndex, int textY) {
 // showPetMood() — draws the mood label at the Stats screen position.
 // The Stats screen is a pure data view: five stat bars and this mood word,
 // with no pet sprite. Used by renderStatsScreen().
-void DisplayManager::showPetMood(int moodIndex) {
-    showPetMoodText(moodIndex, MOOD_ZONE.y);
+void DisplayManager::showPetMood(MoodSprite mood) {
+    showPetMoodText(mood, MOOD_ZONE.y);
 }
 
 // showPetStatus() — draws all five labelled stat bars using the Stats screen zones.
@@ -296,28 +296,45 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
     drawStatusBar(sick, 100, STATS_ZONE.x, SICK_BAR_ZONE.barY, STATS_ZONE.width, TFT_PURPLE);
 }
 
+// spriteForMood() — returns the pixel data to draw for a given mood and frame.
+// This is the single place that maps a mood to its artwork. Each mood will have
+// its own picture, so this switch is where a new mood gets connected to its
+// sprite (one extra case).
+//
+// For now every mood returns the same test sprite, so the pipeline is fully
+// wired and the mood logic runs even though the faces look identical. When the
+// real per-mood sprites exist, each case points at its own array instead.
+const uint16_t* DisplayManager::spriteForMood(MoodSprite mood, int frame) {
+    switch (mood) {
+        case MOOD_HAPPY:   return sprite_80x80_test[frame];   // later: sprite_happy[frame]
+        case MOOD_UNWELL:  return sprite_80x80_test[frame];   // later: sprite_unwell[frame]
+        case MOOD_HUNGRY:  return sprite_80x80_test[frame];   // later: sprite_hungry[frame]
+        case MOOD_NEUTRAL:
+        default:           return sprite_80x80_test[frame];   // later: sprite_neutral[frame]
+    }
+}
+
 // drawPetSprite() — draws the pet's face as a bitmap sprite.
 // The sprite is centred horizontally on the screen, and its vertical centre
 // is positioned at faceCenterY so each screen can choose where the face sits.
 //
-// Why pass the sprite data and dimensions in as parameters?
-// Every screen draws the same 80x80 sprite, so the width and height are the same
-// at each call site. They are passed in rather than hard-coded so a future screen
-// could supply a different size without changing this function, and so the caller
-// stays in charge of which sprite is drawn.
+// How does it pick the picture?
+// It asks spriteForMood() for the right artwork for the current mood, using the
+// animation frame chosen by petAnimation. So the same call draws a different
+// face as the pet's mood changes, and animates within that face.
 //
-// Why is moodIndex unused for now?
-// Eventually each mood (happy, sad, hungry, etc.) will have its own sprite.
-// Keeping moodIndex in the signature today means the call sites are already
-// the right shape when we add that lookup later — no second round of edits.
+// Why pass the dimensions in as parameters?
+// Every screen draws the same 80x80 size, so width and height are the same at
+// each call site. They are passed in rather than hard-coded so a future screen
+// could supply a different size without changing this function.
 //
 // Why SPRITE_TRANSPARENT_COLOR?
 // The sprite is a square block of pixels, but the pet's outline is not square.
 // Pixels matching SPRITE_TRANSPARENT_COLOR (0x1FF8) are skipped by pushImage(),
 // so the screen background shows through and the pet appears to "float"
 // instead of sitting inside a coloured rectangle.
-void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWidth, int spriteHeight,
-                                   const uint16_t* spriteData, int spriteOffsetX, int spriteOffsetY) {
+void DisplayManager::drawPetSprite(MoodSprite mood, int faceCenterY, int spriteWidth,
+                                   int spriteHeight, int spriteOffsetX, int spriteOffsetY) {
     // Start from the normal centred position, then add the tilt offset. When the
     // offset is 0 (tilt disabled, or device held flat) this is exactly the old
     // centred position, so every screen looks unchanged. The offset is already
@@ -325,6 +342,8 @@ void DisplayManager::drawPetSprite(int moodIndex, int faceCenterY, int spriteWid
     int spriteX = (SCREEN_WIDTH - spriteWidth) / 2 + spriteOffsetX;
     int spriteY = faceCenterY - (spriteHeight / 2) + spriteOffsetY;
 
+    // Pick the picture for this mood and the current animation frame, then draw it.
+    const uint16_t* spriteData = spriteForMood(mood, petAnimation.getCurrentFrame());
     canvas.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
 }
 
