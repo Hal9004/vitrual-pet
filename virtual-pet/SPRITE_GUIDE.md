@@ -173,6 +173,12 @@ to be white, paint it white — do not leave it empty.
 
 ### Which states need a sprite
 
+> **How the shipped code actually picks a face:** the project draws one sprite per **mood**
+> (`MoodSprite`: neutral / happy / unwell / hungry), chosen by `Pet::computeMood()` — see
+> **Part 8**. That is four sprites, not one per `PetState`. The richer per-`PetState` set below is
+> an *optional* direction (e.g. a distinct eating or sleeping pose); treat this table as drawing
+> guidance for that extension, not as a description of the current renderer.
+
 You need one sprite file for each value in the `PetState` enum in `lib/Pet/pet.h`.
 
 | State constant | When the pet enters this state | Suggested look |
@@ -886,3 +892,195 @@ the first build is an educated guess you confirm by looking. All the knobs are n
 from Part 6 and you have two tiny single-job classes — one for *when*, one for *where* — composing
 into richer behaviour than either could alone. That is the whole game: small pieces, each with one
 job, combined.
+
+## Part 8 — Changing the Pet's Face With Its Mood (the Mood Sprite System)
+
+Part 6 changed **which frame** is drawn (animation); Part 7 changed **where** it is drawn (tilt).
+This part changes **which picture** is drawn, based on **how the pet feels**. When the pet is
+starving it shows a hungry face; when it is sick it shows an unwell face. Same slot on screen, same
+animation timing — a different sprite, chosen from the pet's stats.
+
+The whole feature is three small pieces working in a line:
+
+```
+Pet::computeMood()  →  a MoodSprite value  →  DisplayManager::spriteForMood()  →  the picture
+```
+
+### 8.1 — Mood is not the same thing as state
+
+The codebase already has a `PetState` enum (`STATE_IDLE`, `STATE_EATING`, …). It is tempting to
+think that is the pet's "mood", but they answer different questions:
+
+- **`PetState`** = what the pet is *doing* right now (eating, sleeping, being healed). It is set by
+  the action methods.
+- **`MoodSprite`** = how the pet *looks* / feels, read straight from its stats. It is computed fresh
+  every frame and is never stored.
+
+Keeping them separate means the pet can be `STATE_IDLE` (doing nothing) yet still look `HUNGRY`
+because its hunger stat is high. The face follows the stats, not the activity.
+
+### 8.2 — `computeMood()`: a priority ladder, not a winner-takes-all
+
+`Pet::computeMood()` (in `lib/Pet/pet.cpp`) turns the seven stats into exactly one of four moods:
+
+```cpp
+MoodSprite Pet::computeMood() const {
+    if (sick > 50) {
+        return MOOD_UNWELL;
+    }
+    if (hungry > 70) {
+        return MOOD_HUNGRY;
+    }
+    if (happy > 70) {
+        return MOOD_HAPPY;
+    }
+    return MOOD_NEUTRAL;
+}
+```
+
+Read it top to bottom as a **ladder**: the *first* rule that is true wins and we `return`
+immediately, so every rule below it is skipped. Order therefore encodes **priority** — we deal with
+the worst thing first. Being unwell matters more than being hungry, which matters more than being
+happy. If nothing crosses a threshold, the pet is `MOOD_NEUTRAL`.
+
+A worked example with a fresh pet (its starting stats are `hungry 30, happy 70, sick 0`):
+
+| Check | Value | `> threshold`? | Result |
+|---|---|---|---|
+| `sick > 50`   | 0  | no  | fall through |
+| `hungry > 70` | 30 | no  | fall through |
+| `happy > 70`  | 70 | **no** (70 is not *greater than* 70) | fall through |
+| (none matched) | — | — | **`MOOD_NEUTRAL`** |
+
+So a brand-new pet shows the **neutral** face, not the happy one — `happy` has to climb *above* 70
+(press **Play** and it jumps to ~95) before `MOOD_HAPPY` wins. That `>` vs `>=` detail is exactly
+the kind of off-by-one worth checking on the whiteboard.
+
+> **What this replaced.** The old `getDominantMood()` scanned all seven stats and returned whichever
+> was *numerically highest*. That answered "which stat is biggest?" — not "what mood should the pet
+> be in?" — so a high *good* stat like cleanliness could announce itself as the mood. The priority
+> ladder answers the real question and is far easier to extend (see 8.6).
+
+### 8.3 — Where the `MoodSprite` enum lives, and why it is not in `pet.h`
+
+`computeMood()` lives in `Pet`, so you might expect the `MoodSprite` enum to live in `pet.h` next to
+`PetState`. It does not — it lives in **`lib/Display/screen_layout.h`**:
+
+```cpp
+enum MoodSprite {
+    MOOD_NEUTRAL,
+    MOOD_HAPPY,
+    MOOD_UNWELL,
+    MOOD_HUNGRY
+};
+```
+
+The reason is a dependency rule worth understanding. The enum is a *shared word* that two modules
+both need to speak: `Pet` **produces** a mood, `DisplayManager` **consumes** it to pick a picture.
+Whoever does not own the enum has to `#include` the file that does. So:
+
+- If the enum lived in `pet.h`, then `DisplayManager` would have to `#include "pet.h"` — dragging
+  the entire `Pet` class into the display layer and breaking the rule written at the top of
+  `display_manager.h`: *"it does not need to know what a `Pet` is."*
+- Instead it lives in `screen_layout.h`, a tiny header with **no includes of its own**. `Pet`
+  includes it to *return* a `MoodSprite`; `DisplayManager` already includes it. Neither depends on
+  the other — they only share the small vocabulary file.
+
+This is the same pattern `RelevantStat` already uses (produced by the action menu, defined in
+`screen_layout.h`). The rule of thumb: **a type shared across a boundary belongs in the lightweight
+header both sides can include, not inside either heavy module.** Keep the arrow pointing
+`Pet → screen_layout` and `Display → screen_layout`, never `Display → Pet`.
+
+### 8.4 — From a mood to a picture: `spriteForMood()`
+
+`DisplayManager::spriteForMood()` is the single place that maps a mood to its artwork:
+
+```cpp
+const uint16_t* DisplayManager::spriteForMood(MoodSprite mood, int frame) {
+    switch (mood) {
+        case MOOD_HAPPY:   return sprite_happy_placeholder[frame];
+        case MOOD_UNWELL:  return sprite_unwell_placeholder[frame];
+        case MOOD_HUNGRY:  return sprite_hungry_placeholder[frame];
+        case MOOD_NEUTRAL:
+        default:           return sprite_neutral_placeholder[frame];
+    }
+}
+```
+
+`drawPetSprite()` then calls it, passing the frame `AnimationManager` picked, so a mood sprite can
+*also* animate:
+
+```cpp
+const uint16_t* spriteData = spriteForMood(mood, petAnimation.getCurrentFrame());
+canvas.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
+```
+
+Notice `drawPetSprite()` no longer receives the pixel data as a parameter — it is *given the mood*
+and looks up the picture itself. That switch is the hook point earlier tasks left waiting (the
+sprite slot was always there; this task filled it in).
+
+### 8.5 — The face and the word can never disagree
+
+The same `MoodSprite` value also chooses the **word** under the pet, in `showPetMoodText()`:
+
+```cpp
+switch (mood) {
+    case MOOD_HAPPY:  moodText = "Happy";   moodColor = TFT_GREEN;  break;
+    case MOOD_UNWELL: moodText = "Unwell";  moodColor = TFT_PURPLE; break;
+    case MOOD_HUNGRY: moodText = "Hungry";  moodColor = TFT_RED;    break;
+    case MOOD_NEUTRAL:
+    default:          moodText = "Neutral"; moodColor = TFT_WHITE;  break;
+}
+```
+
+Because **one** `mood` value flows down the whole render chain
+(`renderDisplay → renderMainScreen / renderInteractScreen → drawPetSprite` *and* `showPetMoodText`),
+the sprite and the label are always computed from the same source. They cannot drift apart and say
+"Happy" while drawing a hungry face. Passing the typed `MoodSprite` (rather than a bare `int`) is
+what lets the compiler keep everyone honest.
+
+### 8.6 — One picture per mood, and the single-frame placeholder
+
+Each mood has its own sprite header in `lib/Display/sprites/`
+(`neutral_placeholder.h`, `happy_placeholder.h`, `unwell_placeholder.h`, `hungry_placeholder.h`),
+made with the exact workflow from Parts 1–3. They are **single-frame** for now, so `AnimationManager`
+is created with a frame count of **1**:
+
+```cpp
+AnimationManager petAnimation = AnimationManager(SPRITE_NEUTRAL_PLACEHOLDER_FRAME_COUNT); // = 1
+```
+
+A one-frame animator simply holds frame 0 (its `update()` does nothing — see Part 6), so the pet is
+still and `spriteForMood(mood, 0)` always returns frame 0. To make the moods animate later: draw a
+second frame for each (Part 6's anchor-point rule still applies), re-run the converter, and bump
+that frame count to 2. Nothing else in the chain changes — the `frame` argument is already threaded
+through `spriteForMood()` waiting for it.
+
+On flash cost: four 80×80 sprites at 12.8 KB each is ~51 KB, and even an animated set (eight frames)
+is ~102 KB — a rounding error against the ESP32's 4 MB of flash (Part 4, Rule 4). Moods are cheap.
+
+### 8.7 — Add your own mood (a three-step exercise)
+
+The system is built so a new mood is a small, bounded change in three named places:
+
+1. **Add the value** to `MoodSprite` in `screen_layout.h` (e.g. `MOOD_SAD`).
+2. **Add a rule** in `Pet::computeMood()` — a new `if` block, placed at the priority height you want
+   (remember: higher in the ladder = higher priority).
+3. **Add a sprite** header and one `case` in `spriteForMood()` (and a word/colour in
+   `showPetMoodText()`).
+
+A natural first exercise: the four shipped moods deliberately give **no** face to the two stats that
+can *kill* the pet at their low end — `happy → 0` and `energised → 0` (see `Pet::isDead()`). As those
+fall, the face stays `NEUTRAL` right up until the pet dies. Adding a `MOOD_SAD` (for low `happy`)
+and/or a `MOOD_TIRED` (for low `energised`) closes that gap and is the perfect way to practise the
+three steps above.
+
+### The architectural lesson (once more)
+
+The mood system is three single-job pieces in a line: `Pet` decides the *mood* from its stats and
+knows nothing about pictures; `screen_layout.h` holds the shared *word* both sides speak;
+`DisplayManager` turns a mood into *pixels* and knows nothing about stats. The dependency arrows all
+point inward to the small shared enum, never module-to-module. Add the typed value flowing through
+one render chain so the face and the label can't disagree, and you have a feature that is both easy
+to read today and easy to extend tomorrow — the same "small pieces, each with one job" idea as the
+animator and the tilt helper before it.
