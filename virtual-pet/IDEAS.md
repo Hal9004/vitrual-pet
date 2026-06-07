@@ -69,7 +69,13 @@ amplitude (±5px) at a slow period (2–3 seconds) gives a natural breathing fee
 
 ## Sprite-Based Mood Expressions
 
-**The idea:**
+> ✅ **Implemented — Task 20 (Mood Sprite System).** The pet's face is now a bitmap sprite
+> chosen by mood: `Pet::computeMood()` → a `MoodSprite` (NEUTRAL/HAPPY/UNWELL/HUNGRY),
+> drawn via `DisplayManager::spriteForMood()`. Shipped with four moods (not the six sketched
+> below); `MOOD_SAD`/`MOOD_TIRED` remain as the "add your own mood" extension. The old
+> `drawPetFace()` circle face was already removed in Task 13. Kept here as a design-history note.
+
+**The original idea:**
 Replace the current circle-and-lines pet face with bitmap sprites — one sprite per mood state
 (happy, sad, hungry, sick, energised, neutral). The sprite renderer passes `ZONE_PET_FACE`
 directly to the draw call so the sprite always fills the correct region.

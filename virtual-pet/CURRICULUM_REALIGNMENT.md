@@ -114,8 +114,9 @@ Step-by-step:
 | 1.1b | Task 19b — Pet-Owns-Sound Refactor | `task/19b-pet-owns-sound` | ✅ done |
 | 1.2 | Task 14c — Gameplay Balance Tuning | `task/14c-balance-tuning` | ✅ done |
 | 1.3 | Task 14d — Sprite Display Simplification | `task/14d-sprite-simplification` | ✅ done |
-| 1.4 | Task 13a — Sprite Animation | `task/13a-sprite-animation` | pending |
-| 1.5 | Task 20 — Mood Sprite System (new) | `task/20-mood-sprites` | pending |
+| 1.4 | Task 13a — Sprite Animation | `task/13a-sprite-animation` | ✅ done |
+| 1.4b | Task 13b — Tilt-Reactive Sprite Movement | `task/13b-tilt-movement` | ✅ done |
+| 1.5 | Task 20 — Mood Sprite System (new) | `task/20-mood-sprite-system` | ✅ done |
 | 1.6 | Task 21 — Curriculum Scaffolding Refactor (new) | `task/21-scaffolding-refactor` | pending |
 | 1.7 | Task 22 — Doc Sweep (new) | `task/22-doc-sweep` | pending |
 
@@ -162,12 +163,17 @@ For each of Sessions 2 through 10:
 
 ## Open questions (still need answers before later Steps run)
 
-1. **Mood threshold rules** (needed for Step 1.5 / Task 20). Default proposal,
-   priority order:
-   - `UNWELL` when `sickness > 50` (highest priority)
-   - `HUNGRY` when `hunger > 70`
-   - `HAPPY` when `happiness > 70` (and not unwell or hungry)
+1. **Mood threshold rules** (Step 1.5 / Task 20). ✅ RESOLVED — shipped as the
+   default proposal, priority order (first match wins), in `Pet::computeMood()`:
+   - `UNWELL` when `sick > 50` (highest priority)
+   - `HUNGRY` when `hungry > 70`
+   - `HAPPY` when `happy > 70` (and not unwell or hungry)
    - `NEUTRAL` otherwise
+   Decided to keep `sick > 50` (not `>= 50`) as written, accepting a 1-point
+   window at `sick == 50` where the state is SICK but the face is not yet UNWELL.
+   Accepted limitation: the four moods give no sprite cue for the *low* fatal
+   stats (`happy → 0`, `energised → 0`); a future `MOOD_SAD`/`MOOD_TIRED` is the
+   natural "add your own mood" extension exercise.
 
 2. **Other Task 19 cleanup candidates** beyond mic/wifi/evolution.
    Discovered during the Task 19 audit; capture findings here as they come up.

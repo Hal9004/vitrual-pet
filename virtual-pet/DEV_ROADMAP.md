@@ -207,12 +207,20 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        low-pass-smoothed, clamped (x,y) offset that `drawPetSprite()` applies;
        gated behind one toggle in main.cpp. Always-on, no Pet state change.
        A natural extension of the Session-6 animation example.
- 20. Mood Sprite System (new)           — runs after Task 13b (next up)
-     — Add `MoodSprite` enum (NEUTRAL / HAPPY / UNWELL / HUNGRY).
-       Add `Pet::computeMood()` mapping stats → mood with prioritised thresholds.
-       Add 4 sprite assets in `lib/Display/sprites/`.
-       `DisplayManager::drawPetSprite()` picks the sprite from
-       `pet.computeMood()`. Verify on device.
+ 20. Mood Sprite System (new)           ✅ Done — ran after Task 13b
+     — Added `MoodSprite` enum (NEUTRAL / HAPPY / UNWELL / HUNGRY) in
+       `screen_layout.h` (kept out of `pet.h` so DisplayManager stays decoupled
+       from Pet, mirroring `RelevantStat`). `Pet::computeMood()` replaces the old
+       `getDominantMood()` scan with a prioritised threshold ladder:
+       `sick>50 → hungry>70 → happy>70 → neutral` (first match wins). The render
+       chain now carries a typed `MoodSprite`, and a new `spriteForMood()` switch
+       maps each mood to its artwork — `drawPetSprite()` does the lookup itself,
+       realising the previously-reserved mood parameter. 4 single-frame 80×80
+       placeholders in `lib/Display/sprites/*_placeholder.h`; AnimationManager set
+       to frame count 1 (ready to bump to 2 for animated per-mood art).
+       Accepted scope limit: no sprite warning for the low fatal stats
+       (happy→0, energised→0) — future `MOOD_SAD`/`MOOD_TIRED` extension.
+       Verified on device.
  21. Curriculum Scaffolding Refactor (new) — runs after Task 20
      — Add `#define ENABLE_*` flags so the codebase can be configured for any
        session's day-start state:
@@ -753,7 +761,7 @@ This is a natural pedagogical follow-on to Task 13 — students learned `pushIma
 
 **Beyond the minimum — also consider:**
 
-- **Per-mood animation:** wire the existing `moodIndex` parameter (currently reserved but unused inside `drawPetSprite()`) to switch which animated sprite is drawn. Requires per-mood multi-frame art.
+- **Per-mood animation:** mood-based sprite switching is now done (Task 20 — `spriteForMood()` picks a sprite per `MoodSprite`). What remains is the *animated* version: give each mood a second frame and bump the `AnimationManager` frame count from 1 to 2. Requires per-mood multi-frame art.
 - **Per-state animation:** same idea but driven by `Pet::getState()` (`STATE_EATING`, `STATE_SLEEPING`, etc.). A larger art workload.
 - **Variable frame rate per state:** idle = slow blink (2 fps), eating = bouncing (10 fps). Replace the single global `FRAME_DURATION_MS` with a per-state lookup.
 
@@ -1259,6 +1267,7 @@ graph LR
     Menu[ActionMenu - Hotspot 1, kept]
 
     Pet --> Speaker
+    Pet --> Layout
     Timer --> Pet
     Storage --> Pet
     Display --> Layout
@@ -1299,7 +1308,7 @@ Layer 0 — Foundations (no internal dependencies)
 
 Layer 1 — Single-dependency managers
 ═══════════════════════════════════════════════════
-   Pet              ──►  SpeakerManager   (updateState()/reset() take it by reference)
+   Pet              ──►  SpeakerManager, screen_layout   (Speaker by reference in updateState()/reset(); screen_layout for the MoodSprite enum computeMood() returns)
    TimerManager     ──►  Pet
    StorageManager   ──►  Pet
    DisplayManager   ──►  screen_layout, AnimationManager   (owns one AnimationManager member)
@@ -1430,15 +1439,17 @@ the four-manager signature as natural for an action runner, not as a defect.
 
 ### A.4 — Hotspot 4 — `main.cpp` fan-out at the render call
 
-`main.cpp:140–145` pulls six values out of `Pet` to pass into
+`main.cpp`'s render call pulls six values out of `Pet` to pass into
 `renderDisplay`:
 
 ```cpp
 display.renderDisplay(
     myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
-    myPet.getCleanliness(), myPet.getSick(), myPet.getDominantMood(),
-    menu, petIsDead, myPet.getPetName(),
-    navManager.getCurrentScreen()
+    myPet.getCleanliness(), myPet.getSick(), myPet.computeMood(),
+    selectedAction.name, selectedAction.relevantStat,
+    myPet.isInDeadState(), myPet.getPetName(),
+    navManager.getCurrentScreen(),
+    spriteOffsetX, spriteOffsetY
 );
 ```
 
