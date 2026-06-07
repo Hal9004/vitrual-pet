@@ -9,7 +9,9 @@
 #include "../lib/Navigation/navigation_manager.h"
 #include "../lib/Timer/time_manager.h"
 #include "../lib/Imu/imu_manager.h"
+#ifdef ENABLE_SOUND
 #include "../lib/Speaker/speaker_manager.h"
+#endif
 #include "../lib/Storage/storage_manager.h"
 
 // -------------------------------------------------------------------------
@@ -41,7 +43,9 @@ NavigationManager navManager; // Tracks which screen is active and routes button
 TimerManager    timers;   // Handles all automatic stat changes over time.
 ImuManager      imu;      // Reads accelerometer data and detects shake gestures.
 TiltMotion      spriteMotion; // Turns live tilt into a smoothed pet-sprite screen offset.
+#ifdef ENABLE_SOUND
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
+#endif
 StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 
 // handleDeathScreen() — the only interaction once the pet has died: pressing
@@ -49,7 +53,11 @@ StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
 // fanfare itself; clearing storage stops the dead pet reloading on the next boot.
 void handleDeathScreen() {
     if (buttons.wasButtonAPressed()) {
-        myPet.reset(speaker);
+        myPet.reset(
+            #ifdef ENABLE_SOUND
+            speaker
+            #endif
+        );
         storage.clear();
     }
 }
@@ -80,7 +88,11 @@ void updateLivePet() {
     // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
     // logic out of NavigationManager, which only handles screen transitions.
     if (navManager.shouldConfirmAction()) {
-        menu.confirmAction(myPet, display, speaker, storage);
+        menu.confirmAction(myPet, display,
+            #ifdef ENABLE_SOUND
+            speaker,
+            #endif
+            storage);
     }
 
     // A shake gesture triggers play from any screen.
@@ -155,7 +167,9 @@ void setup() {
     #endif
 
     display.init();
+    #ifdef ENABLE_SOUND
     speaker.init();
+    #endif
 
     // Restore the pet's stats from NVS flash storage.
     // If no save data exists yet (first boot), load() falls back to healthy defaults.
@@ -184,7 +198,11 @@ void loop() {
     // Run the state machine — sets STATE_DEAD when a stat hits a fatal level, and
     // plays the pet's own hunger/sickness/death sounds when a stat crosses its
     // warning threshold. Runs first so the dead check below is always up to date.
-    myPet.updateState(speaker);
+    myPet.updateState(
+        #ifdef ENABLE_SOUND
+        speaker
+        #endif
+    );
 
     // Once dead, the only interaction is "press A to restart"; while alive, run
     // the full game tick. Each branch lives in its own helper so this loop reads

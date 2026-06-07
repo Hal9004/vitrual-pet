@@ -1,11 +1,14 @@
 #ifndef ACTION_MENU_H
 #define ACTION_MENU_H
 
+#include "../Config/scaffold_config.h"  // ENABLE_* feature switches — read this first.
 #include "../Pet/pet.h"
 #include "../Display/display_manager.h"
 #include "../Display/screen_layout.h"
 #include "../Button/button_handler.h"
+#ifdef ENABLE_SOUND
 #include "../Speaker/speaker_manager.h"
+#endif
 #include "../Storage/storage_manager.h"
 
 // ActionMenu manages the list of things the user can do with their pet.
@@ -75,8 +78,13 @@ public:
 
     // confirmAction() — executes the selected action and plays the matching sound.
     // Only call this when isBackSelected() is false — Back is handled separately.
+    // The speaker parameter only exists when sound is switched on.
     // StorageManager is needed because the Save action writes directly to NVS.
-    void confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage);
+    void confirmAction(Pet& pet, DisplayManager& display,
+        #ifdef ENABLE_SOUND
+        SpeakerManager& speaker,
+        #endif
+        StorageManager& storage);
 };
 
 #endif

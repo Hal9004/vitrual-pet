@@ -52,36 +52,53 @@ RelevantStat ActionMenu::getRelevantStat() const {
     return actions[currentActionIndex].relevantStat;
 }
 
-void ActionMenu::confirmAction(Pet& pet, DisplayManager& display, SpeakerManager& speaker, StorageManager& storage) {
+void ActionMenu::confirmAction(Pet& pet, DisplayManager& display,
+    #ifdef ENABLE_SOUND
+    SpeakerManager& speaker,
+    #endif
+    StorageManager& storage) {
     Action selectedAction = getSelectedAction();
 
-    // Each case calls the matching Pet method directly and plays its sound.
-    // Save and Back are special cases: Save writes to storage instead of changing
-    // a pet stat, and Back is normally handled by NavigationManager before we get here.
+    // Each case calls the matching Pet method directly and, when sound is on,
+    // plays its sound. Save and Back are special cases: Save writes to storage
+    // instead of changing a pet stat, and Back is normally handled by
+    // NavigationManager before we get here.
     switch (selectedAction.type) {
         case ACTION_FEED:
             pet.feed();
+            #ifdef ENABLE_SOUND
             speaker.playFeedSound();
+            #endif
             break;
         case ACTION_PLAY:
             pet.play();
+            #ifdef ENABLE_SOUND
             speaker.playPlaySound();
+            #endif
             break;
         case ACTION_SLEEP:
             pet.sleep();
+            #ifdef ENABLE_SOUND
             speaker.playSleepSound();
+            #endif
             break;
         case ACTION_BATHE:
             pet.bathe();
+            #ifdef ENABLE_SOUND
             speaker.playBatheSound();
+            #endif
             break;
         case ACTION_HEAL:
             pet.heal();
+            #ifdef ENABLE_SOUND
             speaker.playHealSound();
+            #endif
             break;
         case ACTION_SAVE:
             storage.save(pet);
+            #ifdef ENABLE_SOUND
             speaker.playSaveSound();
+            #endif
             break;
         case ACTION_BACK:
             // Back is handled by the NavigationManager before confirmAction() is called.

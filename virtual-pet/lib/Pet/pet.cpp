@@ -128,20 +128,28 @@ void Pet::setState(PetState newState) {
 // Runs once per loop. Checks the current state and applies any behaviour that
 // belongs to it, and plays the pet's own alert and death sounds through the
 // given speaker. Add new states here as the program grows.
-void Pet::updateState(SpeakerManager& speaker) {
+void Pet::updateState(
+    #ifdef ENABLE_SOUND
+    SpeakerManager& speaker
+    #endif
+) {
     // Death overrides every other state — if any critical stat is fatal, stop here.
-    // The death sound plays only on the first frame of death (when transitioning
-    // from a living state) so it sounds exactly once per death.
     if (isDead()) {
+        #ifdef ENABLE_SOUND
+        // The death sound plays only on the first frame of death (when transitioning
+        // from a living state) so it sounds exactly once per death.
         if (currentState != STATE_DEAD) {
             speaker.playDeathSound();
         }
+        #endif
         setState(STATE_DEAD);
         return;
     }
 
-    // Check whether a hunger alert is due — same millis() pattern as TimerManager.
-    // The pet plays the alert through the speaker, then resets the timer.
+    #ifdef ENABLE_SOUND
+    // The alerts exist only to make a sound, so the whole block lives behind the
+    // sound switch. Check whether a hunger alert is due — same millis() pattern as
+    // TimerManager — then play it and reset the timer.
     if (hungry >= HUNGER_ALERT_THRESHOLD) {
         if (millis() - lastHungerAlertTime >= HUNGER_ALERT_INTERVAL) {
             speaker.playHungerAlertSound();
@@ -156,6 +164,7 @@ void Pet::updateState(SpeakerManager& speaker) {
             lastSicknessAlertTime = millis();
         }
     }
+    #endif
 
     switch (currentState) {
         case STATE_IDLE:
@@ -223,7 +232,11 @@ bool Pet::isDead() const {
 // and reset() all share one source of truth — change a starting value in
 // pet.h and every code path agrees.
 // Called when the user chooses to restart after the pet has died.
-void Pet::reset(SpeakerManager& speaker) {
+void Pet::reset(
+    #ifdef ENABLE_SOUND
+    SpeakerManager& speaker
+    #endif
+) {
     hungry      = DEFAULT_HUNGRY;
     tired       = DEFAULT_TIRED;
     happy       = DEFAULT_HAPPY;
@@ -237,9 +250,11 @@ void Pet::reset(SpeakerManager& speaker) {
     lastHungerAlertTime  = 0;
     lastSicknessAlertTime = 0;
 
+    #ifdef ENABLE_SOUND
     // Play the restart fanfare. The pet owns this lifecycle sound, just like its
     // death and alert sounds.
     speaker.playResetSound();
+    #endif
 }
 
 // computeMood()

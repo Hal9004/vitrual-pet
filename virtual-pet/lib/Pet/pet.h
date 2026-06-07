@@ -1,7 +1,10 @@
 #ifndef PET_H
 #define PET_H
 
+#include "../Config/scaffold_config.h"  // ENABLE_* feature switches — read this first.
+#ifdef ENABLE_SOUND
 #include "../Speaker/speaker_manager.h"
+#endif
 #include "../Display/screen_layout.h"  // for the MoodSprite enum returned by computeMood()
 
 // PetState — the list of behaviours the pet can currently be doing.
@@ -109,12 +112,21 @@ public:
     void setState(PetState newState);
 
     // Runs once per loop — checks the current state and applies any behaviour that
-    // belongs to it, playing the pet's own alert and death sounds through the given speaker.
-    void updateState(SpeakerManager& speaker);
+    // belongs to it. When sound is switched on it also plays the pet's own alert
+    // and death sounds, so it takes the speaker; with sound off it takes nothing.
+    void updateState(
+        #ifdef ENABLE_SOUND
+        SpeakerManager& speaker
+        #endif
+    );
 
-    // Restores all stats to their starting values so the game can begin again,
-    // playing the restart fanfare through the given speaker.
-    void reset(SpeakerManager& speaker);
+    // Restores all stats to their starting values so the game can begin again.
+    // When sound is on it also plays the restart fanfare, so it takes the speaker.
+    void reset(
+        #ifdef ENABLE_SOUND
+        SpeakerManager& speaker
+        #endif
+    );
 
 };
 
