@@ -3,7 +3,13 @@
 
 #include <M5StickCPlus2.h>
 #include "screen_layout.h"
-#include "sprites/80x80_test.h"   // 80x80 sprite — the single size used on every screen
+// One 80x80 sprite per mood. spriteForMood() maps a MoodSprite to the matching
+// array, so the pet's face changes with how it feels. All four are the same
+// size and (for now) a single still frame.
+#include "sprites/neutral_placeholder.h"
+#include "sprites/happy_placeholder.h"
+#include "sprites/unwell_placeholder.h"
+#include "sprites/hungry_placeholder.h"
 #include "animation_manager.h"   // decides which sprite frame to draw each loop
 
 // DisplayManager only deals in primitive values (ints, strings, enums).
@@ -78,7 +84,10 @@ private:
     // Times the pet sprite's frame cycling. Created with the sprite's frame
     // count so it knows how many frames to loop through; update() is called
     // each loop and getCurrentFrame() tells drawPetSprite() which frame to draw.
-    AnimationManager petAnimation = AnimationManager(SPRITE_80X80_TEST_FRAME_COUNT);
+    // The mood placeholders are single-frame, so this is 1 for now: the animator
+    // simply holds frame 0 (it does nothing for a 1-frame sprite). When the moods
+    // gain a second frame, bump this to that frame count and the loop resumes.
+    AnimationManager petAnimation = AnimationManager(SPRITE_NEUTRAL_PLACEHOLDER_FRAME_COUNT);
 
     // pushCanvas() — copies the finished off-screen frame to the LCD in one
     // operation. Called at the end of every render path so the screen only

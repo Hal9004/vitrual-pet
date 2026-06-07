@@ -121,7 +121,7 @@ void DisplayManager::renderMainScreen(MoodSprite mood, const char* petName,
                                       int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-    drawPetSprite(mood, MAIN_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+    drawPetSprite(mood, MAIN_FACE_CENTER_Y, SPRITE_NEUTRAL_PLACEHOLDER_WIDTH, SPRITE_NEUTRAL_PLACEHOLDER_HEIGHT,
                   spriteOffsetX, spriteOffsetY);
     showPetMoodText(mood, MAIN_MOOD_Y);
     drawMainNavBar();
@@ -175,7 +175,7 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
                                           int spriteOffsetX, int spriteOffsetY) {
     clearScreen();
     printCenteredText(petName, TITLE_ZONE.y, TFT_YELLOW, 2);
-    drawPetSprite(mood, INTERACT_FACE_CENTER_Y, SPRITE_80X80_TEST_WIDTH, SPRITE_80X80_TEST_HEIGHT,
+    drawPetSprite(mood, INTERACT_FACE_CENTER_Y, SPRITE_NEUTRAL_PLACEHOLDER_WIDTH, SPRITE_NEUTRAL_PLACEHOLDER_HEIGHT,
                   spriteOffsetX, spriteOffsetY);
     showPetMoodText(mood, INTERACT_MOOD_Y);
     drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
@@ -301,16 +301,16 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
 // its own picture, so this switch is where a new mood gets connected to its
 // sprite (one extra case).
 //
-// For now every mood returns the same test sprite, so the pipeline is fully
-// wired and the mood logic runs even though the faces look identical. When the
-// real per-mood sprites exist, each case points at its own array instead.
+// Each mood maps to its own picture. The placeholders are single-frame, so
+// frame is always 0 for now, but it is threaded through so a future animated
+// sprite (more than one frame) needs no change here.
 const uint16_t* DisplayManager::spriteForMood(MoodSprite mood, int frame) {
     switch (mood) {
-        case MOOD_HAPPY:   return sprite_80x80_test[frame];   // later: sprite_happy[frame]
-        case MOOD_UNWELL:  return sprite_80x80_test[frame];   // later: sprite_unwell[frame]
-        case MOOD_HUNGRY:  return sprite_80x80_test[frame];   // later: sprite_hungry[frame]
+        case MOOD_HAPPY:   return sprite_happy_placeholder[frame];
+        case MOOD_UNWELL:  return sprite_unwell_placeholder[frame];
+        case MOOD_HUNGRY:  return sprite_hungry_placeholder[frame];
         case MOOD_NEUTRAL:
-        default:           return sprite_80x80_test[frame];   // later: sprite_neutral[frame]
+        default:           return sprite_neutral_placeholder[frame];
     }
 }
 
