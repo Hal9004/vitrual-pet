@@ -12,7 +12,9 @@
 #ifdef ENABLE_SOUND
 #include "../lib/Speaker/speaker_manager.h"
 #endif
+#ifdef ENABLE_PERSISTENCE
 #include "../lib/Storage/storage_manager.h"
+#endif
 
 // -------------------------------------------------------------------------
 // SPRITE_TEST — quick render test for Task 12.
@@ -46,11 +48,12 @@ TiltMotion      spriteMotion; // Turns live tilt into a smoothed pet-sprite scre
 #ifdef ENABLE_SOUND
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
 #endif
+#ifdef ENABLE_PERSISTENCE
 StorageManager  storage;  // Saves and loads pet stats to NVS flash storage.
+#endif
 
 // handleDeathScreen() — the only interaction once the pet has died: pressing
-// Button A starts a new game. reset() restores the stats and plays the restart
-// fanfare itself; clearing storage stops the dead pet reloading on the next boot.
+// Button A starts a new game by resetting the pet's stats.
 void handleDeathScreen() {
     if (buttons.wasButtonAPressed()) {
         myPet.reset(
@@ -58,7 +61,10 @@ void handleDeathScreen() {
             speaker
             #endif
         );
+        #ifdef ENABLE_PERSISTENCE
+        // Clear the saved data too, so the dead pet does not reload on next boot.
         storage.clear();
+        #endif
     }
 }
 
@@ -88,11 +94,14 @@ void updateLivePet() {
     // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
     // logic out of NavigationManager, which only handles screen transitions.
     if (navManager.shouldConfirmAction()) {
-        menu.confirmAction(myPet, display,
+        menu.confirmAction(myPet, display
             #ifdef ENABLE_SOUND
-            speaker,
+            , speaker
             #endif
-            storage);
+            #ifdef ENABLE_PERSISTENCE
+            , storage
+            #endif
+            );
     }
 
     // A shake gesture triggers play from any screen.
@@ -171,9 +180,12 @@ void setup() {
     speaker.init();
     #endif
 
+    #ifdef ENABLE_PERSISTENCE
     // Restore the pet's stats from NVS flash storage.
     // If no save data exists yet (first boot), load() falls back to healthy defaults.
+    // With persistence off, the pet just starts from its constructor defaults.
     storage.load(myPet);
+    #endif
 
     display.showMessage("Virtual Pet initialized!");
     delay(2000);

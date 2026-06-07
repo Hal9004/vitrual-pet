@@ -9,7 +9,9 @@
 #ifdef ENABLE_SOUND
 #include "../Speaker/speaker_manager.h"
 #endif
+#ifdef ENABLE_PERSISTENCE
 #include "../Storage/storage_manager.h"
+#endif
 
 // ActionMenu manages the list of things the user can do with their pet.
 // It tracks which action is highlighted and executes the action when confirmed.
@@ -32,7 +34,9 @@ enum ActionType {
     ACTION_SLEEP,
     ACTION_BATHE,
     ACTION_HEAL,
-    ACTION_SAVE,
+    #ifdef ENABLE_PERSISTENCE
+    ACTION_SAVE,   // Only exists when persistence is on — it writes the pet to NVS
+    #endif
     ACTION_BACK    // Returns the user to the Main screen without doing anything
 };
 
@@ -49,7 +53,15 @@ struct Action {
 
 class ActionMenu {
 private:
-    static const int NUM_ACTIONS = 7;  // Feed, Play, Sleep, Bathe, Heal, Save, Back
+    // The Save action only exists when persistence is on, so the list is one
+    // shorter without it. Keeping this count exact matters because update()
+    // wraps the selection around using NUM_ACTIONS.
+    static const int NUM_ACTIONS =
+        #ifdef ENABLE_PERSISTENCE
+        7;  // Feed, Play, Sleep, Bathe, Heal, Save, Back
+        #else
+        6;  // Feed, Play, Sleep, Bathe, Heal, Back
+        #endif
     Action actions[NUM_ACTIONS];
     int currentActionIndex;
 
@@ -78,13 +90,17 @@ public:
 
     // confirmAction() — executes the selected action and plays the matching sound.
     // Only call this when isBackSelected() is false — Back is handled separately.
-    // The speaker parameter only exists when sound is switched on.
-    // StorageManager is needed because the Save action writes directly to NVS.
-    void confirmAction(Pet& pet, DisplayManager& display,
+    // The two trailing parameters only exist when their feature is switched on:
+    // the speaker when sound is on, and the storage when persistence is on (the
+    // Save action writes the pet directly to NVS).
+    void confirmAction(Pet& pet, DisplayManager& display
         #ifdef ENABLE_SOUND
-        SpeakerManager& speaker,
+        , SpeakerManager& speaker
         #endif
-        StorageManager& storage);
+        #ifdef ENABLE_PERSISTENCE
+        , StorageManager& storage
+        #endif
+        );
 };
 
 #endif

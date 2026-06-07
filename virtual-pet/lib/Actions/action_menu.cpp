@@ -9,8 +9,14 @@ ActionMenu::ActionMenu() : currentActionIndex(0) {
     actions[2] = {ACTION_SLEEP, "Sleep", "Let pet rest",         STAT_ENERGY};
     actions[3] = {ACTION_BATHE, "Bathe", "Clean the pet",        STAT_CLEANLINESS};
     actions[4] = {ACTION_HEAL,  "Heal",  "Treat pet illness",    STAT_SICKNESS};
+    // Save only appears when persistence is on. Without it, Back moves up to
+    // index 5 so the array stays packed (no empty gap) and matches NUM_ACTIONS.
+    #ifdef ENABLE_PERSISTENCE
     actions[5] = {ACTION_SAVE,  "Save",  "Save pet progress",    STAT_NONE};
     actions[6] = {ACTION_BACK,  "Back",  "Return to main screen",STAT_NONE};
+    #else
+    actions[5] = {ACTION_BACK,  "Back",  "Return to main screen",STAT_NONE};
+    #endif
 }
 
 void ActionMenu::update(const ButtonHandler& buttons) {
@@ -52,11 +58,14 @@ RelevantStat ActionMenu::getRelevantStat() const {
     return actions[currentActionIndex].relevantStat;
 }
 
-void ActionMenu::confirmAction(Pet& pet, DisplayManager& display,
+void ActionMenu::confirmAction(Pet& pet, DisplayManager& display
     #ifdef ENABLE_SOUND
-    SpeakerManager& speaker,
+    , SpeakerManager& speaker
     #endif
-    StorageManager& storage) {
+    #ifdef ENABLE_PERSISTENCE
+    , StorageManager& storage
+    #endif
+    ) {
     Action selectedAction = getSelectedAction();
 
     // Each case calls the matching Pet method directly and, when sound is on,
@@ -94,12 +103,14 @@ void ActionMenu::confirmAction(Pet& pet, DisplayManager& display,
             speaker.playHealSound();
             #endif
             break;
+        #ifdef ENABLE_PERSISTENCE
         case ACTION_SAVE:
             storage.save(pet);
             #ifdef ENABLE_SOUND
             speaker.playSaveSound();
             #endif
             break;
+        #endif
         case ACTION_BACK:
             // Back is handled by the NavigationManager before confirmAction() is called.
             // If we somehow reach here, do nothing — there is no pet action to run.
