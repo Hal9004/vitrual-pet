@@ -232,6 +232,33 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
          ENABLE_MOOD_SPRITES    (Session 6)
        Every flag combination must compile + flash cleanly. This is the test
        that the scaffolding actually works.
+
+     Design notes (from the 2026-06-07 pre-audit — SETTLE THESE FIRST):
+     — Q1: What does a flag OFF *mean*? (a) feature physically absent (the student
+       has not written it yet — true session day-start; forces #ifdef around code
+       AND includes, so Pet must compile WITHOUT SpeakerManager), or (b) present
+       but inert. The cumulative-session framing points to (a) — the harder one.
+       This choice drives the whole implementation, especially ENABLE_SOUND.
+     — Q2: Independent flags (every 2^6 combo compiles — CLAUDE.md wording) or 6
+       cumulative checkpoints (one per session — Verification wording)? Pick one;
+       they are very different test burdens. NOTE the flags are NOT independent:
+       the Save action lives in the action menu, so ENABLE_PERSISTENCE needs
+       ENABLE_ACTION_MENU. State the inter-flag rule explicitly.
+     — Seam quality today (so flags don't spray #ifdef everywhere):
+         ENABLE_IMU_PLAY    — very clean (3 isolated call sites in main.cpp)
+         ENABLE_MULTISCREEN — very clean (NavigationManager + SCREEN_MAIN fallback)
+         ENABLE_MOOD_SPRITES— clean (gate computeMood(); fall back to MOOD_NEUTRAL)
+         ENABLE_PERSISTENCE — minor (coupled to the menu's Save action)
+         ENABLE_ACTION_MENU — minor seam (NavigationManager must learn "is there a
+                              menu?" so pressing A does not confirm a missing action)
+         ENABLE_SOUND       — MESSIEST: SpeakerManager& is threaded into Pet's
+                              updateState()/reset() and ActionMenu::confirmAction()
+                              signatures. Needs a seam (depends on Q1). Build the
+                              seam as a `refactor:` commit BEFORE the `feat:` flag.
+     — Sequencing: flag-seam refactors belong IN Task 21 (refactor: then feat:,
+       per feature). The pure-readability simplifications in CURRICULUM_REALIGNMENT
+       open-question #2 are SEPARATE logical changes — keep them out of the flag
+       commits so the Task 21 git story stays clean.
  22. Doc Sweep (new)                    — runs after Task 21
      — With code in final form: rewrite COURSE_CHECKLIST.md against the
        10-session arc; purge IDEAS.md of items now in core scope; update

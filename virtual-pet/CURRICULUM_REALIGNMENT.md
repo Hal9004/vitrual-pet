@@ -175,8 +175,37 @@ For each of Sessions 2 through 10:
    stats (`happy → 0`, `energised → 0`); a future `MOOD_SAD`/`MOOD_TIRED` is the
    natural "add your own mood" extension exercise.
 
-2. **Other Task 19 cleanup candidates** beyond mic/wifi/evolution.
-   Discovered during the Task 19 audit; capture findings here as they come up.
+2. **Student-facing simplification candidates** (code audit, captured 2026-06-07
+   while scoping Task 21). All are *readability* wins for the curriculum, not bug
+   fixes. None require removing extensible scaffolding. Triaged against the
+   "explicit over clever" rule:
+
+   **Worth doing — a separate cleanup pass, NOT mixed into the Task 21 flag commits:**
+   - `display_manager.cpp` `showPetStatus()` (~:271–297): five copy-pasted
+     `setCursor → printf → drawStatusBar` blocks → extract one `drawOneStat(label,
+     value, zone, colour)` helper + five calls. Top pick — textbook "extract a
+     helper / DRY" lesson, beginner-appropriate.
+   - `display_manager.cpp` `drawMainNavBar()` (~:137–148): two near-identical tab
+     draws with magic `+6`/`+3` text offsets → a `drawNavTab()` helper that centres
+     the label (removes the magic numbers, teaches text centring).
+   - `speaker_manager.cpp`: melody magic frequencies (523, 659…) → named note
+     constants (`NOTE_C5`, …). Medium value (the `// C5` comments already help).
+   - Cheap comment-only adds: a "adding a mood = update 3 places" note above
+     `showPetMoodText()`/`spriteForMood()`; a pattern comment over the Pet
+     getter/setter block; a save/load key-pairing note in `storage_manager.cpp`.
+
+   **Rejected — too clever for this audience (keep the honest repetition):**
+   - Function-pointer / member-pointer helpers for Pet's alert checks and
+     TimerManager's decay methods; iterate-over-keys for Storage save/load.
+   - A data-driven "mood metadata table" merging the two mood switches (the two
+     small explicit switches are clearer; "update 3 places" is the student exercise).
+   - `cycleAction()` modulo helper in `action_menu.cpp` — `(i+delta+N)%N` is neat
+     but the explicit if-wrap is more readable here. Borderline; leave it.
+
+   **Already decided (do not relitigate — see DEV_ROADMAP Appendix hotspots):**
+   - `main.cpp`'s six-value render fan-out (and a `PetStats` struct to shrink it):
+     kept on purpose so data flow is visible top-to-bottom.
+   - `ActionMenu::confirmAction()`'s four manager refs: kept as honest domain coupling.
 
 ---
 
