@@ -725,3 +725,164 @@ the pet animates.
 screen, M5, or pixels; drawing stays in `DisplayManager`. That clean split — "each module has
 exactly one job" — is the single most important design idea in this codebase, and this small class
 is a tidy example to point students to.
+
+---
+
+## Part 7 — Sliding Your Sprite With Tilt (optional demo)
+
+Part 6 made the pet change **which frame** is on screen over time (it bounces). This optional extra
+makes it change **where on the screen** it is drawn, based on how you physically **tilt the
+device** — the pet slides toward the low side, like a marble on a tray. It is a self-contained
+demo you can switch on to play with the accelerometer; turning it off returns the pet to dead
+centre exactly as before.
+
+The key idea to take away: **animation (which frame) and motion (where on screen) are two separate
+jobs.** `AnimationManager` owns the frame timing; a second small helper, `TiltMotion`, owns the
+position. They compose without knowing about each other — the pet bounces *and* glides at once.
+
+### 7.1 — Where the tilt signal comes from
+
+The M5StickC has an accelerometer (the MPU6886) that already reports gravity as three numbers —
+`accelX`, `accelY`, `accelZ` — in units of **g** (1 g = the pull of gravity). Held flat, gravity
+points straight down through the Z axis, so X and Y read ≈ 0. **Tilt** the board and some of that
+gravity "leans" into the X and Y axes. That lean is exactly the signal we want: tilt right and
+`accelX` grows; tilt away from you and `accelY` grows. `ImuManager` already reads these every loop
+for shake detection, and exposes `imu.getAccelX()` / `getAccelY()` — until now those getters were
+unused.
+
+### 7.2 — Two problems with raw tilt, and the two fixes
+
+If we drew the pet straight at the raw reading, two things would go wrong. Each fix is one idea in
+`lib/Display/tilt_motion.{h,cpp}`:
+
+1. **Raw data is noisy and jumpy** → the pet would jitter. Fix: a **low-pass filter** (smoothing).
+   Instead of snapping to each new reading, ease toward it a little every frame.
+2. **A hard tilt would push the pet off the screen** → Fix: a **clamp**, capping the offset to a
+   maximum number of pixels.
+
+So `TiltMotion::update()` runs a four-step pipeline every loop: **scale → clamp → smooth → round.**
+
+```cpp
+void TiltMotion::update(float accelX, float accelY) {
+    // 1 & 2 — scale tilt (g) to pixels, then clamp so the pet stays on screen.
+    float targetX = constrain(accelX * TILT_SCALE, -MAX_OFFSET_X, MAX_OFFSET_X);
+    float targetY = constrain(accelY * TILT_SCALE, -MAX_OFFSET_Y, MAX_OFFSET_Y);
+
+    // 3 — ease the stored offset a fraction of the way toward the target.
+    smoothedX = smoothedX + (targetX - smoothedX) * SMOOTHING_FACTOR;
+    smoothedY = smoothedY + (targetY - smoothedY) * SMOOTHING_FACTOR;
+}
+```
+
+- **`TILT_SCALE`** turns g into pixels — the main *sensitivity* knob (bigger = pet moves further).
+- **`constrain(value, low, high)`** is an Arduino helper that returns `value`, or the nearest limit
+  if it is out of range. We clamp the **target**, so even a violent shake can only ask for a slide
+  of `MAX_OFFSET` pixels.
+- **`MAX_OFFSET_X / MAX_OFFSET_Y`** are the limits. The sprite is 80 px wide on a 135 px screen,
+  leaving `(135 − 80) / 2 = 27` px of slack each side, so 25 keeps it just inside the edge.
+
+### 7.3 — The smoothing line, slowly
+
+```cpp
+smoothedX = smoothedX + (targetX - smoothedX) * SMOOTHING_FACTOR;
+```
+
+Read it as: *"move from where I am a fraction of the way toward where I want to be."*
+`(targetX − smoothedX)` is the gap left to close; `* SMOOTHING_FACTOR` (0.2) closes 20% of it this
+frame, then 20% of the new smaller gap next frame, and so on — fast at first, gently slowing as it
+arrives. That is a **low-pass filter**: sudden jitter in the raw reading is averaged away, so the
+pet glides instead of twitching.
+
+It is the *same* "a little closer each tick" idea as the `millis()` timers in Part 6 and in
+`TimerManager` — there it was applied to **time**, here to **position**. `SMOOTHING_FACTOR` is the
+feel knob: 0 would freeze the pet, 1 would snap instantly (all jitter, no smoothing), 0.2 is calm.
+
+#### What "low-pass filter" means
+
+A **low-pass filter** lets *slow* changes through but blocks *fast* ones. A real, sustained tilt
+lasts many frames, so it eases all the way through; a one-frame noise spike is gone before the pet
+can move 20% toward it, so it gets smoothed away. That is exactly why the pet follows your tilt but
+ignores the accelerometer's constant tiny jitter.
+
+#### A worked example
+
+Start the pet at `0` and tilt so `targetX = 100`, with `SMOOTHING_FACTOR = 0.2`. Each frame it
+closes 20% of the gap that is *left*:
+
+| Frame | Gap (`target − smoothed`) | Step (gap × 0.2) | New `smoothedX` |
+|------:|--------------------------:|-----------------:|----------------:|
+| 1 | 100  | 20   | 20   |
+| 2 | 80   | 16   | 36   |
+| 3 | 64   | 12.8 | 48.8 |
+| 4 | 51.2 | 10.2 | 59.0 |
+
+The steps shrink every frame, so the pet *glides in* — fast at first, easing as it arrives — and
+never snaps. (It approaches 100 without quite landing on it exactly, which is why we keep
+`smoothedX` as a `float`; see 7.4.)
+
+> **Why it recenters by itself.** Hold the device flat and tilt ≈ 0, so `targetX` ≈ 0. The line
+> above then keeps easing `smoothedX` toward 0 — the pet drifts back to centre on its own. There is
+> no special "go home" code; it falls straight out of the maths.
+
+### 7.4 — Handing out whole pixels
+
+The offsets are kept as `float`s so the easing keeps its precision frame to frame. The screen only
+deals in whole pixels, so we round **only when handing the value out**:
+
+```cpp
+int TiltMotion::getOffsetX() const { return (int) round(smoothedX); }
+int TiltMotion::getOffsetY() const { return (int) round(smoothedY); }
+```
+
+### 7.5 — How the offset reaches the screen
+
+`TiltMotion` does pure maths and touches no pixels — just like `AnimationManager`. The offset
+travels from `main.cpp` (which owns the IMU) down to the one place that positions the sprite:
+
+```
+main.cpp  →  renderDisplay()  →  renderMainScreen()/renderInteractScreen()  →  drawPetSprite()
+```
+
+`drawPetSprite()` simply adds the offset to the centre it already computes:
+
+```cpp
+int spriteX = (SCREEN_WIDTH - spriteWidth) / 2 + spriteOffsetX;
+int spriteY = faceCenterY - (spriteHeight / 2) + spriteOffsetY;
+```
+
+When the offset is `0, 0`, this *is* the old centred position — so every screen looks unchanged.
+(The Stats screen draws no pet sprite, so it is left out of this entirely.)
+
+### 7.6 — The on/off switch
+
+One flag near the top of `main.cpp` controls the whole effect:
+
+```cpp
+static const bool TILT_MOVEMENT_ENABLED = true;
+```
+
+When `true`, `main.cpp` feeds the helper live tilt each loop and passes its offset on; when
+`false`, it passes `0, 0` and the pet is drawn dead centre exactly as before. Flip it and rebuild —
+a safe, self-contained thing for students to experiment with.
+
+### 7.7 — Calibrating on the device (a good exercise)
+
+Which way the pet moves depends on how the accelerometer is physically mounted in *this* board, so
+the first build is an educated guess you confirm by looking. All the knobs are named constants in
+`tilt_motion.{h,cpp}`, so tuning is a one-file edit:
+
+- **Moves on the wrong axis** (you tilt left/right but it goes up/down): swap which reading feeds
+  which target in `update()`.
+- **Moves the opposite way** (tilt right, pet goes left): negate that axis's reading —
+  `accelX` → `-accelX` (negate the *reading*, not `TILT_SCALE`, which is shared by both axes and
+  would flip both).
+- **Too sluggish or too twitchy**: raise/lower `TILT_SCALE` (distance) or `SMOOTHING_FACTOR`
+  (responsiveness).
+
+### The architectural lesson (again)
+
+`TiltMotion` knows about **tilt and pixels** — nothing else. It never reads the IMU directly (it is
+*handed* the numbers) and never draws (it *hands back* an offset). Pair it with `AnimationManager`
+from Part 6 and you have two tiny single-job classes — one for *when*, one for *where* — composing
+into richer behaviour than either could alone. That is the whole game: small pieces, each with one
+job, combined.

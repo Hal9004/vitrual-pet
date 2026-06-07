@@ -69,7 +69,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 > **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
 > Execution order for the remaining in-repo work:
 > **14c → 14d → 13a → 13b → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
-> (Tasks 19, 19b, 14c, 14d, and 13a are done — next up is 13b.)
+> (Tasks 19, 19b, 14c, 14d, 13a, and 13b are done — next up is 20.)
 > Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
@@ -106,7 +106,7 @@ LEVEL 5 — ASSET PIPELINE
  12. Asset Pipeline (image → C array)  ✅ Done (C++ piskel_converter tool, SPRITE_GUIDE.md, SPRITE_TEST flag in main.cpp, byte-swap fix for M5StickC Plus 2 SPI byte order)
  13. Basic Sprite Rendering            ✅ Done (drawPetSprite via pushImage; three sprite sizes; placeholder circle face removed. Also fixed a converter bug: Piskel exports ABGR8888, not ARGB8888 — the channel extraction had red and blue swapped)
 13a. Sprite Animation                  ✅ Done (AnimationManager cycles frames with the non-blocking millis() pattern; all rendering routed through a 135×240 M5Canvas double-buffer, which let the 5s STATUS_UPDATE_INTERVAL throttle be removed — stats now refresh every frame, flicker-free. 80x80_test regenerated as 2 frames; full walkthrough in SPRITE_GUIDE.md Part 6)
-13b. Tilt-Reactive Sprite Movement     ⏳ Planned (next up) — optional demo: the pet sprite slides around the screen from live accelerometer tilt. New `TiltMotion` helper maps tilt → low-pass-smoothed, clamped (x,y) offset; `drawPetSprite()` applies it; gated behind one toggle in main.cpp. Always-on, NO Pet state change — deliberately small. Finally uses the unused `getAccelX/Y/Z()`. Detailed design in the session plan file; own branch `task/13b-tilt-movement`.
+13b. Tilt-Reactive Sprite Movement     ✅ Done — optional demo: the pet sprite slides around the screen from live accelerometer tilt. New `TiltMotion` helper maps tilt → low-pass-smoothed, clamped (x,y) offset; `drawPetSprite()` applies it; gated behind the `TILT_MOVEMENT_ENABLED` toggle in main.cpp. Always-on, NO Pet state change — deliberately small. Finally uses the previously-unused `getAccelX/Y()`. Student-facing walkthrough in SPRITE_GUIDE.md Part 7; branch `task/13b-tilt-movement`.
  14. Initial Simplification Pass       (umbrella — split into 14a code audit and 14b roadmap audit. Gate before Level 6 — streamline existing code AND right-size future tasks before any new features land.)
 14a. Code Simplification Audit         ✅ Done (removed dead ActionMenu legacy methods, dead printText(String) overload, STATE_EVOLVING placeholder; fixed Pet::reset() to use DEFAULT_* constants and corrected the cleanliness=60 drift; inlined ActionMenu::executePetAction; collapsed clearScreen overload to default-param. Output: DEV_ROADMAP.md Appendix A — module coupling map for Task 19. Branch: refactor/14a-code-simplification.)
 14b. Roadmap Simplification Audit      ✅ Done (right-sized Tasks 15–18 toward minimum teachable foundations. Task 15 RTC moved to Bonus Feature 1; Task 16 narrowed from "Voice Memos" to "Microphone Input (Detect & React)" with happiness +5 and a buzzer chirp; Task 17 narrowed from "Wireless Communication (BLE/WiFi)" to "Wireless Access Point Primitive"; Task 18 Remote Dashboard moved to Bonus Feature 2. Expanded Task 14c into a full section. Added Task 14d (Sprite Display Simplification) to lock in single 80×80 sprite size before animation. Added Appendix B with six bonus features (RTC, Web Dashboard, Pet-to-Pet ESP-NOW, Live-Refreshing Dashboard, Phone-Controlled Actions, Voice Memos). Branch: refactor/14b-roadmap-simplification.)
@@ -201,13 +201,13 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        Implements `lib/Display/animation_manager.h/.cpp`. This is the worked
        example students extend in Session 6 of the lab. The M5Canvas also let
        the 5s redraw throttle be removed, so stats now update instantly.
- 13b. Tilt-Reactive Sprite Movement     — runs after Task 13a (next up)
+ 13b. Tilt-Reactive Sprite Movement     ✅ Done — ran after Task 13a
      — Optional demo: the pet slides around the screen from live tilt.
        New `lib/Display/tilt_motion.h/.cpp` maps accelerometer tilt → a
        low-pass-smoothed, clamped (x,y) offset that `drawPetSprite()` applies;
        gated behind one toggle in main.cpp. Always-on, no Pet state change.
        A natural extension of the Session-6 animation example.
- 20. Mood Sprite System (new)           — runs after Task 13b
+ 20. Mood Sprite System (new)           — runs after Task 13b (next up)
      — Add `MoodSprite` enum (NEUTRAL / HAPPY / UNWELL / HUNGRY).
        Add `Pet::computeMood()` mapping stats → mood with prioritised thresholds.
        Add 4 sprite assets in `lib/Display/sprites/`.
