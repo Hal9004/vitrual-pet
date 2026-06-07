@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "M5StickCPlus2.h"
+#include "../lib/Config/scaffold_config.h"  // The ENABLE_* feature switches — read this first.
 #include "../lib/Pet/pet.h"
 #include "../lib/Display/display_manager.h"
 #include "../lib/Display/tilt_motion.h"
