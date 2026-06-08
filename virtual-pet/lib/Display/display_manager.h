@@ -8,9 +8,11 @@
 // array, so the pet's face changes with how it feels. All four are the same
 // size and (for now) a single still frame.
 #include "sprites/neutral_placeholder.h"
+#ifdef ENABLE_MOOD_SPRITES
 #include "sprites/happy_placeholder.h"
 #include "sprites/unwell_placeholder.h"
 #include "sprites/hungry_placeholder.h"
+#endif
 #include "animation_manager.h"   // decides which sprite frame to draw each loop
 
 // DisplayManager only deals in primitive values (ints, strings, enums).

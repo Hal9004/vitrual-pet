@@ -274,6 +274,7 @@ void Pet::reset(
 // mood here, so the face stays NEUTRAL as those stats fall. Adding a "sad" or
 // "tired" mood for those is a natural extension exercise.
 MoodSprite Pet::computeMood() const {
+    #ifdef ENABLE_MOOD_SPRITES
     if (sick > 50) {
         return MOOD_UNWELL;
     }
@@ -283,6 +284,8 @@ MoodSprite Pet::computeMood() const {
     if (happy > 70) {
         return MOOD_HAPPY;
     }
+    #endif
+    // With mood sprites off, the pet has only one face: every state is NEUTRAL.
     return MOOD_NEUTRAL;
 }
 
