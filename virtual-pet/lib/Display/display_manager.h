@@ -2,6 +2,7 @@
 #define DISPLAY_MANAGER_H
 
 #include <M5StickCPlus2.h>
+#include "../Config/scaffold_config.h"  // ENABLE_* feature switches — read this first.
 #include "screen_layout.h"
 // One 80x80 sprite per mood. spriteForMood() maps a MoodSprite to the matching
 // array, so the pet's face changes with how it feels. All four are the same
@@ -103,6 +104,7 @@ private:
     // take an offset.
     void renderMainScreen(MoodSprite mood, const char* petName, int spriteOffsetX, int spriteOffsetY);
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, MoodSprite mood, const char* petName);
+    #ifdef ENABLE_ACTION_MENU
     // The Interact screen needs two pieces of information about the action menu:
     // the action name to display, and which stat bar to highlight. We pass these
     // as primitives so DisplayManager does not need to know what an ActionMenu is.
@@ -110,15 +112,18 @@ private:
                               MoodSprite mood, const char* selectedActionName,
                               RelevantStat relevantStat, const char* petName,
                               int spriteOffsetX, int spriteOffsetY);
+    #endif
 
     // Draws the two-tab nav bar at the bottom of the Main screen.
     // The highlighted tab (mainNavIndex) gets a filled background.
     void drawMainNavBar();
 
+    #ifdef ENABLE_ACTION_MENU
     // Draws a single stat bar for the action currently selected on the Interact screen.
     // The bar label, value, and colour are determined by relevantStat.
     // Draws nothing if relevantStat is STAT_NONE (Save / Back actions).
     void drawContextualStatBar(int happiness, int hunger, int energy, int cleanliness, int sick, RelevantStat relevantStat);
+    #endif
 
     // Draws just the mood label text at the given Y position.
     // Separated from drawPetSprite() so each screen can position the text independently.
@@ -165,10 +170,12 @@ public:
     void showMessage(const char* message);
     void showDeathScreen();
 
+    #ifdef ENABLE_ACTION_MENU
     // drawMenuIndicator() — draws the compact action name overlay at the bottom.
     // Used on the Interact screen. Takes the action name as a plain string so
     // this helper has no knowledge of ActionMenu's internals.
     void drawMenuIndicator(const char* selectedActionName, int x, int y);
+    #endif
 
     // drawStatusBar() — draws a single labelled progress bar.
     void drawStatusBar(int value, int maxValue, int x, int y, int width, uint32_t color);

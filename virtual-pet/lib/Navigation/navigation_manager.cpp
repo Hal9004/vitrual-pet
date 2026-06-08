@@ -21,18 +21,25 @@ void NavigationManager::update(const ButtonHandler& buttons, bool backSelected) 
         case SCREEN_STATS:
             handleStatsScreenInput(buttons);
             break;
+        #ifdef ENABLE_ACTION_MENU
         case SCREEN_INTERACT:
             handleInteractScreenInput(buttons, backSelected);
             break;
+        #endif
     }
 }
 
 void NavigationManager::handleMainScreenInput(const ButtonHandler& buttons) {
-    // B goes directly to Stats. C goes directly to Interact.
-    // No intermediate selection step — one press, one action.
+    // From Main, a single button press jumps straight to another screen — no
+    // intermediate selection step. Each destination is gated by its feature, so
+    // a button does nothing when the screen it leads to is switched off.
+    #ifdef ENABLE_ACTION_MENU
+    // B opens the Interact screen (the action menu).
     if (buttons.wasButtonBPressed()) {
         currentScreen = SCREEN_INTERACT;
     }
+    #endif
+    // C opens the Stats screen.
     if (buttons.wasButtonCPressed()) {
         currentScreen = SCREEN_STATS;
     }
@@ -45,6 +52,7 @@ void NavigationManager::handleStatsScreenInput(const ButtonHandler& buttons) {
     }
 }
 
+#ifdef ENABLE_ACTION_MENU
 void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected) {
     // B and C are NOT handled here — loop() calls menu.update(buttons) first
     // so they cycle through actions rather than triggering a screen switch.
@@ -57,6 +65,7 @@ void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, 
         }
     }
 }
+#endif
 
 ScreenState NavigationManager::getCurrentScreen() const {
     return currentScreen;

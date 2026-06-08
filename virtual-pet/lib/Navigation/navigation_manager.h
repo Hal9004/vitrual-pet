@@ -1,6 +1,7 @@
 #ifndef NAVIGATION_MANAGER_H
 #define NAVIGATION_MANAGER_H
 
+#include "../Config/scaffold_config.h"  // ENABLE_* feature switches — read this first.
 #include "../Display/screen_layout.h"
 #include "../Button/button_handler.h"
 
@@ -23,7 +24,9 @@ private:
     // the buttons do on that screen, nothing more.
     void handleMainScreenInput(const ButtonHandler& buttons);
     void handleStatsScreenInput(const ButtonHandler& buttons);
+    #ifdef ENABLE_ACTION_MENU
     void handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected);
+    #endif
 
 public:
     NavigationManager();

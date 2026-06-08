@@ -5,7 +5,9 @@
 #include "../lib/Display/display_manager.h"
 #include "../lib/Display/tilt_motion.h"
 #include "../lib/Button/button_handler.h"
+#ifdef ENABLE_ACTION_MENU
 #include "../lib/Actions/action_menu.h"
+#endif
 #include "../lib/Navigation/navigation_manager.h"
 #include "../lib/Timer/time_manager.h"
 #include "../lib/Imu/imu_manager.h"
@@ -40,7 +42,9 @@ static const bool TILT_MOVEMENT_ENABLED = true;
 Pet             myPet;    // Holds all of the pet's stats and care actions.
 DisplayManager  display;  // Draws everything to the screen.
 ButtonHandler   buttons;  // Reads and tracks button presses.
+#ifdef ENABLE_ACTION_MENU
 ActionMenu      menu;     // Manages the list of actions the user can choose.
+#endif
 NavigationManager navManager; // Tracks which screen is active and routes button input.
 TimerManager    timers;   // Handles all automatic stat changes over time.
 ImuManager      imu;      // Reads accelerometer data and detects shake gestures.
@@ -76,12 +80,14 @@ void updateLivePet() {
     // The rules for what changes and how fast live in TimerManager, not here.
     timers.update(myPet);
 
+    #ifdef ENABLE_ACTION_MENU
     // Only cycle through menu actions when the Interact screen is visible.
     // Calling menu.update() on other screens would silently change the selected
     // action while the user cannot even see the menu.
     if (navManager.getCurrentScreen() == SCREEN_INTERACT) {
         menu.update(buttons);
     }
+    #endif
 
     // Update navigation — reads button input and switches screens if needed.
     // This must run AFTER menu.update() so the latest "is Back highlighted?"
@@ -89,9 +95,14 @@ void updateLivePet() {
     // bool rather than handing over the whole menu object — NavigationManager
     // does not need to know what an ActionMenu is. Reading it into a named local
     // gives us one place to supply a fallback when the menu is switched off.
+    #ifdef ENABLE_ACTION_MENU
     bool backSelected = menu.isBackSelected();
+    #else
+    bool backSelected = false;  // No menu, so "Back" can never be highlighted.
+    #endif
     navManager.update(buttons, backSelected);
 
+    #ifdef ENABLE_ACTION_MENU
     // shouldConfirmAction() is true for exactly one frame when the user pressed A
     // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
     // logic out of NavigationManager, which only handles screen transitions.
@@ -105,6 +116,7 @@ void updateLivePet() {
             #endif
             );
     }
+    #endif
 
     // A shake gesture triggers play from any screen.
     // wasShaken() fires only on the first frame of a gesture so play() is called once.
@@ -119,12 +131,16 @@ void updateLivePet() {
 // to draw, and isInDeadState() tells it whether to show the death screen.
 void renderCurrentScreen() {
     // Pull the two menu-derived values the display needs into named locals.
-    // Reading them here (rather than reaching into the menu inline in the
-    // renderDisplay() call) gives us one clear place to supply fallback values
-    // when the action menu is switched off.
+    // With the action menu switched off there is no menu to ask, so we supply
+    // harmless fallbacks: no action name and no highlighted stat.
+    #ifdef ENABLE_ACTION_MENU
     Action selectedAction = menu.getSelectedAction();
     const char*  selectedActionName = selectedAction.name;
     RelevantStat selectedActionStat = selectedAction.relevantStat;
+    #else
+    const char*  selectedActionName = "";
+    RelevantStat selectedActionStat = STAT_NONE;
+    #endif
 
     // Work out the sprite offset to draw with. When the tilt demo is on we use
     // the helper's smoothed values; when it is off we pass 0, 0 so the pet draws

@@ -102,11 +102,13 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
         case SCREEN_STATS:
             renderStatsScreen(happiness, hunger, energy, cleanliness, sick, mood, petName);
             break;
+        #ifdef ENABLE_ACTION_MENU
         case SCREEN_INTERACT:
             renderInteractScreen(happiness, hunger, energy, cleanliness, sick, mood,
                                  selectedActionName, relevantStat, petName,
                                  spriteOffsetX, spriteOffsetY);
             break;
+        #endif
     }
 
     pushCanvas();
@@ -141,10 +143,12 @@ void DisplayManager::drawMainNavBar() {
     canvas.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
 
+    #ifdef ENABLE_ACTION_MENU
     // Right tab — Interact
     int rightX = MAIN_NAV_ZONE.x + tabWidth;
     canvas.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
+    #endif
 }
 
 // -----------------------------------------------------------------------
@@ -169,6 +173,7 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
 // middle (the stat the selected action affects), and the action menu
 // indicator at the very bottom — the same indicator style as before.
 // -----------------------------------------------------------------------
+#ifdef ENABLE_ACTION_MENU
 void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy, int cleanliness,
                                           int sick, MoodSprite mood, const char* selectedActionName,
                                           RelevantStat relevantStat, const char* petName,
@@ -181,7 +186,9 @@ void DisplayManager::renderInteractScreen(int happiness, int hunger, int energy,
     drawContextualStatBar(happiness, hunger, energy, cleanliness, sick, relevantStat);
     drawMenuIndicator(selectedActionName, MENU_ZONE.x, MENU_ZONE.y);
 }
+#endif
 
+#ifdef ENABLE_ACTION_MENU
 // drawContextualStatBar()
 // Draws a single stat bar in the INTERACT_STAT_ZONE area — only the one stat
 // that the currently selected action affects. The label, current value, and
@@ -222,11 +229,13 @@ void DisplayManager::drawContextualStatBar(int happiness, int hunger, int energy
     canvas.printf("%s: %d", label, value);
     drawStatusBar(value, 100, INTERACT_STAT_ZONE.x, INTERACT_STAT_BAR_Y, INTERACT_STAT_ZONE.width, color);
 }
+#endif
 
 // -----------------------------------------------------------------------
 // Shared helpers used by more than one render method
 // -----------------------------------------------------------------------
 
+#ifdef ENABLE_ACTION_MENU
 // drawMenuIndicator() — the compact action name box at the very bottom.
 // Used on the Interact screen. Clears its area before drawing.
 // Takes the action name as a plain string — no ActionMenu reference needed —
@@ -237,6 +246,7 @@ void DisplayManager::drawMenuIndicator(const char* selectedActionName, int x, in
     printText("Action: ", x + 2, y + 4, TFT_CYAN, 1);
     printText(selectedActionName, x + 50, y + 4, TFT_YELLOW, 1);
 }
+#endif
 
 // showPetMoodText() — draws just the mood label at the given Y position.
 // Separated from drawPetSprite() so the Main and Interact screens can place
