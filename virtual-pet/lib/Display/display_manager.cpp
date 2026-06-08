@@ -99,9 +99,11 @@ void DisplayManager::renderDisplay(int happiness, int hunger, int energy, int cl
         case SCREEN_MAIN:
             renderMainScreen(mood, petName, spriteOffsetX, spriteOffsetY);
             break;
+        #ifdef ENABLE_MULTISCREEN
         case SCREEN_STATS:
             renderStatsScreen(happiness, hunger, energy, cleanliness, sick, mood, petName);
             break;
+        #endif
         #ifdef ENABLE_ACTION_MENU
         case SCREEN_INTERACT:
             renderInteractScreen(happiness, hunger, energy, cleanliness, sick, mood,
@@ -137,17 +139,24 @@ void DisplayManager::renderMainScreen(MoodSprite mood, const char* petName,
 // the Main screen has no concept of "selected tab"; a single press jumps
 // straight to the chosen screen.
 void DisplayManager::drawMainNavBar() {
+    // Each tab is gated by the screen it leads to, so the bar is empty when
+    // neither destination exists (Session 1). The outer guard keeps tabWidth
+    // from being an unused variable in that case.
+    #if defined(ENABLE_MULTISCREEN) || defined(ENABLE_ACTION_MENU)
     int tabWidth = MAIN_NAV_ZONE.width / 2;
 
+    #ifdef ENABLE_MULTISCREEN
     // Left tab — Stats
     canvas.drawRect(MAIN_NAV_ZONE.x, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Stats", MAIN_NAV_ZONE.x + 6, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
+    #endif
 
     #ifdef ENABLE_ACTION_MENU
     // Right tab — Interact
     int rightX = MAIN_NAV_ZONE.x + tabWidth;
     canvas.drawRect(rightX, MAIN_NAV_ZONE.y, tabWidth, MAIN_NAV_ZONE.height, TFT_CYAN);
     printText("Interact", rightX + 3, MAIN_NAV_ZONE.y + 5, TFT_CYAN, 1);
+    #endif
     #endif
 }
 
@@ -156,6 +165,7 @@ void DisplayManager::drawMainNavBar() {
 // Preserves the original layout exactly: stat bars at the top, face below.
 // A "B/C: Back" hint replaces the old action menu indicator at the bottom.
 // -----------------------------------------------------------------------
+#ifdef ENABLE_MULTISCREEN
 void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, int cleanliness,
                                        int sick, MoodSprite mood, const char* petName) {
     clearScreen();
@@ -166,6 +176,7 @@ void DisplayManager::renderStatsScreen(int happiness, int hunger, int energy, in
     canvas.drawRect(MENU_ZONE.x, MENU_ZONE.y, MENU_ZONE.width, MENU_ZONE.height, TFT_CYAN);
     printText("B/C: Back", MENU_ZONE.x + 10, MENU_ZONE.y + 4, TFT_CYAN, 1);
 }
+#endif
 
 // -----------------------------------------------------------------------
 // Interact screen render
@@ -269,6 +280,7 @@ void DisplayManager::showPetMoodText(MoodSprite mood, int textY) {
     printCenteredText(moodText, textY, moodColor, 2);
 }
 
+#ifdef ENABLE_MULTISCREEN
 // showPetMood() — draws the mood label at the Stats screen position.
 // The Stats screen is a pure data view: five stat bars and this mood word,
 // with no pet sprite. Used by renderStatsScreen().
@@ -305,6 +317,7 @@ void DisplayManager::showPetStatus(int happiness, int hunger, int energy, int cl
     canvas.printf("Sick: %d", sick);
     drawStatusBar(sick, 100, STATS_ZONE.x, SICK_BAR_ZONE.barY, STATS_ZONE.width, TFT_PURPLE);
 }
+#endif
 
 // spriteForMood() — returns the pixel data to draw for a given mood and frame.
 // This is the single place that maps a mood to its artwork. Each mood will have

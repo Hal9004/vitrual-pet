@@ -103,7 +103,9 @@ private:
     // tilt. The Stats screen has no pet sprite, so renderStatsScreen() does not
     // take an offset.
     void renderMainScreen(MoodSprite mood, const char* petName, int spriteOffsetX, int spriteOffsetY);
+    #ifdef ENABLE_MULTISCREEN
     void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, MoodSprite mood, const char* petName);
+    #endif
     #ifdef ENABLE_ACTION_MENU
     // The Interact screen needs two pieces of information about the action menu:
     // the action name to display, and which stat bar to highlight. We pass these
@@ -165,8 +167,11 @@ public:
                        int spriteOffsetX, int spriteOffsetY);
 
     // Pet display helpers — used internally and by the three private render methods
+    #ifdef ENABLE_MULTISCREEN
+    // Both are used only by the Stats screen: the five-bar readout and its mood label.
     void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
     void showPetMood(MoodSprite mood);
+    #endif
     void showMessage(const char* message);
     void showDeathScreen();
 

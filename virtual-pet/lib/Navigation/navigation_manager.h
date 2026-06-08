@@ -23,7 +23,9 @@ private:
     // which makes it easy to reason about: open the handler, see exactly what
     // the buttons do on that screen, nothing more.
     void handleMainScreenInput(const ButtonHandler& buttons);
+    #ifdef ENABLE_MULTISCREEN
     void handleStatsScreenInput(const ButtonHandler& buttons);
+    #endif
     #ifdef ENABLE_ACTION_MENU
     void handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected);
     #endif

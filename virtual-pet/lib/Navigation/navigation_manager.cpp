@@ -18,9 +18,11 @@ void NavigationManager::update(const ButtonHandler& buttons, bool backSelected) 
         case SCREEN_MAIN:
             handleMainScreenInput(buttons);
             break;
+        #ifdef ENABLE_MULTISCREEN
         case SCREEN_STATS:
             handleStatsScreenInput(buttons);
             break;
+        #endif
         #ifdef ENABLE_ACTION_MENU
         case SCREEN_INTERACT:
             handleInteractScreenInput(buttons, backSelected);
@@ -39,18 +41,22 @@ void NavigationManager::handleMainScreenInput(const ButtonHandler& buttons) {
         currentScreen = SCREEN_INTERACT;
     }
     #endif
+    #ifdef ENABLE_MULTISCREEN
     // C opens the Stats screen.
     if (buttons.wasButtonCPressed()) {
         currentScreen = SCREEN_STATS;
     }
+    #endif
 }
 
+#ifdef ENABLE_MULTISCREEN
 void NavigationManager::handleStatsScreenInput(const ButtonHandler& buttons) {
     // Stats is a read-only screen — any button press returns to Main.
     if (buttons.wasButtonBPressed() || buttons.wasButtonCPressed() || buttons.wasButtonAPressed()) {
         currentScreen = SCREEN_MAIN;
     }
 }
+#endif
 
 #ifdef ENABLE_ACTION_MENU
 void NavigationManager::handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected) {
