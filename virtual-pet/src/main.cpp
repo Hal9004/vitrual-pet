@@ -87,8 +87,10 @@ void updateLivePet() {
     // This must run AFTER menu.update() so the latest "is Back highlighted?"
     // value is what NavigationManager sees. We pass that single fact as a
     // bool rather than handing over the whole menu object — NavigationManager
-    // does not need to know what an ActionMenu is.
-    navManager.update(buttons, menu.isBackSelected());
+    // does not need to know what an ActionMenu is. Reading it into a named local
+    // gives us one place to supply a fallback when the menu is switched off.
+    bool backSelected = menu.isBackSelected();
+    navManager.update(buttons, backSelected);
 
     // shouldConfirmAction() is true for exactly one frame when the user pressed A
     // on a non-Back action. Calling confirmAction() here keeps the pet/speaker/storage
@@ -116,7 +118,13 @@ void updateLivePet() {
 // menu fields it needs and hand them over. NavigationManager decides which screen
 // to draw, and isInDeadState() tells it whether to show the death screen.
 void renderCurrentScreen() {
+    // Pull the two menu-derived values the display needs into named locals.
+    // Reading them here (rather than reaching into the menu inline in the
+    // renderDisplay() call) gives us one clear place to supply fallback values
+    // when the action menu is switched off.
     Action selectedAction = menu.getSelectedAction();
+    const char*  selectedActionName = selectedAction.name;
+    RelevantStat selectedActionStat = selectedAction.relevantStat;
 
     // Work out the sprite offset to draw with. When the tilt demo is on we use
     // the helper's smoothed values; when it is off we pass 0, 0 so the pet draws
@@ -132,8 +140,8 @@ void renderCurrentScreen() {
     display.renderDisplay(
         myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
         myPet.getCleanliness(), myPet.getSick(), myPet.computeMood(),
-        selectedAction.name,
-        selectedAction.relevantStat,
+        selectedActionName,
+        selectedActionStat,
         myPet.isInDeadState(), myPet.getPetName(),
         navManager.getCurrentScreen(),
         spriteOffsetX, spriteOffsetY
