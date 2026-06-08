@@ -118,11 +118,16 @@ void updateLivePet() {
     }
     #endif
 
+    #ifdef ENABLE_IMU_PLAY
     // A shake gesture triggers play from any screen.
     // wasShaken() fires only on the first frame of a gesture so play() is called once.
+    // Only the shake-to-play link is gated here: ImuManager itself keeps running
+    // (the tilt-movement demo also reads the accelerometer), so this just decides
+    // whether a shake feeds into play().
     if (imu.wasShaken()) {
         myPet.play();
     }
+    #endif
 }
 
 // renderCurrentScreen() — draws the whole screen for this frame. DisplayManager
