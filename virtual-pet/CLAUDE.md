@@ -43,6 +43,9 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts (Task 8 — implemented) |
 | `Microphone` | (out of scope) | Module moved to bonus during the curriculum realignment. See `CURRICULUM_REALIGNMENT.md`. The original stub files were deleted during Task 14a and are not being re-created in the active queue |
 | `Storage` | `lib/Storage/storage_manager.h/.cpp` | NVS persistence via Arduino `Preferences` — saves and loads all pet stats |
+| `Config` | `lib/Config/scaffold_config.h` | The six `ENABLE_*` curriculum feature switches (commented-`#define` style, all ON on this reference branch). Included by every gated file so all separately-compiled translation units agree on which features are built in. Holds the `#error` guard for the one inter-flag rule: `ENABLE_PERSISTENCE` requires `ENABLE_ACTION_MENU` (the Save action lives in the menu) |
+
+Each major feature is wrapped in `#ifdef ENABLE_*` (added in Task 21) so it can be compiled out for a given teaching session — see `lib/Config/scaffold_config.h`. A flag OFF means the feature is genuinely **absent, not inert**: e.g. with `ENABLE_SOUND` off, the `SpeakerManager&` parameter leaves `Pet::updateState()/reset()` and `ActionMenu::confirmAction()` entirely. The flags are verified as a cumulative staircase (Session 1 all-off → Session 6 all-on), not as all 2⁶ combinations.
 
 ## Current Progress
 

@@ -221,7 +221,7 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        Accepted scope limit: no sprite warning for the low fatal stats
        (happy→0, energised→0) — future `MOOD_SAD`/`MOOD_TIRED` extension.
        Verified on device.
- 21. Curriculum Scaffolding Refactor (new) — runs after Task 20
+ 21. Curriculum Scaffolding Refactor (new) — ✅ DONE (merged to main) — ran after Task 20
      — Add `#define ENABLE_*` flags so the codebase can be configured for any
        session's day-start state:
          ENABLE_ACTION_MENU     (Session 2)
@@ -230,8 +230,11 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
          ENABLE_PERSISTENCE     (Session 5)
          ENABLE_MULTISCREEN     (Session 6)
          ENABLE_MOOD_SPRITES    (Session 6)
-       Every flag combination must compile + flash cleanly. This is the test
-       that the scaffolding actually works.
+       Each cumulative session tier must compile + flash cleanly (Session 1
+       all-off → Session 6 all-on) — NOT all 2^6 combinations, which are not
+       all valid (ENABLE_PERSISTENCE requires ENABLE_ACTION_MENU, since the
+       Save action lives in the menu). This staircase is the test that the
+       scaffolding actually works.
 
      Design notes (from the 2026-06-07 pre-audit — SETTLE THESE FIRST):
      — Q1: What does a flag OFF *mean*? (a) feature physically absent (the student
