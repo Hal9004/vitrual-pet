@@ -54,16 +54,21 @@ maths (mapping a sensor range to screen pixels), and animation (moving a sprite 
 **The idea:**
 Give the pet a subtle idle animation when nothing is happening — a gentle bob up and down,
 blinking eyes, or a small breathing motion. This makes the pet feel alive even when no
-buttons are being pressed.
+buttons are being pressed. (This is distinct from the frame-cycling already shipped in
+`AnimationManager` — it is a smooth positional bob, not a swap between drawn frames.)
 
 **How it would work:**
-Use `millis()` to drive a sine-wave offset applied to `centerY` in `drawPetFace()`. A small
-amplitude (±5px) at a slow period (2–3 seconds) gives a natural breathing feel.
+Use `millis()` to drive a sine-wave offset applied to the pet sprite's Y position in
+`DisplayManager::drawPetSprite()`. A small amplitude (±5px) at a slow period (2–3 seconds)
+gives a natural breathing feel.
 
 **What to revisit:**
-- Needs the M5Canvas double-buffering approach (see USEFUL_NOTES.md — Gotcha 3) to avoid
-  flicker at animation speeds faster than the current 5-second status refresh.
-- The animation timer should be separate from `STATUS_UPDATE_INTERVAL` so it can run faster.
+- The plumbing already exists: all rendering goes through a full-screen `M5Canvas`
+  double-buffer (pushed once per frame), so animation at any speed is already flicker-free —
+  no extra work is needed there.
+- `TiltMotion` (`lib/Display/tilt_motion.{h,cpp}`) already feeds a smoothed (x, y) offset into
+  `drawPetSprite()`. The idle bob is the same idea: add a `millis()`-driven sine offset to the
+  Y position — either inside `TiltMotion` or as a small sibling helper — so the two offsets sum.
 
 ---
 
