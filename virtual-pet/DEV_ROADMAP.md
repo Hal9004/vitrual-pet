@@ -236,17 +236,17 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        Save action lives in the menu). This staircase is the test that the
        scaffolding actually works.
 
-     Design notes (from the 2026-06-07 pre-audit — SETTLE THESE FIRST):
-     — Q1: What does a flag OFF *mean*? (a) feature physically absent (the student
-       has not written it yet — true session day-start; forces #ifdef around code
-       AND includes, so Pet must compile WITHOUT SpeakerManager), or (b) present
-       but inert. The cumulative-session framing points to (a) — the harder one.
-       This choice drives the whole implementation, especially ENABLE_SOUND.
-     — Q2: Independent flags (every 2^6 combo compiles — CLAUDE.md wording) or 6
-       cumulative checkpoints (one per session — Verification wording)? Pick one;
-       they are very different test burdens. NOTE the flags are NOT independent:
-       the Save action lives in the action menu, so ENABLE_PERSISTENCE needs
-       ENABLE_ACTION_MENU. State the inter-flag rule explicitly.
+     Design notes (from the 2026-06-07 pre-audit — both RESOLVED by Task 21):
+     — Q1: What does a flag OFF *mean*? RESOLVED → (a) feature physically absent
+       (the student has not written it yet — true session day-start; forces #ifdef
+       around code AND includes, so Pet compiles WITHOUT SpeakerManager), not (b)
+       present but inert. This is what drove the ENABLE_SOUND seam.
+     — Q2: Independent flags or cumulative checkpoints? RESOLVED → 6 cumulative
+       checkpoints, one per session (Session 1 all-off → Session 6 all-on), NOT all
+       2^6 combinations. The 2^6 combos are not all valid because the flags are NOT
+       independent: the Save action lives in the action menu, so ENABLE_PERSISTENCE
+       requires ENABLE_ACTION_MENU. That one inter-flag rule is enforced by the
+       #error guard in scaffold_config.h.
      — Seam quality today (so flags don't spray #ifdef everywhere):
          ENABLE_IMU_PLAY    — very clean (3 isolated call sites in main.cpp)
          ENABLE_MULTISCREEN — very clean (NavigationManager + SCREEN_MAIN fallback)
