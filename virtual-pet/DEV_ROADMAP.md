@@ -69,7 +69,7 @@ Items are mapped directly against `COURSE_CHECKLIST.md`.
 > **Active migration:** `CURRICULUM_REALIGNMENT.md` is the source of truth for current work.
 > Execution order for the remaining in-repo work:
 > **14c → 14d → 13a → 13b → 20 → 21 → 22 → (move to `virtual-pet-learning-lab`)**.
-> (Tasks 19, 19b, 14c, 14d, 13a, and 13b are done — next up is 20.)
+> (Phase 1 is complete: Tasks 19, 19b, 14c, 14d, 13a, 13b, 20, 21, and 22 are all done. Next work is Phase 2 — Session 1 lesson plan — in the `virtual-pet-learning-lab` repo.)
 > Tasks 16, 17, 18, 9a are out of the active queue and live in Appendix B.
 
 Tasks ordered from **easiest** to **hardest** so a student always has a clear next step that builds on what they already know.
@@ -262,11 +262,15 @@ PHASE 6 — CURRICULUM REALIGNMENT (active — see CURRICULUM_REALIGNMENT.md)
        per feature). The pure-readability simplifications in CURRICULUM_REALIGNMENT
        open-question #2 are SEPARATE logical changes — keep them out of the flag
        commits so the Task 21 git story stays clean.
- 22. Doc Sweep (new)                    — runs after Task 21
-     — With code in final form: rewrite COURSE_CHECKLIST.md against the
-       10-session arc; purge IDEAS.md of items now in core scope; update
-       CLAUDE.md next-task pointer to "Define Session 1 lesson plan"; audit
-       USEFUL_NOTES.md for accuracy.
+ 22. Doc Sweep (new)                    — ✅ DONE — ran after Task 21
+     — Brought the docs into line with the frozen code: rewrote
+       COURSE_CHECKLIST.md around the 10-session arc; trimmed shipped items
+       in IDEAS.md to pointers; ran a full accuracy audit of USEFUL_NOTES.md
+       against the source (ABGR converter, M5Canvas redraw section, plain
+       enums, NavigationManager signatures, dead checkDeathAlert/delay(1000),
+       module overview + Pet "one job" row, player→user); resolved the stale
+       2^6 design note here; advanced the CLAUDE.md pointer to "Define
+       Session 1 lesson plan". Branch: task/22-doc-sweep.
 
 ➡️  AFTER TASK 22 — Work moves to `virtual-pet-learning-lab`
      - This repo is frozen as the curriculum reference.

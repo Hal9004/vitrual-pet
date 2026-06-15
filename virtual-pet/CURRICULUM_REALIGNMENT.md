@@ -118,7 +118,7 @@ Step-by-step:
 | 1.4b | Task 13b — Tilt-Reactive Sprite Movement | `task/13b-tilt-movement` | ✅ done |
 | 1.5 | Task 20 — Mood Sprite System (new) | `task/20-mood-sprite-system` | ✅ done |
 | 1.6 | Task 21 — Curriculum Scaffolding Refactor (new) | `task/21-scaffolding-refactor` | ✅ done (merged to main) |
-| 1.7 | Task 22 — Doc Sweep (new) | `task/22-doc-sweep` | 🟡 in progress |
+| 1.7 | Task 22 — Doc Sweep (new) | `task/22-doc-sweep` | ✅ done (pending merge) |
 
 ### Phase 2 — Define Session 1 in this repo
 
