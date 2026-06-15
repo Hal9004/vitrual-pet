@@ -41,7 +41,7 @@ struct StatBarZone {
 // -----------------------------------------------------------------------
 enum ScreenState {
     SCREEN_MAIN,       // Pet face + bottom nav bar ("Stats" | "Interact")
-    SCREEN_STATS,      // Stat bars + pet face + mood (same layout as original)
+    SCREEN_STATS,      // Stat bars + mood word, no pet sprite (read-only data view)
     SCREEN_INTERACT    // Pet face + contextual stat bar + action menu
 };
 
