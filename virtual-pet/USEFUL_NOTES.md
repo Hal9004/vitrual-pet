@@ -22,8 +22,10 @@ This is called the **Single Responsibility Principle** — one of the most impor
 
 | Module | Its one job |
 |---|---|
-| `Pet` | Store and update pet stats — hunger, happiness, energy, and so on |
+| `Pet` | Own the pet's stats, its state machine, and its mood (`computeMood()`); decide when its own alert/death/reset sounds should fire |
 | `DisplayManager` | Draw things to the screen — nothing else |
+| `AnimationManager` | Decide which sprite frame to show right now (timing only) — nothing else |
+| `TiltMotion` | Turn live accelerometer tilt into a smoothed pet-sprite offset — nothing else |
 | `ButtonHandler` | Detect when buttons are pressed — nothing else |
 | `ActionMenu` | Track which action is selected and confirm it — nothing else |
 | `TimerManager` | Apply automatic stat changes over time — nothing else |
@@ -32,11 +34,15 @@ This is called the **Single Responsibility Principle** — one of the most impor
 | `StorageManager` | Save and load pet stats to flash memory — nothing else |
 | `NavigationManager` | Track which screen is active and handle top-level navigation — nothing else |
 
+`AnimationManager` and `TiltMotion` are small **display helpers**: instead of being created in `main.cpp` like the others, `DisplayManager` owns the `AnimationManager`, and `main.cpp` owns the `TiltMotion` and feeds its offset into `DisplayManager`. They are still single-responsibility modules — they just happen to be owned by the part of the program that uses them.
+
+Having one job does **not** mean a module never calls another. `Pet` decides *when* its death, reset, and hunger/sickness sounds should fire — but it does not know *how* to make a tone, so it borrows a `SpeakerManager` (passed into `updateState()` and `reset()`) and asks it to play. In the same way, `ActionMenu`'s `confirmAction()` carries out the chosen action by calling `Pet`, `SpeakerManager`, and `StorageManager`. Each module still owns exactly one responsibility; it simply *delegates* the parts that belong to other modules, borrowing them for the duration of a single call (see "How the modules link together" below).
+
 When a module has one job, you know exactly where to look when something goes wrong. Buzzer broken? Open `speaker_manager.cpp`. Pet not saving? Open `storage_manager.cpp`. You never have to read unrelated code to fix a focused problem.
 
 ### How the modules link together
 
-None of the modules talk to each other directly. They each do their job, and `src/main.cpp` is the **orchestrator** — it holds one instance of each module and passes them to each other as needed.
+None of the modules talk to each other directly. They each do their job, and `src/main.cpp` is the **orchestrator** — it holds the modules and passes them to each other as needed.
 
 ```
                         src/main.cpp
@@ -71,7 +77,9 @@ None of the modules talk to each other directly. They each do their job, and `sr
                  (saves to flash)
 ```
 
-When `main.cpp` needs `ButtonHandler` to tell `ActionMenu` about a button press, it passes the `ButtonHandler` object into `ActionMenu::update()` as a parameter. The modules never hold permanent references to each other — they only borrow what they need for the duration of one function call. This keeps the dependencies loose and easy to follow.
+*(The two display helpers are left out of this diagram to keep the core flow readable: `DisplayManager` owns the `AnimationManager`, and `main.cpp` owns the `TiltMotion` and passes its offset to `DisplayManager`.)*
+
+When `main.cpp` needs `ButtonHandler` to tell `ActionMenu` about a button press, it passes the `ButtonHandler` object into `ActionMenu::update()` as a parameter. The top-level managers never hold permanent references to each *other* — they only borrow what they need for the duration of one function call. (The one exception is a module owning a small private helper of its own, like `DisplayManager`'s `AnimationManager` — that is composition, not two managers reaching into each other.) This keeps the dependencies loose and easy to follow.
 
 ### What is Object-Oriented Programming?
 
@@ -121,7 +129,7 @@ myDog.bark();  // Dog's own method
 
 Inheritance is useful when you have several things that are mostly the same but differ in specific ways — for example, `Cat`, `Dog`, and `Bird` all sharing an `Animal` base class.
 
-**This project intentionally avoids inheritance.** All nine modules are completely independent — a `DisplayManager` is not a kind of `Pet`, and a `SpeakerManager` is not a kind of `TimerManager`. Forcing inheritance where there is no real "is-a" relationship makes code harder to read and harder to change. Using separate, unrelated classes and connecting them through `main.cpp` (called **composition**) is the right approach here, and is actually preferred in most professional embedded C++ code for exactly this reason.
+**This project intentionally avoids inheritance.** All of these modules are completely independent — a `DisplayManager` is not a kind of `Pet`, and a `SpeakerManager` is not a kind of `TimerManager`. Forcing inheritance where there is no real "is-a" relationship makes code harder to read and harder to change. Using separate, unrelated classes and connecting them through `main.cpp` (called **composition**) is the right approach here, and is actually preferred in most professional embedded C++ code for exactly this reason.
 
 A useful rule of thumb:
 - Use **inheritance** when one thing genuinely *is a kind of* another thing (a `Dog` is an `Animal`).
@@ -194,7 +202,7 @@ Try changing the numbers in `lib/Speaker/speaker_manager.cpp` and flashing the d
 
 You will notice that the functions in `speaker_manager.cpp` use `delay()` between each note. The next section explains why `delay()` is normally forbidden inside `loop()`, so this might look like a contradiction. It is not — and understanding the difference is important.
 
-The sound functions only ever run inside `confirmAction()`, which is called when the user presses Button A to confirm a menu choice. At that moment, the device is **intentionally pausing** to show the user a feedback message on screen anyway — there is already a `delay(1000)` call there. Adding a short melody of a few hundred milliseconds inside that same deliberate pause does not make things worse. The user expects the device to briefly acknowledge their input.
+The sound functions only ever run inside `confirmAction()`, which is called when the user presses Button A to confirm a menu choice. That is a deliberate, **one-shot response** to something the user just did — not a background event — so a short melody of a few hundred milliseconds is exactly the kind of brief, intentional pause the user expects as acknowledgement of their button press. The melody's own `delay()` calls between notes are the only blocking here, and they last only as long as the notes play.
 
 The rule is more precisely stated as: **do not use `delay()` for background, automatic events that should happen silently without interrupting the user**. The stat decay timers are a perfect example — if hunger increased every 5 seconds and the screen froze for a moment each time, the device would feel broken. The melodies are different: they are a direct, intentional response to something the user just did.
 
@@ -360,17 +368,18 @@ prefs.getInt("hungry", DEFAULT_HUNGRY);
 prefs.getInt("hungry", Pet::DEFAULT_HUNGRY);
 ```
 
-### You have already seen :: in this project
+### Plain enums vs `enum class` — when you need ::
 
-The same operator appears in other places you have already written:
+This project uses **plain enums** for its option lists, with a prefix on every value:
 
 ```cpp
-ActionType::FEED    // FEED is a value inside the ActionType enum class
-STATE_IDLE          // plain enum values (no class keyword) do not need ::,
-                    // but enum class values do — that is why ActionType needs it
+ACTION_FEED    // a value of the plain enum ActionType — written directly, no ::
+SCREEN_STATS   // a value of the plain enum ScreenState — also written directly
 ```
 
-Think of `::` as saying *"open this container and find the name inside it."* The container can be a class, an enum class, or a namespace — `::` works the same way in all three cases.
+A plain enum's values live in the surrounding scope, so you write them by name with no `::`. The prefix (`ACTION_`, `SCREEN_`) is what keeps them from clashing with other names. If these had instead been declared `enum class ActionType { FEED, ... }`, the values would live *inside* the type and you would have to write `ActionType::FEED` — the same `::` you already use for `Pet::DEFAULT_HUNGRY`. This project chooses plain enums precisely so beginners can write the value directly.
+
+Think of `::` as saying *"open this container and find the name inside it."* The container can be a class, an `enum class`, or a namespace — `::` works the same way in all three cases.
 
 ### Defining class functions outside the class body
 
@@ -483,22 +492,26 @@ This is called **constant folding**, and it is why `static const int` is a speci
 
 ### Why `static const ScreenZone` is different
 
+Suppose one of the screen zones were declared the plain `static const` way:
+
 ```cpp
-static const ScreenZone ZONE_PET_FACE = { 0, 20, 135, 185 };
+static const ScreenZone TITLE_ZONE = { 0, 5, 135, 19 };
 ```
 
 `ScreenZone` is a struct — it has four separate `int` fields. The compiler cannot substitute it as a single number. It has to exist somewhere in memory as a real object with an address, so that code can read `.x`, `.y`, `.width`, and `.height` from it.
 
-If you only declare it in the header and never define it in a `.cpp` file, the compiler will not warn you — it trusts your promise. But when the linker tries to build the final program, it searches all the compiled files looking for "where is `DisplayManager::ZONE_PET_FACE` actually stored?" and finds nothing. That produces a **linker error** — a subtly different kind of failure from a normal compile error.
+If you only declare it in the header and never define it in a `.cpp` file, the compiler will not warn you — it trusts your promise. But when the linker tries to build the final program, it searches all the compiled files looking for "where is `DisplayManager::TITLE_ZONE` actually stored?" and finds nothing. That produces a **linker error** — a subtly different kind of failure from a normal compile error.
 
 ### The fix — one line in the `.cpp` file
 
 ```cpp
 // In display_manager.cpp
-const ScreenZone DisplayManager::ZONE_PET_FACE = { 0, 20, 135, 185 };
+const ScreenZone DisplayManager::TITLE_ZONE = { 0, 5, 135, 19 };
 ```
 
-This is the definition. It tells the linker: "here is where `ZONE_PET_FACE` actually lives in memory, and here are its values." The `DisplayManager::` prefix (the scope resolution operator, explained in an earlier section) tells the compiler this belongs to the `DisplayManager` class — the same pattern used for every function body in the project.
+This is the definition. It tells the linker: "here is where `TITLE_ZONE` actually lives in memory, and here are its values." The `DisplayManager::` prefix (the scope resolution operator, explained in an earlier section) tells the compiler this belongs to the `DisplayManager` class — the same pattern used for every function body in the project.
+
+(In this project the zones do not actually need this `.cpp` line — they are declared `constexpr`, which sidesteps the problem entirely. That shortcut is the next section. The `static const` long form shown here is what you would need for any `static const` object that is not `constexpr`-friendly.)
 
 ### The analogy
 
@@ -592,7 +605,7 @@ Every `.h` file needs an include guard. Without one, including the same header t
 
 In a web app or phone app, a "screen" is usually a whole new page loaded from a server. On a tiny device like the M5StickC Plus 2, there is no server and no pages — there is just one 135×240 pixel display that you draw on directly.
 
-A "screen" in embedded code is just a **set of decisions about what to draw**. The Stats screen draws five stat bars and a pet face. The Interact screen draws a pet face, one stat bar, and an action menu. The Main screen draws a pet face and a tab bar. The hardware never changes — only what gets painted on it does.
+A "screen" in embedded code is just a **set of decisions about what to draw**. The Stats screen draws five stat bars and a mood word (no pet sprite). The Interact screen draws a pet sprite, one stat bar, and an action menu. The Main screen draws a pet sprite and a tab bar. The hardware never changes — only what gets painted on it does.
 
 ### The `ScreenState` enum
 
@@ -614,9 +627,9 @@ An enum is just a named list of options. Using an enum instead of a plain intege
 
 | Screen | What it shows | How you leave it |
 |---|---|---|
-| `SCREEN_MAIN` | Pet face, mood, nav bar (Stats / Interact) | Press B → Interact, Press C → Stats |
-| `SCREEN_STATS` | All five stat bars + pet face + mood | Press any button → back to Main |
-| `SCREEN_INTERACT` | Pet face, mood, one contextual stat bar, action menu | Confirm "Back" action → Main |
+| `SCREEN_MAIN` | Pet sprite, mood, nav bar (Stats / Interact) | Press B → Interact, Press C → Stats |
+| `SCREEN_STATS` | All five stat bars + mood word (no pet sprite) | Press any button → back to Main |
+| `SCREEN_INTERACT` | Pet sprite, mood, one contextual stat bar, action menu | Confirm "Back" action → Main |
 
 ---
 
@@ -631,10 +644,10 @@ For this project, the Stats screen zones look like this:
 ```
 ┌─────────────────┐  y: 0
 │   TITLE_ZONE    │     5 – 24    pet name
-│   STATS_ZONE    │    26 – 133   five stat bars
-│  PET_FACE_ZONE  │   134 – 169   pet face
-│   MOOD_ZONE     │   180 – 198   mood text
-│   MENU_ZONE     │   220 – 240   action / hint
+│   STATS_ZONE    │    26 – 124   five stat bars
+│                 │  (124 – 180   left empty — the Stats screen has no pet sprite)
+│   MOOD_ZONE     │   180 – 198   mood word
+│   MENU_ZONE     │   220 – 240   Back hint
 └─────────────────┘  y: 240
 ```
 
@@ -671,20 +684,19 @@ Now the intent is visible. If you want to move all the stat bars down by 10 pixe
 
 ### Each screen can have its own zones
 
-The Stats screen and the Interact screen need the pet face in different positions — the Interact screen has no stat bars above the face, so the face can sit higher up and be drawn larger.
+Not every screen shows the same things in the same places. The Main and Interact screens show the pet sprite; the Stats screen does not — it uses that vertical space for the five stat bars instead. Each screen's render method decides which zones it draws.
 
-Rather than one shared `PET_FACE_ZONE`, each screen defines its own face centre and radius:
+The pet sprite is positioned by a single `*_FACE_CENTER_Y` value (the sprite is always centred horizontally and drawn at a fixed 80×80 size). The Main and Interact screens deliberately use the *same* centre, so the pet does not appear to jump when you switch between them:
 
 ```cpp
-// Stats screen — face sits below the stat bars
-static constexpr ScreenZone PET_FACE_ZONE = { 0, 134, 135, 36 };
+// Main screen — face sits in the centre, no stat bars above it
+static constexpr int MAIN_FACE_CENTER_Y = 110;
 
-// Interact screen — face gets more vertical room
-static constexpr int INTERACT_FACE_CENTER_Y = 90;
-static constexpr int INTERACT_FACE_RADIUS   = 26;
+// Interact screen — same centre as Main, so the pet stays put across screens
+static constexpr int INTERACT_FACE_CENTER_Y = 110;  // = MAIN_FACE_CENTER_Y
 ```
 
-This is not duplication — it is each screen owning its own layout. The Stats face and the Interact face are deliberately different sizes.
+This is not duplication for its own sake — it is each screen owning its own layout while choosing to line up where it matters. The Stats screen owns a different layout entirely: no sprite, more room for data.
 
 ---
 
@@ -720,11 +732,11 @@ void DisplayManager::renderDisplay(..., ScreenState screenState) {
 }
 ```
 
-`DisplayManager` no longer guesses what the player is looking at. `NavigationManager` tracks that, and passes the answer in. `DisplayManager` just draws.
+`DisplayManager` no longer guesses what the user is looking at. `NavigationManager` tracks that, and passes the answer in. `DisplayManager` just draws.
 
 This separation — **one module decides, another executes** — is a pattern called **separation of concerns**. Each module concerns itself with exactly one question:
 
-- *What screen is the player on?* → `NavigationManager`'s job
+- *What screen is the user on?* → `NavigationManager`'s job
 - *How do I draw that screen?* → `DisplayManager`'s job
 
 ---
@@ -737,10 +749,11 @@ Without `NavigationManager`, all the screen-switching logic would live inside `l
 
 ### The solution — delegate to a module
 
-`NavigationManager` owns one piece of state: which screen the player is currently on. Its `update()` method reads button input and switches screens when needed. `loop()` becomes two lines:
+`NavigationManager` owns one piece of state: which screen the user is currently on. Its `update()` method reads button input and switches screens when needed. It is deliberately kept unaware of `ActionMenu` — rather than receiving the menu, it is told only whether the "Back" entry is currently selected, as a plain `bool`. `loop()` stays short:
 
 ```cpp
-navManager.update(buttons, menu);
+bool backSelected = menu.isBackSelected();
+navManager.update(buttons, backSelected);
 
 if (navManager.shouldConfirmAction()) {
     menu.confirmAction(myPet, display, speaker, storage);
@@ -756,7 +769,7 @@ Inside `NavigationManager`, each screen gets its own private handler method:
 ```cpp
 void handleMainScreenInput(const ButtonHandler& buttons);
 void handleStatsScreenInput(const ButtonHandler& buttons);
-void handleInteractScreenInput(const ButtonHandler& buttons, const ActionMenu& menu);
+void handleInteractScreenInput(const ButtonHandler& buttons, bool backSelected);
 ```
 
 Each handler only reads the buttons that are relevant on that screen. `handleStatsScreenInput()` has no idea what `handleInteractScreenInput()` does. If you need to understand what the buttons do on the Stats screen, you open that one method and read four lines. Nothing else to search through.
@@ -769,14 +782,14 @@ When a new screen is added in the future, you add one new handler method and one
 
 ### The problem
 
-When the player presses Button A to feed the pet, `confirmAction()` should fire **once**. But `loop()` runs hundreds of times per second. If you stored "A was pressed" as a boolean and never cleared it, `confirmAction()` would fire on every single frame until the player released the button — feeding the pet hundreds of times in one press.
+When the user presses Button A to feed the pet, `confirmAction()` should fire **once**. But `loop()` runs hundreds of times per second. If you stored "A was pressed" as a boolean and never cleared it, `confirmAction()` would fire on every single frame until the user released the button — feeding the pet hundreds of times in one press.
 
 ### The solution — reset at the top of every frame
 
 `NavigationManager` tracks this with a `confirmActionRequested` flag. The key is where it gets reset:
 
 ```cpp
-void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& menu) {
+void NavigationManager::update(const ButtonHandler& buttons, bool backSelected) {
     confirmActionRequested = false;  // reset FIRST, before checking anything
 
     switch (currentScreen) {
@@ -785,53 +798,43 @@ void NavigationManager::update(const ButtonHandler& buttons, const ActionMenu& m
 }
 ```
 
-By resetting `confirmActionRequested` to `false` at the very start of `update()`, the flag can only ever be `true` for **one loop iteration** — the single frame where the player's button press was detected. On the next frame, `update()` resets it back to `false` before anything else runs.
+By resetting `confirmActionRequested` to `false` at the very start of `update()`, the flag can only ever be `true` for **one loop iteration** — the single frame where the user's button press was detected. On the next frame, `update()` resets it back to `false` before anything else runs.
 
-This is called a **one-shot flag**: it fires once and immediately resets itself. You will see this pattern used in `ButtonHandler` (`wasButtonAPressed()` returns `true` only once per press), in `Pet` (`checkDeathAlert()` returns `true` only on the first frame of death), and now in `NavigationManager`. It is one of the most useful patterns for any program that responds to hardware inputs inside a polling loop.
+This is called a **one-shot flag**: it fires once and immediately resets itself. You will see this pattern used in `ButtonHandler` (`wasButtonAPressed()` returns `true` only once per press) and in `NavigationManager` (`confirmActionRequested`). A close cousin lives in `Pet`: it plays the death melody exactly once by checking `currentState != STATE_DEAD` just before it switches into `STATE_DEAD`, so the sound fires only on the transition, not on every frame the pet is dead. It is one of the most useful patterns for any program that responds to hardware inputs inside a polling loop.
 
 ---
 
-## Partial Screen Redraws — Why Not Draw Everything Every Frame?
+## How Flicker Is Avoided — the Off-Screen Canvas (Double-Buffering)
 
-### The problem with redrawing everything
+### The problem with drawing straight to the screen
 
-The M5StickC Plus 2 LCD is driven over SPI — a serial connection that sends pixel data one bit at a time. A full 135×240 screen clear takes a noticeable fraction of a second. If you called `clearScreen()` every frame, the display would flash black 60 times per second. This is called **screen flicker**, and it makes the device feel broken.
+The M5StickC Plus 2 LCD is driven over SPI — a serial connection that sends pixel data one chunk at a time. If you clear the real screen and then draw each element directly onto it, there is a brief moment where the screen is half-finished: cleared to black, with only some of the new frame painted on. Repeated every loop, that half-drawn moment shows up as **screen flicker**, and it makes the device feel broken.
 
-### The solution — only redraw what changed
+### The solution — draw to an invisible canvas, then push it in one shot
 
-`DisplayManager` uses two techniques to avoid this.
-
-**1. Full redraw throttle**
-
-A full redraw — clearing the screen and drawing everything from scratch — only happens when the screen changes or every 5 seconds:
+`DisplayManager` never draws directly to the LCD. Instead it owns a full-screen `M5Canvas` — an off-screen buffer the same size as the display (135×240). Every frame it clears that canvas, draws the *entire* screen onto it (pet sprite, stat bars, mood word, nav bar — everything), and then copies the finished image to the real LCD in a single `pushSprite()` call:
 
 ```cpp
-bool screenChanged   = (lastRenderedScreen != SCREEN_INTERACT);
-bool intervalElapsed = (millis() - lastFullRedrawTime >= STATUS_UPDATE_INTERVAL);
-
-if (screenChanged || intervalElapsed) {
-    clearScreen();
-    // ... draw everything ...
+void DisplayManager::renderDisplay(..., ScreenState screenState) {
+    // Draw the whole screen onto the off-screen canvas...
+    switch (screenState) {
+        case SCREEN_MAIN:     renderMainScreen(...);     break;
+        case SCREEN_STATS:    renderStatsScreen(...);    break;
+        case SCREEN_INTERACT: renderInteractScreen(...); break;
+    }
+    pushCanvas();   // ...then copy the finished canvas to the LCD in one operation
 }
 ```
 
-Between full redraws, the screen just holds whatever was drawn last. Stat values change slowly enough that a 5-second stale display is fine.
+Because the LCD is only ever updated by that one push of a fully-drawn frame, the user never sees a half-drawn intermediate state — there is no flicker, even though the **whole screen is redrawn every single loop**. This is what **double-buffering** means: one buffer (the canvas) is drawn to while the other (the LCD) is shown, then they swap.
 
-**2. Fast path for elements that change quickly**
+### Why redraw everything every frame instead of only what changed?
 
-Some things change immediately — like the action menu selection when the player presses B or C. For these, only the small area that changed is redrawn. On the Interact screen:
+An earlier version of this project tried to be clever: it threw most frames away with a 5-second redraw throttle and only repainted small regions (like the menu strip) when they changed, tracking each fast-changing element with its own "did this change?" variable. That saved SPI traffic, but it had two costs — stat changes could sit stale on screen for up to 5 seconds, and every animated element needed its own bookkeeping.
 
-```cpp
-if (menu.getCurrentActionIndex() != lastMenuActionIndex) {
-    drawContextualStatBar(...);   // redraw only the stat bar strip
-    drawMenuIndicator(...);       // redraw only the menu zone
-    lastMenuActionIndex = menu.getCurrentActionIndex();
-}
-```
+The off-screen canvas removed the need for all of that. Pushing one pre-drawn 135×240 buffer is fast enough to do on every loop without flicker, so the throttle and the per-region fast-paths were deleted (Task 13a). The rule is now simply: **redraw the whole canvas every frame, then push it once.** Stat changes and the sprite animation both appear instantly, and there are no `last...`-changed flags to keep in sync.
 
-This erases and redraws only the bottom ~40 pixels of the screen. The pet face and mood text above are untouched and never flicker.
-
-The general rule: **redraw the whole screen rarely; redraw small regions immediately**. Track what changed using `last...` variables, and only draw when the value differs from what is already on screen.
+The one piece of `last...` tracking that remains is `lastRenderedScreen`, and it has nothing to do with flicker — it just lets `DisplayManager` notice when the user has switched screens so it can restart the sprite animation cleanly from frame 0.
 
 ---
 
@@ -840,7 +843,7 @@ The general rule: **redraw the whole screen rarely; redraw small regions immedia
 Before reading this section, make sure you have read `SPRITE_GUIDE.md`. That guide
 covers how to create and convert sprites step by step. This section explains the
 *why* behind the technical choices — why images cannot just be loaded from a file,
-what RGB565 and ARGB8888 actually mean, and why the `PROGMEM` keyword matters.
+what RGB565 and ABGR8888 actually mean, and why the `PROGMEM` keyword matters.
 
 ### Why not just load a PNG or JPEG?
 
@@ -855,32 +858,33 @@ program is compiled, and bake that array directly into the firmware. When the pr
 runs, the pixel data is already sitting in flash, ready to draw without any decoding step.
 That is what the `piskel_converter` tool does.
 
-### Two colour formats: ARGB8888 and RGB565
+### Two colour formats: ABGR8888 and RGB565
 
 Every digital colour is made up of red, green, and blue channels mixed together.
 The difference between formats is how many bits are used to describe each channel,
 and whether an alpha (transparency) channel is included.
 
-**ARGB8888 — what Piskel exports**
+**ABGR8888 — what Piskel exports**
 
-Piskel stores each pixel as a 32-bit number: 8 bits for alpha, 8 for red, 8 for green,
-8 for blue. That gives 256 possible values per channel — fine colour detail, but 4 bytes
-per pixel.
+Piskel stores each pixel as a 32-bit number: 8 bits for alpha, then 8 for blue, 8 for
+green, and 8 for red. Watch the order — it is **ABGR**, not the more familiar ARGB, so
+the red and blue bytes sit in opposite positions. (Green is in the middle either way,
+which is why a red/blue mix-up is easy to miss until you draw a red or blue pixel.)
 
 ```
-One pixel in ARGB8888 — 32 bits (4 bytes):
+One pixel in ABGR8888 — 32 bits (4 bytes):
 
 Bit: 31      24 23      16 15       8 7        0
      ┌─────────┬──────────┬──────────┬──────────┐
-     │  Alpha  │   Red    │  Green   │   Blue   │
+     │  Alpha  │   Blue   │  Green   │   Red    │
      │  8 bits │  8 bits  │  8 bits  │  8 bits  │
      └─────────┴──────────┴──────────┴──────────┘
 
-Example: 0xFF5C996E
+Example: 0xFF689858
   Alpha = 0xFF = 255 → fully opaque
-  Red   = 0x5C = 92
-  Green = 0x99 = 153
-  Blue  = 0x6E = 110
+  Blue  = 0x68 = 104
+  Green = 0x98 = 152
+  Red   = 0x58 = 88
   Result: a sage green colour
 ```
 
@@ -916,10 +920,10 @@ Step 1 — Check alpha.
   If alpha == 0, the pixel is transparent.
   Write the colour key (0x1FF8) and stop.
 
-Step 2 — Extract the colour channels from the 32-bit ARGB value.
-  Red   = (pixel >> 16) & 0xFF   → 8-bit value, 0–255
+Step 2 — Extract the colour channels from the 32-bit ABGR value.
+  Blue  = (pixel >> 16) & 0xFF   → 8-bit value, 0–255
   Green = (pixel >>  8) & 0xFF   → 8-bit value, 0–255
-  Blue  = (pixel >>  0) & 0xFF   → 8-bit value, 0–255
+  Red   = (pixel >>  0) & 0xFF   → 8-bit value, 0–255
 
 Step 3 — Shrink each channel to fit the RGB565 bit widths.
   Red5   = Red   >> 3   (keep top 5 bits, discard bottom 3)
@@ -933,16 +937,16 @@ Step 5 — Swap the two bytes before storing.
   stored = (rgb565 >> 8) | (rgb565 << 8)
   (Why this is necessary is explained in the byte-ordering section below.)
 
-Example with 0xFF5C996E:
-  Red   = 0x5C = 92  → 92  >> 3 = 11  → 0b01011
-  Green = 0x99 = 153 → 153 >> 2 = 38  → 0b100110
-  Blue  = 0x6E = 110 → 110 >> 3 = 13  → 0b01101
+Example with 0xFF689858:
+  Blue  = 0x68 = 104 → 104 >> 3 = 13  → 0b01101
+  Green = 0x98 = 152 → 152 >> 2 = 38  → 0b100110
+  Red   = 0x58 = 88  → 88  >> 3 = 11  → 0b01011
 
-  Pack: (11 << 11) | (38 << 5) | 13 = 0x5CCD ✓
+  Pack: (Red 11 << 11) | (Green 38 << 5) | (Blue 13) = 0x5CCD ✓
 ```
 
 You can see this exact logic in `tools/piskel_converter/main.cpp` inside the
-`convertArgbToRgb565()` function.
+`convertAbgrToRgb565()` function.
 
 ### The transparent colour key
 
@@ -986,19 +990,19 @@ RAM:         ~200 KB  — small, read-write, used by running code, the display
                         buffer, the stack, and any variables your program creates
 ```
 
-A single 32×32 sprite at 2 bytes per pixel = 2,048 bytes. Seven states of sprites =
-~14 KB. That is manageable in either location, but if you add animation frames later
-(Task 13), the size grows quickly. Storing sprite arrays in flash by default is the
-safe habit to build now.
+A single 80×80 sprite at 2 bytes per pixel = 12,800 bytes. The four mood sprites
+(NEUTRAL/HAPPY/UNWELL/HUNGRY) together are ~50 KB. That is manageable in flash, but the
+moment you add animation frames — each mood gaining a second frame doubles its cost — the
+total grows quickly. That is exactly why sprite arrays live in flash by default, not RAM.
 
 The `PROGMEM` keyword (from `<pgmspace.h>`) marks an array for flash storage:
 
 ```cpp
 // Without PROGMEM — may end up in RAM
-static const uint16_t sprite_pet_idle[1][1024] = { ... };
+static const uint16_t sprite_pet_idle[1][6400] = { ... };  // [frames][80*80]
 
 // With PROGMEM — guaranteed to live in flash
-static const uint16_t PROGMEM sprite_pet_idle[1][1024] = { ... };
+static const uint16_t PROGMEM sprite_pet_idle[1][6400] = { ... };
 ```
 
 On the ESP32, flash memory is memory-mapped — the CPU can read it using normal array
@@ -1076,7 +1080,7 @@ If `menu.update(buttons)` ran on every frame regardless of which screen was acti
 1. Switch to the Interact screen (handled by `NavigationManager`)
 2. Silently advance the action selection in the menu (handled by `menu.update()`)
 
-The player would arrive at the Interact screen with a different action already selected — and have no idea why.
+The user would arrive at the Interact screen with a different action already selected — and have no idea why.
 
 ### The fix — check the screen before passing input
 
