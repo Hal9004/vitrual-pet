@@ -77,8 +77,8 @@ Everyone does these. Each is **a small, safe change with an obvious result.** Op
   `// prefs.putInt("happy", pet.getHappy());`. Make the pet very happy, Save, power-cycle →
   happiness is **not** remembered (it reverts). Un-comment to restore.
 - **Dial 3 — the first-boot default.** In `load()`, the second value in
-  `prefs.getInt("hungry", Pet::DEFAULT_HUNGRY)` is what a brand-new pet uses before any save
-  exists. Change it (e.g. to `90`) → a fresh/cleared pet starts almost starving.
+  `prefs.getInt("fullness", Pet::DEFAULT_FULLNESS)` is what a brand-new pet uses before any
+  save exists. Change it (e.g. to `10`) → a fresh/cleared pet starts almost empty (starving).
 
 Predict-then-test: pairs say what will survive a reboot before pulling the power.
 
@@ -91,8 +91,8 @@ next time — each value stored under a name (a key)."*
 
 **Taught by the teacher (short):** the device's normal memory is wiped when it powers off.
 **Saving** writes values to special long-term storage. When you press Save, `save()` writes
-each stat under a **name** — `putInt("hungry", ...)`. On boot, `load()` reads each one back by
-the **same name** — `getInt("hungry", ...)`. The name (the **key**) is how save and load find
+each stat under a **name** — `putInt("fullness", ...)`. On boot, `load()` reads each one back by
+the **same name** — `getInt("fullness", ...)`. The name (the **key**) is how save and load find
 the same value. If nothing was ever saved, `getInt` uses its **default** (the second argument)
 — that's why a brand-new pet still boots with sensible stats.
 

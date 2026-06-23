@@ -49,8 +49,8 @@ There is no switch to flip yet — today you meet the pet in its simplest form.
    `commit` your changes at the end of the session — these are the only Git commands
    you need today.)
 2. **Build + flash** to the M5StickC.
-3. **The reveal:** an empty device → *your pet, alive on screen,* with its hunger bar
-   slowly filling. That build-and-watch-it-appear moment is the hook.
+3. **The reveal:** an empty device → *your pet, alive on screen,* with its fullness bar
+   slowly draining. That build-and-watch-it-appear moment is the hook.
 
 > **Preview the flag model (sets up Session 2):** "Most of the team that runs this pet
 > is asleep right now. In future sessions you'll flip a switch — like `ENABLE_SOUND` —
@@ -82,12 +82,12 @@ Everyone does these. Each is **one value, an obvious result, and a one-line undo
 - **Dial 1 — your pet's name.** In `lib/Pet/pet.cpp`, find `petName = "Pixel";` and change
   `"Pixel"` to your own name. Reflash → the title shows your name.
 - **Dial 2 — how it starts.** In `lib/Pet/pet.h`, the `DEFAULT_*` values are the pet's
-  starting stats. Change `DEFAULT_HUNGRY` from `30` to `90`. Reflash → your pet starts
-  *almost starving* (bar nearly full). Try `0` → it starts stuffed.
+  starting stats. Change `DEFAULT_FULLNESS` from `80` to `10`. Reflash → your pet starts
+  *almost starving* (bar nearly empty). Try `100` → it starts completely full.
 - **Dial 3 — how fast it gets hungry.** In `lib/Timer/time_manager.cpp`, find
-  `HUNGER_INCREASE_INTERVAL` (it's `9000` — meaning "+1 hunger every 9000 ms"). Change it
-  to `2000` → hunger climbs much faster.
-  - *Teacher tip:* the real pet takes ~10 minutes to get fully hungry — too slow to watch.
+  `FULLNESS_DECAY_INTERVAL` (it's `6000` — meaning "−1 fullness every 6000 ms"). Change it
+  to `2000` → fullness drops much faster.
+  - *Teacher tip:* the real pet takes ~8 minutes to starve — too slow to watch.
     Uncomment `#define FAST_TEST` at the top of `time_manager.cpp` so changes are visible
     in seconds, and re-comment it before committing.
 
@@ -101,14 +101,14 @@ Predict-then-flash: have pairs say what they *think* will happen before reflashi
 how the pet behaves."*
 
 **Taught by the teacher (short):** the box metaphor. `petName` is a box holding text;
-`DEFAULT_HUNGRY` is a box holding a number; `HUNGER_INCREASE_INTERVAL` is a box holding
+`DEFAULT_FULLNESS` is a box holding a number; `FULLNESS_DECAY_INTERVAL` is a box holding
 how-many-milliseconds. You just changed what's in the boxes and the pet changed with it —
 *that's all a variable is.*
 
 **Pointed to in the code (for the readers):**
 - `petName = "Pixel";` in `lib/Pet/pet.cpp` — a text variable.
 - the `DEFAULT_*` constants in `lib/Pet/pet.h` — number variables (starting stats).
-- `HUNGER_INCREASE_INTERVAL` in `lib/Timer/time_manager.cpp` — a number variable that
+- `FULLNESS_DECAY_INTERVAL` in `lib/Timer/time_manager.cpp` — a number variable that
   controls timing.
 
 Tie it back: every dial in the Play block was just "change the value in a box."
@@ -135,11 +135,11 @@ These extend today's feature (the stat/decay system) and stay in your two worksh
 - **★ Predict the bars.** Change three different `DEFAULT_*` stats at once and, *before*
   flashing, write down how full each bar will be. Flash and check. *(Reinforces:
   many independent variables.)*
-- **★★ Change the speed of the drop, not just the start.** In `time_manager.cpp`, find
-  `HUNGER_INCREASE_AMOUNT` (it's `1`). Make it `5` → hunger now jumps 5 at a time. Reason
+- **★★ Change the size of the drop, not just the speed.** In `time_manager.cpp`, find
+  `FULLNESS_DECAY_AMOUNT` (it's `1`). Make it `5` → fullness now drops 5 at a time. Reason
   about the difference between *how much* (amount) and *how often* (interval).
 - **★★★ Add a brand-new automatic change *(write code)*.** `time_manager.cpp` already
-  contains a worked twin: `applyHungerIncrease()`, and a comment that says *"to add a new
+  contains a worked twin: `applyFullnessDecay()`, and a comment that says *"to add a new
   automatic stat change, add a method and call it in `update()`."* Copy that method,
   rename it, point it at a different stat, and call it from `update()`. Reflash and watch
   your new rule run. *(This is a first taste of writing a function — Session 2's concept.)*
@@ -161,12 +161,12 @@ These extend today's feature (the stat/decay system) and stay in your two worksh
 This plan is drafted ahead of the `session-1-start` branch. Before the session ships,
 run these on the device with the all-`ENABLE_*`-OFF build:
 
-- [ ] All flags OFF compiles and flashes; the pet appears on screen with its hunger bar.
+- [ ] All flags OFF compiles and flashes; the pet appears on screen with its fullness bar.
 - [ ] Dial 1 (`petName`) changes the on-screen title.
-- [ ] Dial 2 (`DEFAULT_HUNGRY` 30→90) makes the pet start near-starving — obvious on flash.
-- [ ] Dial 3 (`HUNGER_INCREASE_INTERVAL`) visibly changes decay speed (use `FAST_TEST`).
+- [ ] Dial 2 (`DEFAULT_FULLNESS` 80→10) makes the pet start near-starving — obvious on flash.
+- [ ] Dial 3 (`FULLNESS_DECAY_INTERVAL`) visibly changes decay speed (use `FAST_TEST`).
 - [ ] The Piskel → converter → flash pipeline produces a student sprite on screen.
-- [ ] The ★★★ challenge (copy `applyHungerIncrease`) compiles and runs inside the 25' block.
+- [ ] The ★★★ challenge (copy `applyFullnessDecay`) compiles and runs inside the 25' block.
 
 ---
 

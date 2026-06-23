@@ -83,10 +83,10 @@ an obvious result, a one-line undo.**
 
 - **Dial 1 — look happy more easily.** Find `if (happy > 70)`. Change `70` to `40` → the pet
   wears its happy face far more of the time.
-- **Dial 2 — look hungry sooner.** Find `if (hungry > 70)`. Change `70` to `40` → the hungry
-  face shows up earlier as hunger rises.
+- **Dial 2 — look hungry sooner.** Find `if (fullness < 30)`. Change `30` to `60` → the hungry
+  face shows up sooner, while there's still food left.
 - **Dial 3 — change who wins (reorder the ladder).** Move the `if (happy > 70)` block **above**
-  the `if (hungry > 70)` block. Now when the pet is *both* hungry and happy, it shows **happy**
+  the `if (fullness < 30)` block. Now when the pet is *both* hungry and happy, it shows **happy**
   instead of hungry — because the first matching rule wins.
 
 Predict-then-flash: nudge a stat to the edge of a rule and guess which face appears first.
@@ -161,7 +161,7 @@ Run on device with the day-start build (S2–5 flags on, mood/multiscreen off), 
 - [ ] Day-start build compiles; the pet has one face and two screens (Main + Interact).
 - [ ] Turning on both flags adds the changing face and the Stats screen.
 - [ ] Dial 1 (`happy > 70`→`40`) shows the happy face more readily.
-- [ ] Dial 2 (`hungry > 70`→`40`) shows the hungry face sooner.
+- [ ] Dial 2 (`fullness < 30`→`60`) shows the hungry face sooner.
 - [ ] Dial 3 (reorder happy above hungry) flips which face wins when both are true.
 - [ ] ★★ `MOOD_SAD` shows when happiness is low; ★★★ `MOOD_TIRED` shows with its own sprite.
 

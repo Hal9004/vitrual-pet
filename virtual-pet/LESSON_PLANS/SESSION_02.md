@@ -82,7 +82,7 @@ Keep the habits: **read the `.h` to use it**, and your **workshop is three files
 Everyone does these. Each is **one value inside an action, an obvious result, one-line undo.**
 Open `lib/Pet/pet.cpp` and find the care actions:
 
-- **Dial 1 — how much feeding helps.** In `feed()`, find `setHungry(hungry - 30);`. Change
+- **Dial 1 — how much feeding helps.** In `feed()`, find `setFullness(fullness + 30);`. Change
   `30` to `60`. Reflash → feeding fills the pet far more in one press.
 - **Dial 2 — how much playing cheers it up.** In `play()`, find `setHappy(happy + 25);`.
   Change `25` to `5` (barely helps) or `50` (huge boost) and feel the difference.
