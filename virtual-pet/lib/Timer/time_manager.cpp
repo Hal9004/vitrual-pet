@@ -9,8 +9,8 @@
 // ---------------------------------------------------------------------------
 // STAT BALANCE — two complete sets of decay rates.
 //
-// The pet has three fatal stats: hunger (dies at 100), energy and happiness
-// (die at 0). These constants decide how fast each one moves, and therefore how
+// The pet has three fatal stats: fullness, energy and happiness (all die at 0).
+// These constants decide how fast each one moves, and therefore how
 // long the pet survives if you ignore it. Getting them right is "balancing" how
 // the pet behaves — too fast and the pet is impossible to keep alive, too slow
 // and nothing you do seems to matter.
@@ -18,8 +18,9 @@
 // We keep TWO sets and pick one with the FAST_TEST switch at the top of this file:
 //
 //   * The SHIPPED set (the #else branch) is the real, balanced behaviour. An
-//     untouched pet takes about 10–11 minutes to reach a fatal stat — long enough
-//     that caring for it feels meaningful, short enough to demo in one sitting.
+//     untouched pet starves in about 8 minutes — fullness is tuned to empty first,
+//     before happiness or energy, so the on-screen bar is what drives the death.
+//     Long enough that caring for it feels meaningful, short enough to demo.
 //
 //   * The QUICK-TEST set (the #ifdef FAST_TEST branch) speeds everything up so
 //     the pet reaches a fatal stat in about a minute. Uncomment the
@@ -37,9 +38,9 @@
 // ---------------------------------------------------------------------------
 #ifdef FAST_TEST
 
-// --- QUICK-TEST set: a fatal stat is reached in roughly one minute. ---
-const unsigned long HUNGER_INCREASE_INTERVAL = 1000;        // hunger +1 every 1 s
-const int HUNGER_INCREASE_AMOUNT = 1;
+// --- QUICK-TEST set: the pet starves in under a minute (fullness empties first). ---
+const unsigned long FULLNESS_DECAY_INTERVAL = 600;         // fullness -1 every 0.6 s (empties first)
+const int FULLNESS_DECAY_AMOUNT = 1;
 const unsigned long HAPPINESS_DECAY_INTERVAL = 1000;        // happiness -1 every 1 s
 const int HAPPINESS_DECAY_AMOUNT = 1;
 const unsigned long ENERGY_DRAIN_INTERVAL = 1000;           // energy -1 every 1 s
@@ -51,9 +52,9 @@ const int SICKNESS_ACCUMULATION_AMOUNT = 1;
 
 #else
 
-// --- SHIPPED set: a fatal stat is reached in roughly 10–11 minutes. ---
-const unsigned long HUNGER_INCREASE_INTERVAL = 9000;        // hunger +1 every 9 s
-const int HUNGER_INCREASE_AMOUNT = 1;
+// --- SHIPPED set: the pet starves in about 8 minutes (fullness empties first). ---
+const unsigned long FULLNESS_DECAY_INTERVAL = 6000;        // fullness -1 every 6 s (empties first)
+const int FULLNESS_DECAY_AMOUNT = 1;
 const unsigned long HAPPINESS_DECAY_INTERVAL = 9000;        // happiness -1 every 9 s
 const int HAPPINESS_DECAY_AMOUNT = 1;
 const unsigned long ENERGY_DRAIN_INTERVAL = 8000;           // energy -1 every 8 s
@@ -76,7 +77,7 @@ const int CLEANLINESS_DANGER_THRESHOLD = 30;
 // Setting them to 0 means the first check in update() will always find
 // that "enough time has passed", so the first decay fires immediately.
 TimerManager::TimerManager()
-    : lastHungerIncreaseTime(0),
+    : lastFullnessDecayTime(0),
       lastHappinessDecayTime(0),
       lastEnergyDrainTime(0),
       lastCleanlinessDecayTime(0),
@@ -88,7 +89,7 @@ TimerManager::TimerManager()
 // It delegates each timed job to its own private helper method.
 // To add a new automatic stat change, add a method and call it here.
 void TimerManager::update(Pet& pet) {
-    applyHungerIncrease(pet);
+    applyFullnessDecay(pet);
     applyHappinessDecay(pet);
     applyEnergyDrain(pet);
     applyCleanlinessDecay(pet);
@@ -96,15 +97,16 @@ void TimerManager::update(Pet& pet) {
 }
 
 
-// applyHungerIncrease()
-// Checks whether HUNGER_INCREASE_INTERVAL milliseconds have passed since
-// hunger was last increased. If yes, increases hunger and resets the timer.
-void TimerManager::applyHungerIncrease(Pet& pet) {
+// applyFullnessDecay()
+// Checks whether FULLNESS_DECAY_INTERVAL milliseconds have passed since
+// fullness was last decreased. If yes, decreases fullness and resets the timer.
+// The pet gets hungrier (less full) over time whether you feed it or not.
+void TimerManager::applyFullnessDecay(Pet& pet) {
     unsigned long currentTime = millis();
 
-    if (currentTime - lastHungerIncreaseTime > HUNGER_INCREASE_INTERVAL) {
-        pet.setHungry(pet.getHungry() + HUNGER_INCREASE_AMOUNT);
-        lastHungerIncreaseTime = currentTime;
+    if (currentTime - lastFullnessDecayTime > FULLNESS_DECAY_INTERVAL) {
+        pet.setFullness(pet.getFullness() - FULLNESS_DECAY_AMOUNT);
+        lastFullnessDecayTime = currentTime;
     }
 }
 

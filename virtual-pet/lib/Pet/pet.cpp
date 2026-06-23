@@ -9,14 +9,14 @@
 // the constructor, StorageManager::load(), and reset() can never drift out
 // of agreement about what "a new pet" means.
 //
-// The colon-introduced list (`: hungry(...), tired(...), ...`) is a member
+// The colon-introduced list (`: fullness(...), tired(...), ...`) is a member
 // initialiser list — it sets each field before the constructor body runs.
 // It is the canonical C++ way to give member variables their initial values.
 Pet::Pet()
-    : hungry(DEFAULT_HUNGRY), tired(DEFAULT_TIRED), happy(DEFAULT_HAPPY),
+    : fullness(DEFAULT_FULLNESS), tired(DEFAULT_TIRED), happy(DEFAULT_HAPPY),
       sick(DEFAULT_SICK), sad(DEFAULT_SAD), cleanliness(DEFAULT_CLEANLINESS),
       energised(DEFAULT_ENERGISED), currentState(STATE_IDLE),
-      lastHungerAlertTime(0), lastSicknessAlertTime(0) {
+      lastFullnessAlertTime(0), lastSicknessAlertTime(0) {
     petName = "Pixel";
 }
 
@@ -37,7 +37,7 @@ const char* Pet::getPetName() const {
 // The `const` at the end of each declaration is C++'s way of promising that
 // the method does not modify the object — useful both as documentation and
 // because the compiler enforces it.
-int Pet::getHungry() const      { return hungry; }
+int Pet::getFullness() const      { return fullness; }
 int Pet::getTired() const       { return tired; }
 int Pet::getHappy() const       { return happy; }
 int Pet::getSick() const        { return sick; }
@@ -51,7 +51,7 @@ int Pet::getEnergised() const   { return energised; }
 // becomes 100, and pet.setHappy(-5) silently becomes 0. Constraining inside
 // the setter (and not in a separate "constrainAll" sweep) means each setter
 // only touches the one stat it owns.
-void Pet::setHungry(int value)      { hungry      = constrainValue(value); }
+void Pet::setFullness(int value)      { fullness      = constrainValue(value); }
 void Pet::setTired(int value)       { tired       = constrainValue(value); }
 void Pet::setHappy(int value)       { happy       = constrainValue(value); }
 void Pet::setSick(int value)        { sick        = constrainValue(value); }
@@ -69,7 +69,7 @@ void Pet::setEnergised(int value)   { energised   = constrainValue(value); }
 
 void Pet::feed() {
     setState(STATE_EATING);                  // Signal that the pet is now eating
-    setHungry(hungry - 30);                  // Reduce hunger
+    setFullness(fullness + 30);              // Eating fills the pet up
     setHappy(happy + 10);                    // Slightly increase happiness
     setEnergised(energised - 5);             // Small energy cost
 }
@@ -78,7 +78,7 @@ void Pet::sleep() {
     setState(STATE_SLEEPING);                // Signal that the pet is now sleeping
     setTired(tired - 40);                    // Reduce tiredness significantly
     setEnergised(energised + 30);            // Restore energy
-    setHungry(hungry + 10);                  // Wake up hungry
+    setFullness(fullness - 10);              // Sleeping burns through a little fullness
 }
 
 void Pet::play() {
@@ -86,7 +86,7 @@ void Pet::play() {
     setHappy(happy + 25);                    // Significantly increase happiness
     setTired(tired + 20);                    // Increase tiredness
     setEnergised(energised - 5);             // Use a little energy (kept low so repeated play is not an instant-kill)
-    setHungry(hungry + 15);                  // Playing makes them hungry
+    setFullness(fullness - 15);              // Playing burns off fullness (makes them hungrier)
 }
 
 void Pet::bathe() {
@@ -148,16 +148,16 @@ void Pet::updateState(
 
     #ifdef ENABLE_SOUND
     // The alerts exist only to make a sound, so the whole block lives behind the
-    // sound switch. Check whether a hunger alert is due — same millis() pattern as
-    // TimerManager — then play it and reset the timer.
-    if (hungry >= HUNGER_ALERT_THRESHOLD) {
-        if (millis() - lastHungerAlertTime >= HUNGER_ALERT_INTERVAL) {
+    // sound switch. Check whether a low-fullness (hunger) alert is due — same
+    // millis() pattern as TimerManager — then play it and reset the timer.
+    if (fullness <= FULLNESS_ALERT_THRESHOLD) {
+        if (millis() - lastFullnessAlertTime >= FULLNESS_ALERT_INTERVAL) {
             speaker.playHungerAlertSound();
-            lastHungerAlertTime = millis();
+            lastFullnessAlertTime = millis();
         }
     }
 
-    // Check whether a sickness alert is due — same pattern as the hunger alert above.
+    // Check whether a sickness alert is due — same pattern as the fullness alert above.
     if (sick >= SICKNESS_ALERT_THRESHOLD) {
         if (millis() - lastSicknessAlertTime >= SICKNESS_ALERT_INTERVAL) {
             speaker.playSicknessAlertSound();
@@ -211,10 +211,10 @@ void Pet::updateState(
 
 // isDead()
 // Checks whether any critical stat has reached a fatal level.
-// Hunger at 100 means the pet has starved. Energy or happiness at 0 means
+// Fullness at 0 means the pet has starved. Energy or happiness at 0 means
 // the pet has given up. Any one of these ends the pet's life.
 bool Pet::isDead() const {
-    if (hungry >= 100) {
+    if (fullness <= 0) {
         return true;
     }
     if (energised <= 0) {
@@ -237,7 +237,7 @@ void Pet::reset(
     SpeakerManager& speaker
     #endif
 ) {
-    hungry      = DEFAULT_HUNGRY;
+    fullness      = DEFAULT_FULLNESS;
     tired       = DEFAULT_TIRED;
     happy       = DEFAULT_HAPPY;
     sick        = DEFAULT_SICK;
@@ -247,7 +247,7 @@ void Pet::reset(
     currentState = STATE_IDLE;  // Clear death state so the next updateState() starts fresh
 
     // Clear the alert timers so no leftover rate-limit state carries into the new life.
-    lastHungerAlertTime  = 0;
+    lastFullnessAlertTime  = 0;
     lastSicknessAlertTime = 0;
 
     #ifdef ENABLE_SOUND
@@ -261,8 +261,8 @@ void Pet::reset(
 // Maps the pet's current stats to one of the four visual moods, using a fixed
 // priority order so the sprite always shows the single most important thing.
 // We check the worst problems first: being unwell matters more than being
-// hungry, which matters more than being happy. The first rule that matches
-// wins and we return straight away; if none match, the pet is neutral.
+// hungry (low fullness), which matters more than being happy. The first rule
+// that matches wins and we return straight away; if none match, it is neutral.
 //
 // Read this as a ladder of "if this is true, stop here": as soon as one
 // condition is met its mood is returned, so the rules below it never run.
@@ -278,7 +278,7 @@ MoodSprite Pet::computeMood() const {
     if (sick > 50) {
         return MOOD_UNWELL;
     }
-    if (hungry > 70) {
+    if (fullness < 30) {
         return MOOD_HUNGRY;
     }
     if (happy > 70) {

@@ -31,8 +31,8 @@ private:
     // The type 'unsigned long' holds milliseconds without going negative.
     // -----------------------------------------------------------------
 
-    // Tracks when hunger was last increased.
-    unsigned long lastHungerIncreaseTime;
+    // Tracks when fullness was last decreased.
+    unsigned long lastFullnessDecayTime;
 
     // Tracks when happiness was last decreased.
     unsigned long lastHappinessDecayTime;
@@ -52,9 +52,9 @@ private:
     // read, and modify independently.
     // -----------------------------------------------------------------
 
-    // Increases hunger by a fixed amount every few seconds.
-    // The pet gets hungry whether you interact with it or not.
-    void applyHungerIncrease(Pet& pet);
+    // Decreases fullness by a fixed amount every few seconds.
+    // The pet gets hungrier whether you interact with it or not.
+    void applyFullnessDecay(Pet& pet);
 
     // Decreases happiness by a fixed amount every few seconds.
     // The pet gets sad if you ignore it.

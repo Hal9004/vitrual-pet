@@ -58,7 +58,7 @@ enum ScreenState {
 // -----------------------------------------------------------------------
 enum RelevantStat {
     STAT_HAPPINESS,
-    STAT_HUNGER,
+    STAT_FULLNESS,
     STAT_ENERGY,
     STAT_CLEANLINESS,
     STAT_SICKNESS,

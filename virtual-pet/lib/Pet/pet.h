@@ -23,7 +23,7 @@ enum PetState {
 class Pet {
 private:
     // Pet condition values (0-100 scale)
-    int hungry;       // 0 = not hungry, 100 = starving
+    int fullness;     // 100 = full / well-fed, 0 = empty / starving
     int tired;        // 0 = not tired, 100 = exhausted
     int happy;        // 0 = sad, 100 = very happy
     int sick;         // 0 = healthy, 100 = very sick
@@ -37,15 +37,16 @@ private:
 
     // Timestamps used to rate-limit the alerts — same millis() pattern as TimerManager.
     // The pet plays each alert at most once per interval (see updateState()).
-    unsigned long lastHungerAlertTime;
+    unsigned long lastFullnessAlertTime;
     unsigned long lastSicknessAlertTime;
 
-    // How high a stat must be before an alert fires.
-    static const int HUNGER_ALERT_THRESHOLD   = 80;
+    // The level at which each alert fires: fullness alerts when it drops this
+    // LOW (the pet is getting hungry), sickness alerts when it climbs this HIGH.
+    static const int FULLNESS_ALERT_THRESHOLD = 20;
     static const int SICKNESS_ALERT_THRESHOLD = 80;
 
     // How many milliseconds must pass between consecutive alerts.
-    static const unsigned long HUNGER_ALERT_INTERVAL   = 15000;
+    static const unsigned long FULLNESS_ALERT_INTERVAL   = 15000;
     static const unsigned long SICKNESS_ALERT_INTERVAL = 15000;
 
     // constrainValue() — returns value forced into the legal 0..100 range.
@@ -54,7 +55,7 @@ private:
 public:
     // Starting values for a brand-new pet — used by the constructor and by
     // StorageManager::load() so both share a single source of truth.
-    static const int DEFAULT_HUNGRY      = 30;
+    static const int DEFAULT_FULLNESS    = 80;
     static const int DEFAULT_TIRED       = 20;
     static const int DEFAULT_HAPPY       = 70;
     static const int DEFAULT_SICK        = 0;
@@ -66,7 +67,7 @@ public:
     Pet();
 
     // Getters for each condition
-    int getHungry() const;
+    int getFullness() const;
     int getTired() const;
     int getHappy() const;
     int getSick() const;
@@ -75,7 +76,7 @@ public:
     int getEnergised() const;
 
     // Setters for each condition
-    void setHungry(int value);
+    void setFullness(int value);
     void setTired(int value);
     void setHappy(int value);
     void setSick(int value);
@@ -84,7 +85,7 @@ public:
     void setEnergised(int value);
 
     // Utility methods for pet care
-    void feed();           // Decreases hunger, increases happy
+    void feed();           // Increases fullness, increases happy
     void sleep();          // Decreases tired, increases energised
     void play();           // Increases happy, increases tired, decreases energised
     void bathe();          // Increases cleanliness, decreases tired
@@ -95,7 +96,7 @@ public:
     // display uses it to pick the sprite picture and the mood word.
     MoodSprite computeMood() const;
 
-    // Returns true if any stat has reached a fatal level (hunger=100, energy=0, or happy=0)
+    // Returns true if any stat has reached a fatal level (fullness=0, energy=0, or happy=0)
     bool isDead() const;
 
     // Returns the pet's display name for use in the title zone

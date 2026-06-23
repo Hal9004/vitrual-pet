@@ -76,7 +76,7 @@ void handleDeathScreen() {
 // automatic stat timers, cycle the menu when the Interact screen is showing, let
 // navigation switch screens, confirm a chosen action, and play on a shake gesture.
 void updateLivePet() {
-    // Run all automatic stat changes (hunger increase, happiness decay, energy drain).
+    // Run all automatic stat changes (fullness decay, happiness decay, energy drain).
     // The rules for what changes and how fast live in TimerManager, not here.
     timers.update(myPet);
 
@@ -159,7 +159,7 @@ void renderCurrentScreen() {
     }
 
     display.renderDisplay(
-        myPet.getHappy(), myPet.getHungry(), myPet.getEnergised(),
+        myPet.getHappy(), myPet.getFullness(), myPet.getEnergised(),
         myPet.getCleanliness(), myPet.getSick(), myPet.computeMood(),
         selectedActionName,
         selectedActionStat,
@@ -237,7 +237,7 @@ void loop() {
     }
 
     // Run the state machine — sets STATE_DEAD when a stat hits a fatal level, and
-    // plays the pet's own hunger/sickness/death sounds when a stat crosses its
+    // plays the pet's own fullness/sickness/death sounds when a stat crosses its
     // warning threshold. Runs first so the dead check below is always up to date.
     myPet.updateState(
         #ifdef ENABLE_SOUND

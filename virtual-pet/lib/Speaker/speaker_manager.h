@@ -31,7 +31,7 @@ public:
     // Plays a four-note ascending fanfare when the pet is reset and ready to play again.
     void playResetSound();
 
-    // Plays a two-beep urgent warning when the pet's hunger is dangerously high.
+    // Plays a two-beep urgent warning when the pet's fullness is dangerously low.
     void playHungerAlertSound();
 
     // Plays a two-beep warning at a lower pitch when the pet's sickness is dangerously high.

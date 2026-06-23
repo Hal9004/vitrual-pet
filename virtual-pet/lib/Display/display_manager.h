@@ -38,7 +38,7 @@ private:
 
     // Per-stat bar positions within STATS_ZONE
     static constexpr StatBarZone HAPPY_BAR_ZONE  = {  26,  36 };
-    static constexpr StatBarZone HUNGER_BAR_ZONE = {  48,  58 };
+    static constexpr StatBarZone FULLNESS_BAR_ZONE = {  48,  58 };
     static constexpr StatBarZone ENERGY_BAR_ZONE = {  70,  80 };
     static constexpr StatBarZone CLEAN_BAR_ZONE  = {  92, 102 };
     static constexpr StatBarZone SICK_BAR_ZONE   = { 114, 124 };
@@ -49,6 +49,14 @@ private:
     // -----------------------------------------------------------------------
     static constexpr int         MAIN_FACE_CENTER_Y = 110;
     static constexpr int         MAIN_MOOD_Y        = 155;
+    // A single fullness bar on the Main screen, drawn in the band between the mood
+    // word and the nav bar. This gives the pet one visible, at-a-glance stat on
+    // the home screen — the bar the Session 1 dials (starting fullness and decay
+    // speed) visibly change. Positions mirror the Interact contextual bar so the
+    // bar sits in the same place on both screens.
+    static constexpr int         MAIN_FULLNESS_LABEL_Y = 177;
+    static constexpr int         MAIN_FULLNESS_BAR_Y   = 190;
+    static constexpr ScreenZone  MAIN_STAT_ZONE       = {  5, 174, 125, 30 };
     // Nav bar shares the same Y/height as MENU_ZONE so the bottom bar does not
     // appear to move when switching between the Main, Stats, and Interact screens.
     static constexpr ScreenZone  MAIN_NAV_ZONE      = {  5, 220, 125, 20 };
@@ -104,15 +112,15 @@ private:
     // spriteOffsetX/Y slide the pet sprite away from centre to follow the device
     // tilt. The Stats screen has no pet sprite, so renderStatsScreen() does not
     // take an offset.
-    void renderMainScreen(MoodSprite mood, const char* petName, int spriteOffsetX, int spriteOffsetY);
+    void renderMainScreen(int fullness, MoodSprite mood, const char* petName, int spriteOffsetX, int spriteOffsetY);
     #ifdef ENABLE_MULTISCREEN
-    void renderStatsScreen(int happiness, int hunger, int energy, int cleanliness, int sick, MoodSprite mood, const char* petName);
+    void renderStatsScreen(int happiness, int fullness, int energy, int cleanliness, int sick, MoodSprite mood, const char* petName);
     #endif
     #ifdef ENABLE_ACTION_MENU
     // The Interact screen needs two pieces of information about the action menu:
     // the action name to display, and which stat bar to highlight. We pass these
     // as primitives so DisplayManager does not need to know what an ActionMenu is.
-    void renderInteractScreen(int happiness, int hunger, int energy, int cleanliness, int sick,
+    void renderInteractScreen(int happiness, int fullness, int energy, int cleanliness, int sick,
                               MoodSprite mood, const char* selectedActionName,
                               RelevantStat relevantStat, const char* petName,
                               int spriteOffsetX, int spriteOffsetY);
@@ -122,11 +130,16 @@ private:
     // The highlighted tab (mainNavIndex) gets a filled background.
     void drawMainNavBar();
 
+    // Draws the single fullness bar on the Main screen (label + red progress bar).
+    // The Main screen otherwise shows only the pet's face, so this is the one
+    // stat the user can watch at a glance from Session 1 onward.
+    void drawMainFullnessBar(int fullness);
+
     #ifdef ENABLE_ACTION_MENU
     // Draws a single stat bar for the action currently selected on the Interact screen.
     // The bar label, value, and colour are determined by relevantStat.
     // Draws nothing if relevantStat is STAT_NONE (Save / Back actions).
-    void drawContextualStatBar(int happiness, int hunger, int energy, int cleanliness, int sick, RelevantStat relevantStat);
+    void drawContextualStatBar(int happiness, int fullness, int energy, int cleanliness, int sick, RelevantStat relevantStat);
     #endif
 
     // Draws just the mood label text at the given Y position.
@@ -162,7 +175,7 @@ public:
     // spriteOffsetX/Y nudge the pet sprite away from its normal centre so it can
     // follow the device tilt. They are plain pixel counts; pass 0, 0
     // to draw the pet dead-centre exactly as before.
-    void renderDisplay(int happiness, int hunger, int energy, int cleanliness, int sick,
+    void renderDisplay(int happiness, int fullness, int energy, int cleanliness, int sick,
                        MoodSprite mood, const char* selectedActionName,
                        RelevantStat relevantStat,
                        bool petIsDead, const char* petName, ScreenState screenState,
@@ -171,7 +184,7 @@ public:
     // Pet display helpers — used internally and by the three private render methods
     #ifdef ENABLE_MULTISCREEN
     // Both are used only by the Stats screen: the five-bar readout and its mood label.
-    void showPetStatus(int happiness, int hunger, int energy, int cleanliness, int sick, const char* petName);
+    void showPetStatus(int happiness, int fullness, int energy, int cleanliness, int sick, const char* petName);
     void showPetMood(MoodSprite mood);
     #endif
     void showMessage(const char* message);

@@ -18,7 +18,7 @@ void StorageManager::save(const Pet& pet) {
     Preferences prefs;
     prefs.begin(NAMESPACE, false);  // false = read/write mode
 
-    prefs.putInt("hungry",      pet.getHungry());
+    prefs.putInt("fullness",      pet.getFullness());
     prefs.putInt("tired",       pet.getTired());
     prefs.putInt("happy",       pet.getHappy());
     prefs.putInt("sick",        pet.getSick());
@@ -46,7 +46,7 @@ void StorageManager::load(Pet& pet) {
     Preferences prefs;
     prefs.begin(NAMESPACE, true);  // true = read-only mode
 
-    pet.setHungry(     prefs.getInt("hungry",      Pet::DEFAULT_HUNGRY));
+    pet.setFullness(     prefs.getInt("fullness",      Pet::DEFAULT_FULLNESS));
     pet.setTired(      prefs.getInt("tired",       Pet::DEFAULT_TIRED));
     pet.setHappy(      prefs.getInt("happy",       Pet::DEFAULT_HAPPY));
     pet.setSick(       prefs.getInt("sick",        Pet::DEFAULT_SICK));
@@ -57,7 +57,7 @@ void StorageManager::load(Pet& pet) {
     prefs.end();
 
 #ifdef DEBUG
-    Serial.print("  hungry: ");      Serial.println(pet.getHungry());
+    Serial.print("  fullness: ");      Serial.println(pet.getFullness());
     Serial.print("  tired: ");       Serial.println(pet.getTired());
     Serial.print("  happy: ");       Serial.println(pet.getHappy());
     Serial.print("  sick: ");        Serial.println(pet.getSick());

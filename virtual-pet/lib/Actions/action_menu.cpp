@@ -4,7 +4,7 @@ ActionMenu::ActionMenu() : currentActionIndex(0) {
     // Each entry carries the action type, display name, description, and
     // which pet stat it affects. The relevantStat field lets the Interact
     // screen highlight the correct bar without needing a separate lookup.
-    actions[0] = {ACTION_FEED,  "Feed",  "Give food to pet",    STAT_HUNGER};
+    actions[0] = {ACTION_FEED,  "Feed",  "Give food to pet",    STAT_FULLNESS};
     actions[1] = {ACTION_PLAY,  "Play",  "Play with pet",        STAT_HAPPINESS};
     actions[2] = {ACTION_SLEEP, "Sleep", "Let pet rest",         STAT_ENERGY};
     actions[3] = {ACTION_BATHE, "Bathe", "Clean the pet",        STAT_CLEANLINESS};
