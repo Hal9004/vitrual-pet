@@ -25,6 +25,14 @@ Today they can navigate all of it.
 
 ---
 
+## Before you present — load your pet *(no build today)*
+
+Make sure your **latest project is saved on your Google Drive** and **loaded on your device**
+before the showcase — there's no building today, just your finished pet ready to demo. If you
+need to re-flash, open it from Drive in VS Code and **Upload** (see `LESSON_PLANS/WORKFLOW.md`).
+
+---
+
 ## Learning goals
 
 By the end of Session 10, every student can:

@@ -17,7 +17,7 @@ starting values + its name) and `lib/Timer/time_manager.cpp` (how fast a stat ch
 ## Learning goals
 
 By the end of Session 1, every student can:
-- Clone the repo and build + flash it to the device (Git: `clone`, `status`, `add`, `commit`).
+- Download the starter project from **Google Drive**, open it in **VS Code**, and build + upload it to the device with **PlatformIO**.
 - Point to where their pet's **name** and **starting stats** live, and change them.
 - Explain in one sentence what a **variable** is, using the pet as the example.
 - Draw their own sprite in Piskel and see *their* pet alive on screen.
@@ -32,7 +32,7 @@ automatic stat change by copying an existing one.
 | Block | Time | What happens | Beat |
 |---|---|---|---|
 | Opening / recap / pair check-in | 25' | Welcome, the 10-session big picture, pair up, hand out devices | — |
-| Presentation | 50' | Git + first build/flash (**Reveal**) → navigation tour → intro **variables** | Reveal + Learn |
+| Presentation | 50' | Get the project (Drive → VS Code) + first build/upload (**Reveal**) → navigation tour → intro **variables** | Reveal + Learn |
 | Pair exploration | 20' | Tweak the dials: name, starting stats, decay speed | **Play** |
 | Break | 20' | — | — |
 | Guided task | 75' | Draw your own sprite in Piskel → see *your* pet; set its name | Make it yours |
@@ -43,12 +43,15 @@ automatic stat change by copying an existing one.
 
 ## 1. Reveal — your pet appears *(in the presentation block)*
 
-There is no switch to flip yet — today you meet the pet in its simplest form.
+There is no switch to flip yet — today you meet the pet in its simplest form, and learn
+the tools you'll use every session.
 
-1. **Git:** clone the repo, then `git status` to see a clean tree. (You'll `add` and
-   `commit` your changes at the end of the session — these are the only Git commands
-   you need today.)
-2. **Build + flash** to the M5StickC.
+1. **Get the project.** Download the starter project from the class **Google Drive**
+   folder and open the folder in **VS Code**. The **PlatformIO** extension loads
+   automatically — that's the tool that builds the code and talks to the device.
+   *(Full step-by-step: `LESSON_PLANS/WORKFLOW.md`.)*
+2. **Build + upload.** Press PlatformIO's **✓ Build**, then **→ Upload**, to flash it
+   onto the M5StickC.
 3. **The reveal:** an empty device → *your pet, alive on screen,* with its fullness bar
    slowly draining. That build-and-watch-it-appear moment is the hook.
 
@@ -119,9 +122,10 @@ Tie it back: every dial in the Play block was just "change the value in a box."
 
 The creative centrepiece. Follow **`SPRITE_GUIDE.md`** (the asset pipeline):
 1. Draw an 80×80 sprite in Piskel.
-2. Run the converter to turn the image into a C++ array.
-3. Drop it in, reflash → *your* pet is on screen.
-4. Set its name (Dial 1) to match.
+2. **Export it from Piskel and save the file to your Google Drive** so your art is never lost.
+3. Run the converter to turn the image into a C++ array.
+4. Add the array file into `lib/Display/sprites/`, point the code at it, and **Upload** → *your* pet is on screen.
+5. Set its name (Dial 1) to match.
 
 This is the "make it yours" moment — everyone leaves with a pet that is theirs.
 
@@ -143,6 +147,15 @@ These extend today's feature (the stat/decay system) and stay in your two worksh
   automatic stat change, add a method and call it in `update()`."* Copy that method,
   rename it, point it at a different stat, and call it from `update()`. Reflash and watch
   your new rule run. *(This is a first taste of writing a function — Session 2's concept.)*
+
+---
+
+## Save your work — every session ends here
+
+Before you leave, **save your whole project folder back to your Google Drive**, along
+with your sprite file. Next session you'll re-open it from Drive in VS Code and carry on
+exactly where you stopped. *(This is the routine for every session from here on; full
+steps in `LESSON_PLANS/WORKFLOW.md`.)*
 
 ---
 

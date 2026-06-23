@@ -21,6 +21,18 @@ stats. Today: the **actions that change those boxes for you** — and what we ca
 
 ---
 
+## Getting set up & saving your work *(every session)*
+
+- **Start:** open your project from **your Google Drive** folder in **VS Code** — PlatformIO
+  loads automatically and you pick up exactly where you left off last session.
+- **Build & upload:** PlatformIO **✓ Build** → **→ Upload** to flash the device.
+- **End:** save your whole project folder **back to your Google Drive** so next session
+  continues from here.
+
+*(Full steps: `LESSON_PLANS/WORKFLOW.md`.)*
+
+---
+
 ## Learning goals
 
 By the end of Session 2, every student can:
