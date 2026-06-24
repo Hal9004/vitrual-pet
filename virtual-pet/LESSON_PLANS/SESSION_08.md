@@ -7,9 +7,8 @@ time, reads clearly, and feels good.'"*
 **Where we are on the map:** still the whole pet. Today the skill is reading **your own code**
 with the same standards you've been reading the project's code with.
 
-> Designed with the `lesson-design` skill — **adapted** for an open-development session (no
-> flag/Reveal). Shape: **Continue → Learn-to-polish → Build.** The floor is "polish one thing";
-> the ceiling is "finish and polish a ★★★ track ready to present."
+> **Open-development session (no flag/Reveal).** Shape: **Continue → Learn-to-polish → Build.**
+> The floor is "polish one thing"; the ceiling is "finish and polish a ★★★ track ready to present."
 
 ---
 

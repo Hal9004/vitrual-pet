@@ -8,10 +8,9 @@ narrow down where it goes wrong, look at the actual values, fix one thing, and c
 **Where we are on the map:** the whole pet. Today's new skill is seeing **inside** a running
 program with the Serial monitor — and deciding what's ready to demo.
 
-> Designed with the `lesson-design` skill — **adapted** for the final-project session (no
-> flag/Reveal). Shape: **Set the finish line → Learn-to-debug → Build (finish) → Rehearse.**
-> The floor is "a working demo of the pet you have"; the ceiling is "your biggest feature,
-> debugged and demo-ready."
+> **Final-project session (no flag/Reveal).** Shape: **Set the finish line → Learn-to-debug →
+> Build (finish) → Rehearse.** The floor is "a working demo of the pet you have"; the ceiling
+> is "your biggest feature, debugged and demo-ready."
 
 ---
 

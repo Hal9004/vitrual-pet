@@ -9,10 +9,10 @@ look back at how far you've come since Session 1."*
 Session 1 "meet the team" map — the thing that once looked overwhelming, that you've now
 worked inside every part of.
 
-> Designed with the `lesson-design` skill — **heavily adapted**: a no-code session, so there's
-> no Reveal/Play/Build. Shape: **Showcase → Reflect → Celebrate.** The floor is "present the pet
-> you have and name one thing you learned"; the ceiling is a polished demo of an ambitious
-> feature. Every student has something to show — the baseline pet always works.
+> **No-code session**, so there's no Reveal/Play/Build. Shape: **Showcase → Reflect → Celebrate.**
+> The floor is "present the pet you have and name one thing you learned"; the ceiling is a
+> polished demo of an ambitious feature. Every student has something to show — the baseline pet
+> always works.
 
 ---
 

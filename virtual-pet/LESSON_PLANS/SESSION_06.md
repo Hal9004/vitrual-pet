@@ -9,10 +9,7 @@ and takes the first one that's true — so the order decides the winner."*
 **face changes with its mood**, and a third **Stats** screen appears. Today's workshop is
 `lib/Config/scaffold_config.h` (the switches), `lib/Pet/pet.cpp` (`computeMood()` — the
 ladder), `lib/Display/screen_layout.h` (the mood list), and `lib/Display/display_manager.cpp`
-(which picture goes with each mood).
-
-> Designed with the `lesson-design` skill. Session spine: **Reveal → Play → Learn → Build.**
-> Everyone clears Reveal/Play/Learn; Build is optional. This is the **last feature session** —
+(which picture goes with each mood). This is the **last feature session** —
 > it completes the pet and the fundamentals pathway.
 
 ---

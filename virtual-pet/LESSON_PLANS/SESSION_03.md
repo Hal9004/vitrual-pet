@@ -9,10 +9,6 @@ true, do something."*
 workshop is `lib/Config/scaffold_config.h` (the switch), `lib/Imu/imu_manager.h` (how a
 shake is detected), `src/main.cpp` (the `if` that reacts to a shake), and
 `lib/Display/tilt_motion.h` (the tilt dials).
-
-> Designed with the `lesson-design` skill. Session spine: **Reveal → Play → Learn → Build.**
-> Everyone clears Reveal/Play/Learn; Build is optional.
-
 ---
 
 ## Recap from Session 2

@@ -8,10 +8,9 @@ worked example already in the project, change one thing at a time, and test afte
 **Where we are on the map:** the whole team is awake. Today's skill isn't a new area — it's
 learning to **navigate to wherever your chosen feature lives** and change it safely.
 
-> Designed with the `lesson-design` skill — **adapted** for an open-development session.
-> The spine inverts: there's no single Reveal/flag, so the shape is
-> **Survey → Choose → Learn-the-process → Build.** The floor is "ship one small change of your
-> own"; the ceiling is a multi-session feature.
+> **Open-development session — the spine inverts:** there's no single Reveal/flag, so the
+> shape is **Survey → Choose → Learn-the-process → Build.** The floor is "ship one small change
+> of your own"; the ceiling is a multi-session feature.
 
 ---
 
