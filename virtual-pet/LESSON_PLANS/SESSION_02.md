@@ -71,6 +71,11 @@ was asleep. Today you wake one up.
    cycle through the actions (Feed / Play / Sleep / Bathe / Heal); **A** performs the selected
    one, and you watch its stat bar jump. (Each action highlights the one stat it changes.)
 
+> **Where did the fullness bar go?** In Session 1 the fullness bar sat on the **Main** screen,
+> because there was nowhere else to show it. Now that the **Interact** screen displays the stat
+> bars, the Main screen drops it and goes back to just your pet's face — **nothing broke.** Press
+> **B** and your fullness is right there on the Interact screen (it's the bar for **Feed**).
+
 > **What else you'll notice:** now that you can care for the pet, you can also *neglect* it.
 > If a stat hits a fatal level the pet dies and shows a "press A to reset" screen. That's the
 > same decay from Session 1 — the menu is just your way to fight back against it.
