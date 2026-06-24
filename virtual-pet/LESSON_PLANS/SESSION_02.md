@@ -75,6 +75,10 @@ was asleep. Today you wake one up.
 > If a stat hits a fatal level the pet dies and shows a "press A to reset" screen. That's the
 > same decay from Session 1 — the menu is just your way to fight back against it.
 
+> **Heads-up — Sickness is the odd stat out:** it starts at **0** and you *Heal it down*
+> (low = healthy), while the other four stats start high and you keep them up. So when you
+> cycle to **Heal**, its bar looks empty at first — that's normal, not a missing stat.
+
 ## Navigation tour — *teach this before any tweaking*
 
 Update the **"meet the team" map** (same diagram, new "you are here"):
