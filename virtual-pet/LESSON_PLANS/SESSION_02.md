@@ -9,9 +9,6 @@ presses) and **Actions** (the care menu) — and a new **Interact** screen appea
 workshop is `lib/Config/scaffold_config.h` (the switch), `lib/Pet/pet.cpp` (the care
 actions), and `lib/Actions/action_menu.cpp` (the menu).
 
-> Designed with the `lesson-design` skill. Session spine: **Reveal → Play → Learn → Build.**
-> Everyone clears Reveal/Play/Learn; Build is optional.
-
 ---
 
 ## Recap from Session 1
@@ -68,9 +65,11 @@ was asleep. Today you wake one up.
 1. Open `lib/Config/scaffold_config.h` and **turn on `ENABLE_ACTION_MENU`** (uncomment its
    `#define`).
 2. **Rebuild + flash.**
-3. **The reveal:** a new **Interact** screen appears with a menu — Feed / Play / Sleep /
-   Bathe / Heal. Press **B / C** to move through it and **A** to do the action. Watch the
-   stat bars jump when you act.
+3. **The reveal:** a small **Interact tab** now appears at the bottom-right of the Main
+   screen. Press **B** to open the **Interact screen** — it shows the pet, a **stat bar for
+   the action you currently have selected**, and that action's name along the bottom. **B / C**
+   cycle through the actions (Feed / Play / Sleep / Bathe / Heal); **A** performs the selected
+   one, and you watch its stat bar jump. (Each action highlights the one stat it changes.)
 
 > **What else you'll notice:** now that you can care for the pet, you can also *neglect* it.
 > If a stat hits a fatal level the pet dies and shows a "press A to reset" screen. That's the
@@ -113,8 +112,12 @@ Predict-then-flash: have pairs predict which bar moves and by how much before re
 lines inside it are the **steps that happen when you feed**. Pressing **A** on the Feed menu
 item **calls** `feed()`, which runs those steps. The dials you just changed were the steps
 inside the function — so a function is just *a named bundle of steps you can run by name.*
-(Connect to Session 1: variables are the boxes; functions are the named actions that change
-the boxes.)
+
+**You already met functions in Session 1** — every value you changed lived *inside* a
+function (the decay rule `applyFullnessDecay()`, the care-action bodies). You were editing
+function bodies without naming them. Session 2 names the idea and goes deeper: a function has
+a **name**, a **body** of steps, and only runs when something **calls** it. (And from Session 1:
+variables are the boxes; functions are the named actions that change them.)
 
 **Pointed to in the code (for the readers):** in `lib/Pet/pet.cpp` —
 - `feed()`, `play()`, `sleep()`, `bathe()`, `heal()` — five functions, each a named action.
@@ -151,6 +154,13 @@ today's feature (the actions) and start with the smallest possible step into wri
   setter lines). Then add it to the menu in `action_menu.cpp` (copy an existing menu entry).
   Worked twins: `feed()` and the existing menu entries. *(This touches two files in
   agreement — the first deliberate multi-file change.)*
+- **★★★ Invent a whole new stat *(stretch — the big one)*.** Give the pet a stat it doesn't
+  have yet — e.g. *boredom* or *thirst*. The pieces, each with a worked twin already in the
+  code: add the field + getter/setter + a `DEFAULT_` in `pet.h`; add a decay rule in
+  `time_manager.cpp`; write a care action that restores it (`feed()` is the twin) and add it to
+  the menu; and show its bar. Worked twins: **every existing stat is built from exactly these
+  pieces** — copy one end to end. *(Combines everything from Sessions 1–2; expect it to span
+  into open-development later.)*
 
 ---
 
