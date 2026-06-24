@@ -8,7 +8,7 @@ true, do something."*
 **Where we are on the map:** you wake the **IMU** teammate (the motion sensor). Today's
 workshop is `lib/Config/scaffold_config.h` (the switch), `lib/Imu/imu_manager.h` (how a
 shake is detected), `src/main.cpp` (the `if` that reacts to a shake), and
-`lib/Display/tilt_motion.h` (the tilt dials).
+`lib/Imu/tilt_motion.h` (the tilt dials).
 ---
 
 ## Recap from Session 2
@@ -88,7 +88,7 @@ Everyone does these. Each is **one value, an obvious result, a one-line undo.**
   wait between shakes, in ms). Lower it → you can shake-to-play again sooner.
 - **Dial 3 — make it glide (the fun one).** In `src/main.cpp`, `TILT_MOVEMENT_ENABLED` turns
   the tilt demo on/off. With it `true`, tilt the device and the pet slides. Then in
-  `lib/Display/tilt_motion.h`, change `TILT_SCALE = 60.0f` to `120.0f` → the pet slides
+  `lib/Imu/tilt_motion.h`, change `TILT_SCALE = 60.0f` to `120.0f` → the pet slides
   **twice as far** for the same tilt. (Bonus: lower `SMOOTHING_FACTOR` for a calmer glide.)
 
 Predict-then-flash: pairs guess how hard a shake will need to be before each change.
@@ -137,6 +137,20 @@ Everyone leaves with a pet that reacts to motion the way they like.
   pet has energy it plays; **otherwise** it's too tired, so do something gentler instead (a
   tiny happiness bump, or nothing). Worked twin: the `if` you just edited. *(Introduces the
   `else` branch — the other half of a decision.)*
+- **★★ Make tilt *do* something — your choice.** With the tilt demo on, the pet only *slides*
+  right now. Find the **CHALLENGE** comment in `src/main.cpp` (right next to the shake check)
+  and make a big tilt trigger an action — and **you pick which one**: feed, play, sleep, bathe,
+  or heal. The tilt is `imu.getAccelX()` / `imu.getAccelY()`; the worked twin is the
+  `if (imu.wasShaken())` block. *(Same "if a condition is true, act" idea — new trigger.)*
+- **★★★ Change what happens at energy 0 — a design choice.** Right now the pet just **dies**
+  when energy hits 0 (decided in `isDead()` in `lib/Pet/pet.cpp`). Decide what *you* think
+  should happen instead, and build it. Ideas to pick from:
+    - it **passes out and falls asleep**, slowly recovering energy;
+    - it gets **too tired to play** until it has rested;
+    - it shows a **warning** for a while before dying;
+    - energy simply **isn't fatal** anymore (only hunger/sadness are).
+  Worked twins: the checks in `isDead()` and the state handling in `updateState()`. *(There's
+  no single right answer — designing the rule is the point.)*
 
 ---
 
@@ -144,7 +158,8 @@ Everyone leaves with a pet that reacts to motion the way they like.
 
 - **Newly awake:** IMU (motion sensor).
 - **Your workshop (editable today):** `lib/Config/scaffold_config.h`, `lib/Imu/imu_manager.h`,
-  `src/main.cpp` (the shake `if` + the tilt switch), `lib/Display/tilt_motion.h`.
+  `src/main.cpp` (the shake `if`, the tilt switch + the tilt-action seam), `lib/Imu/tilt_motion.h`,
+  and `lib/Pet/pet.cpp` (for the energy-0 challenge).
 - **Still asleep / not for today:** Speaker, Storage, the Stats screen (`ENABLE_MULTISCREEN`),
   mood sprites.
 
