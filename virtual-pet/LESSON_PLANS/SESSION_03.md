@@ -1,14 +1,16 @@
 # Session 3 — Motion
 
 **Day-start flag state:** `ENABLE_ACTION_MENU` ON (from Session 2); all others OFF
-**This session activates:** `ENABLE_IMU_PLAY` — the shake-to-play link. (It also introduces
-the optional tilt-movement demo, a plain `true/false` switch in `main.cpp`.)
+**This session activates:** `ENABLE_IMU_PLAY` — wakes the whole **motion** feature: the
+shake-to-play link plus an optional **tilt-movement demo** (toggled by `TILT_MOVEMENT_ENABLED`
+in `main.cpp`). Before this flag the IMU is entirely asleep.
 **One concept (takeaway sentence):** *"An `if` statement makes a decision — if something is
 true, do something."*
 **Where we are on the map:** you wake the **IMU** teammate (the motion sensor). Today's
 workshop is `lib/Config/scaffold_config.h` (the switch), `lib/Imu/imu_manager.h` (how a
 shake is detected), `src/main.cpp` (the `if` that reacts to a shake), and
 `lib/Imu/tilt_motion.h` (the tilt dials).
+
 ---
 
 ## Recap from Session 2
@@ -186,5 +188,5 @@ turn `ENABLE_IMU_PLAY` on:
 - [x] A dial a struggling student clears fast with a visible result (shake sensitivity / tilt glide).
 - [x] Challenges optional, ordered ★→★★★, all extending the shake `if` (condition → `&&` → `else`).
 - [x] Concept taught both by teacher (yes/no decision) AND pointed to in code (`if (imu.wasShaken())`).
-- [x] Navigation taught up front; map updated with "you are here"; workshop bounded to four files.
+- [x] Navigation taught up front; map updated with "you are here"; workshop bounded to the listed files.
 - [ ] Verified on device — pending the `session-3-start` branch (see above).
