@@ -128,7 +128,12 @@ void DisplayManager::renderMainScreen(int fullness, MoodSprite mood, const char*
     drawPetSprite(mood, MAIN_FACE_CENTER_Y, SPRITE_NEUTRAL_PLACEHOLDER_WIDTH, SPRITE_NEUTRAL_PLACEHOLDER_HEIGHT,
                   spriteOffsetX, spriteOffsetY);
     showPetMoodText(mood, MAIN_MOOD_Y);
+    // Only show the fullness bar on the Main screen when there is no action menu.
+    // Once ENABLE_ACTION_MENU is on, the Interact screen shows the stat bars, so a
+    // bar here would be redundant — the Main screen is just the pet's face again.
+    #ifndef ENABLE_ACTION_MENU
     drawMainFullnessBar(fullness);
+    #endif
     drawMainNavBar();
 }
 
