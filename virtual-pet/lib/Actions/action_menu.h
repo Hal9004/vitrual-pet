@@ -23,6 +23,17 @@
 //
 // Available Actions: Feed, Play, Sleep, Bathe, Heal, Save, Back
 
+// ---------------------------------------------------------------------------
+// TO ADD A NEW ACTION — the extension seam (used by the Session 2 challenge).
+// Five small steps:
+//   1. Add an `ACTION_*` value to the enum below.
+//   2. Add a row in the `actions[]` setup in action_menu.cpp — name, description,
+//      and the `RelevantStat` it changes.
+//   3. Add a `case` in `confirmAction()` (action_menu.cpp) that calls the Pet method.
+//   4. Add that method to `Pet` (pet.h/.cpp) — copy `feed()` as the template.
+//   5. Bump `NUM_ACTIONS` so the menu's B/C wrap-around counts the new entry.
+// ---------------------------------------------------------------------------
+
 // ActionType names every possible action the user can select.
 // Each value is prefixed with ACTION_ so it does not collide with other
 // names elsewhere in the project. Without the prefix a plain enum value

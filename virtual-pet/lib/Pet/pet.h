@@ -22,6 +22,12 @@ enum PetState {
 
 class Pet {
 private:
+    // To add a NEW STAT — the extension seam (used by the Session 2 challenge): add the
+    // field here + its getter/setter (below) + a DEFAULT_ constant; a decay rule in
+    // TimerManager (time_manager.cpp); a RelevantStat value (screen_layout.h) + a
+    // drawContextualStatBar case (display_manager.cpp); and a care action that restores
+    // it (copy feed()).
+    //
     // Pet condition values (0-100 scale)
     int fullness;     // 100 = full / well-fed, 0 = empty / starving
     int tired;        // 0 = not tired, 100 = exhausted
