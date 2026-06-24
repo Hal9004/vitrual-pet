@@ -759,7 +759,7 @@ unused.
 ### 7.2 — Two problems with raw tilt, and the two fixes
 
 If we drew the pet straight at the raw reading, two things would go wrong. Each fix is one idea in
-`lib/Display/tilt_motion.{h,cpp}`:
+`lib/Imu/tilt_motion.{h,cpp}`:
 
 1. **Raw data is noisy and jumpy** → the pet would jitter. Fix: a **low-pass filter** (smoothing).
    Instead of snapping to each new reading, ease toward it a little every frame.

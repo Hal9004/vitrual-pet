@@ -3,7 +3,7 @@
 #include "../lib/Config/scaffold_config.h"  // The ENABLE_* feature switches — read this first.
 #include "../lib/Pet/pet.h"
 #include "../lib/Display/display_manager.h"
-#include "../lib/Display/tilt_motion.h"
+#include "../lib/Imu/tilt_motion.h"
 #include "../lib/Button/button_handler.h"
 #ifdef ENABLE_ACTION_MENU
 #include "../lib/Actions/action_menu.h"
@@ -29,13 +29,15 @@
 
 // -------------------------------------------------------------------------
 // TILT_MOVEMENT_ENABLED — on/off switch for the optional tilt-movement demo.
-// When true, the pet sprite slides around the screen to follow how the
+// Tilt is part of the motion feature, so it only exists when ENABLE_IMU_PLAY
+// is on. When true, the pet sprite slides around the screen to follow how the
 // device is tilted (driven by the accelerometer). When false, the pet is
 // drawn dead-centre exactly as it was before this feature existed.
-// This is a self-contained extra you can switch on to experiment with the
-// accelerometer; flip it to false and rebuild to revert to the plain pet.
+// Flip it to false and rebuild to revert to the plain (centred) pet.
 // -------------------------------------------------------------------------
+#ifdef ENABLE_IMU_PLAY
 static const bool TILT_MOVEMENT_ENABLED = true;
+#endif
 
 // Global instances — one object per system area.
 // Each manager is responsible for exactly one job.
@@ -47,8 +49,10 @@ ActionMenu      menu;     // Manages the list of actions the user can choose.
 #endif
 NavigationManager navManager; // Tracks which screen is active and routes button input.
 TimerManager    timers;   // Handles all automatic stat changes over time.
+#ifdef ENABLE_IMU_PLAY
 ImuManager      imu;      // Reads accelerometer data and detects shake gestures.
 TiltMotion      spriteMotion; // Turns live tilt into a smoothed pet-sprite screen offset.
+#endif
 #ifdef ENABLE_SOUND
 SpeakerManager  speaker;  // Plays buzzer melodies for pet events and alerts.
 #endif
@@ -121,12 +125,15 @@ void updateLivePet() {
     #ifdef ENABLE_IMU_PLAY
     // A shake gesture triggers play from any screen.
     // wasShaken() fires only on the first frame of a gesture so play() is called once.
-    // Only the shake-to-play link is gated here: ImuManager itself keeps running
-    // (the tilt-movement demo also reads the accelerometer), so this just decides
-    // whether a shake feeds into play().
     if (imu.wasShaken()) {
         myPet.play();
     }
+
+    // CHALLENGE (Session 3): when the tilt demo is on, make a big tilt trigger an
+    // interaction of YOUR choice. The live tilt is imu.getAccelX() / imu.getAccelY()
+    // (or spriteMotion's offset). Copy the shape of the shake check above — e.g.
+    // "if the device is tilted far enough, call myPet.sleep();" — and decide which
+    // action it fires (feed / play / sleep / bathe / heal).
     #endif
 }
 
@@ -153,10 +160,12 @@ void renderCurrentScreen() {
     // into named variables keeps the renderDisplay() call below easy to follow.
     int spriteOffsetX = 0;
     int spriteOffsetY = 0;
+    #ifdef ENABLE_IMU_PLAY
     if (TILT_MOVEMENT_ENABLED) {
         spriteOffsetX = spriteMotion.getOffsetX();
         spriteOffsetY = spriteMotion.getOffsetY();
     }
+    #endif
 
     display.renderDisplay(
         myPet.getHappy(), myPet.getFullness(), myPet.getEnergised(),
@@ -227,14 +236,16 @@ void loop() {
 
     M5.update();      // Read the latest hardware state (buttons, IMU, etc.)
     buttons.update(); // Detect which buttons were pressed this frame
+    #ifdef ENABLE_IMU_PLAY
     imu.update();     // Read fresh accelerometer data and update shake detection
 
     // Feed the latest tilt into the sprite-motion helper so it can ease the pet
-    // toward where the device is leaning. Gated by the demo toggle: when the
-    // feature is off we skip this and the offset the helper reports stays at 0.
+    // toward where the device is leaning. Part of the motion feature, so it only
+    // runs under ENABLE_IMU_PLAY; the inner toggle then turns the demo on/off.
     if (TILT_MOVEMENT_ENABLED) {
         spriteMotion.update(imu.getAccelX(), imu.getAccelY());
     }
+    #endif
 
     // Run the state machine — sets STATE_DEAD when a stat hits a fatal level, and
     // plays the pet's own fullness/sickness/death sounds when a stat crosses its

@@ -108,7 +108,7 @@ should clear at least a ★; ★★★ tracks may span into Session 8.
 - **Rebalance the whole game.** Files: `lib/Timer/time_manager.cpp` (decay) + the action amounts in `pet.cpp`. Twin: the existing constants.
 
 ### ★★ Add something new
-- **Idle animation** — a gentle `millis()`-driven bob. Files: `lib/Display/tilt_motion.*` (sum a sine offset) + `drawPetSprite()`. Twin: the existing tilt offset (the bob is the same idea on a timer). *(See `IDEAS.md`.)*
+- **Idle animation** — a gentle `millis()`-driven bob. Files: `lib/Imu/tilt_motion.*` (sum a sine offset) + `drawPetSprite()`. Twin: the existing tilt offset (the bob is the same idea on a timer). *(See `IDEAS.md`.)*
 - **Animated mood sprites** — 2-frame faces. Files: `lib/Display/animation_manager.cpp` (frame count) + new Piskel frames. Twin: the existing single-frame moods.
 - **A persisted counter / high score** (e.g. *times fed*, *longest survival*). Files: `pet` + `lib/Storage/storage_manager.cpp`. Twin: the seven existing `putInt`/`getInt` pairs.
 

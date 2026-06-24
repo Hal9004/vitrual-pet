@@ -4,12 +4,13 @@
 // ---------------------------------------------------------------
 // TiltMotion
 //
-// Works out WHERE on the screen the pet sprite should sit right now,
-// based on how the device is being physically tilted. It does not draw
-// anything itself — DisplayManager asks it for an (x, y) pixel offset
-// and adds that to the sprite's normal centre. Keeping the "where?"
-// maths here, separate from the "how do I draw it?" code in
-// DisplayManager, means each class still has exactly one job.
+// Turns the device's physical tilt into a smoothed, steady (x, y) value.
+// It is pure float maths with NO display or M5 dependencies — which is why it
+// lives in lib/Imu/ next to the raw accelerometer reader, not in Display: the
+// smoothed motion it produces can drive ANY interaction, not just the screen.
+// Its first use is the pet-sprite offset (DisplayManager adds the (x, y) to the
+// sprite's normal centre), but you could just as well use the same value to,
+// say, trigger an action on a strong tilt.
 //
 // This is the position counterpart to AnimationManager: AnimationManager
 // decides WHICH frame to show over time, TiltMotion decides WHERE to show
