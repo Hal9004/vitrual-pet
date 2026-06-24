@@ -8,6 +8,7 @@ change the value, change how the pet behaves."*
 **Where we are on the map:** you boot the project for the very first time, meet the
 team that runs the pet, and work in **two files only** — `lib/Pet/pet.cpp` (the pet's
 starting values + its name) and `lib/Timer/time_manager.cpp` (how fast a stat changes).
+
 ---
 
 ## Learning goals

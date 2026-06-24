@@ -6,6 +6,7 @@
 switched off — and load them back next time, each value stored under a name (a key)."*
 **Where we are on the map:** you wake the **Storage** teammate. Today's workshop is
 `lib/Config/scaffold_config.h` (the switch) and `lib/Storage/storage_manager.cpp` (save & load).
+
 ---
 
 ## Recap from Session 4

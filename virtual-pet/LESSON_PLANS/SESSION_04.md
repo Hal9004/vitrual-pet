@@ -6,6 +6,7 @@
 time — and a loop does the same thing to each one without repeating yourself."*
 **Where we are on the map:** you wake the **Speaker** teammate. Today's workshop is
 `lib/Config/scaffold_config.h` (the switch) and `lib/Speaker/speaker_manager.cpp` (the melodies).
+
 ---
 
 ## Recap from Session 3
