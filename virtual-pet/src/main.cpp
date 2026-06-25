@@ -76,6 +76,27 @@ void handleDeathScreen() {
     }
 }
 
+#ifdef DEBUG
+// printPetStateToSerial() — every few seconds, print the pet's stats to the
+// Serial Monitor so you can watch them change live (and confirm a saved stat
+// reloaded after a power-cycle). Throttled with the same millis() pattern as the
+// stat timers so it does not flood the monitor. Only compiled when DEBUG is on
+// (uncomment the build flag in platformio.ini), then open it with `pio device monitor`.
+void printPetStateToSerial() {
+    static unsigned long lastPrintTime = 0;
+    const unsigned long PRINT_INTERVAL = 3000;  // print once every 3 seconds
+
+    if (millis() - lastPrintTime < PRINT_INTERVAL) {
+        return;  // not time yet — leave without printing
+    }
+    lastPrintTime = millis();
+
+    Serial.printf("Fullness:%d  Happy:%d  Energy:%d  Clean:%d  Sick:%d\n",
+                  myPet.getFullness(), myPet.getHappy(), myPet.getEnergised(),
+                  myPet.getCleanliness(), myPet.getSick());
+}
+#endif
+
 // updateLivePet() — one frame of normal gameplay while the pet is alive: run the
 // automatic stat timers, cycle the menu when the Interact screen is showing, let
 // navigation switch screens, confirm a chosen action, and play on a shake gesture.
@@ -267,4 +288,10 @@ void loop() {
 
     // Draw the fully updated state at the end of every frame.
     renderCurrentScreen();
+
+    #ifdef DEBUG
+    // Print the pet's stats to the Serial Monitor (throttled) so you can watch
+    // them change live — open it with `pio device monitor`.
+    printPetStateToSerial();
+    #endif
 }
