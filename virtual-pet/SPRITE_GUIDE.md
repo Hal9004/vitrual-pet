@@ -22,7 +22,7 @@ in `USEFUL_NOTES.md`.
             |
 5. The .h file appears              (-> lib/Display/sprites/pet_idle.h)
             |
-6. #include it in the display code  (Task 13)
+6. #include it in the display code
 ```
 
 ---
@@ -35,7 +35,7 @@ in `USEFUL_NOTES.md`.
 2. In the right-hand panel, click the **Resize** icon (a square with arrows in the corners).
 3. Set **Width: 32** and **Height: 32**, then click **Resize**.
 4. Set the **Frames** count at the bottom to **1**. We are drawing one static image per
-   pet state for now — animation frames come in Task 13a.
+   pet state for now — animation frames come later (with the mood sprites).
 
 The canvas is now 32×32 pixels. Each small square you paint is one pixel on the device screen.
 
@@ -268,7 +268,7 @@ the rendering code needs a special case for every mismatched state. Pick one siz
 use it for every sprite in the project.
 
 The converter handles any size — it reads the dimensions from the Piskel file. But the
-rendering code written in Task 13 will expect one consistent size for all states.
+rendering code expects one consistent size for all states.
 
 ### Rule 2 — Anchor point must be consistent (see Part 1)
 
@@ -284,8 +284,8 @@ Drawn"** — for the full explanation of why this matters and how it works.
 
 ### Rule 4 — Flash memory budget
 
-For Task 12, each state is one static frame — well within budget. When you add animation
-in Task 13a, keep to a maximum of **8 frames per state**. Here is the maths:
+Each mood is one static frame for now — well within budget. When you add animation,
+keep to a maximum of **8 frames per state**. Here is the maths:
 
 ```
 7 states × 8 frames × 32 pixels wide × 32 pixels tall × 2 bytes per pixel
@@ -296,14 +296,14 @@ The ESP32 has roughly 2.5 MB of flash available after the firmware. 112 KB is
 comfortable. The budget grows quickly if you increase the frame count or sprite size,
 so stay within the 8-frame limit for now.
 
-### Rule 5 — One frame per state for Task 12
+### Rule 5 — One frame per state (for now)
 
 Do not draw animation sequences yet. One clear, well-centred drawing per state is the
-deliverable for this task. Multi-frame animation is Task 13a. Getting the single frames
+deliverable for this task. Multi-frame animation comes later. Getting the single frames
 right first makes the animation work much smoother when you get there.
 
-> **Picking up animation later?** Once you reach Task 13a, see [Part 6 — Animating Your
-> Sprite](#part-6--animating-your-sprite-task-13a) for the multi-frame drawing rules and a
+> **Picking up animation later?** When you add animation, see [Part 6 — Animating Your
+> Sprite](#part-6--animating-your-sprite) for the multi-frame drawing rules and a
 > full walkthrough of the frame-cycling code.
 
 ---
@@ -311,14 +311,14 @@ right first makes the animation work much smoother when you get there.
 ## Part 5 — How Your Sprite Appears on Each Screen
 
 The pet appears on three different screens. Each screen reserves a different amount of
-space for the pet face, and the rendering code (Task 13) will scale the sprite to fill
+space for the pet face, and the rendering code will scale the sprite to fill
 that space. Understanding the boundaries now helps you design a sprite that reads clearly
 on every screen.
 
 **Your sprite canvas is always 32x32 pixels.** The rendering code scales it up when it
 draws to the screen — you never change the sprite size, only the draw call.
 
-The scale factors shown below are the planned values for Task 13. They are based on the
+The scale factors shown below are the planned scale values. They are based on the
 face centre coordinates already defined in `lib/Display/display_manager.h`.
 
 ---
@@ -339,7 +339,7 @@ There are no stat bars on this screen — it is intentionally uncluttered.
 |                           |
 |       +-----------+       |
 |       |           |       |
-|       | 80 x 80px |       |  planned Task 13 sprite: 32x32 at 2.5x scale
+|       | 80 x 80px |       |  planned sprite: 32x32 at 2.5x scale
 |       |           |       |  face centre: y = 110  (MAIN_FACE_CENTER_Y)
 |       |  2.5x     |       |  top edge: y = 70   (110 - 40)
 |       |           |       |  bottom edge: y = 150  (110 + 40)
@@ -428,7 +428,7 @@ the action menu indicator below it.
 |                           |
 |       +-----------+       |
 |       |           |       |
-|       | 64 x 64px |       |  planned Task 13 sprite: 32x32 at 2x scale
+|       | 64 x 64px |       |  planned sprite: 32x32 at 2x scale
 |       |           |       |  face centre: y = 90  (INTERACT_FACE_CENTER_Y)
 |       |  2x       |       |  top edge: y = 58   (90 - 32)
 |       |           |       |  bottom edge: y = 122  (90 + 32)
@@ -460,7 +460,7 @@ the action menu indicator below it.
 ### Summary table
 
 All values are taken directly from the constants in `lib/Display/display_manager.h`.
-The scale factor column is the planned value for Task 13 — it is not yet in the code.
+The scale factor column is the planned value — it is not yet in the code.
 
 | Screen   | Pet size on screen | Scale | Face centre (y) | Zone boundaries          |
 |----------|--------------------|-------|-----------------|--------------------------|
@@ -548,10 +548,10 @@ the STATS zone at 1:1. The practical options are:
 
 ---
 
-## Part 6 — Animating Your Sprite (Task 13a)
+## Part 6 — Animating Your Sprite
 
 Everything above produces a **still** picture: one frame per state, drawn once and held.
-Task 13a brings the pet to life by showing several frames in turn — frame 0, then frame 1,
+Animation brings the pet to life by showing several frames in turn — frame 0, then frame 1,
 then back again — so it bounces, blinks, or breathes. This part covers both halves of that
 work: **drawing** a multi-frame sprite, and the small piece of **code** that decides which
 frame to show at each moment.

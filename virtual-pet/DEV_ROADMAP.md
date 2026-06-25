@@ -43,7 +43,7 @@ Two project-wide conventions that the bonus designs below assume:
 ## Appendix B — Bonus Features
 
 This appendix holds features that were originally on the critical path
-but were right-sized **out** during the Task 14b audit. They are
+but were right-sized out of the core curriculum (kept as opt-in extensions). They are
 **opt-in** — students who finish the critical path with time to spare,
 or who want a deeper dive into a specific area, can attempt any of
 these. None are required to complete the Tamagotchi.
@@ -71,14 +71,14 @@ Numbering:
 **Why this is a bonus rather than a critical-path task:**
 
 The M5StickC Plus 2 has a BM8563 RTC chip on its I²C bus, accessible
-via the `M5.Rtc` API in the M5Unified library. The original Task 15
+via the `M5.Rtc` API in the M5Unified library. The original RTC
 scope ("RTC overnight logic") wanted to use that chip to apply
 accumulated decay during off-time, which would need Unix-timestamp
 math, NVS persistence of the last-seen timestamp, capping logic so a
 pet does not die after a week off, and a UI for setting the initial
 time. Without overnight-decay logic, the only thing left is "show
 HH:MM on a screen" — a stand-alone widget that does not integrate with
-any other module. The Task 14b audit decided this is better as opt-in
+any other module. This is better as opt-in
 bonus content than as a critical-path slug.
 
 **Foundation scope:**
@@ -115,11 +115,11 @@ screen, wait a minute, watch it tick to `12:01`.
   A confirms.
 - **NVS-persisted time.** Save the last-known time on every minute
   rollover so the pet remembers what time it was last on.
-- **Overnight decay logic.** The original Task 15 maximal scope —
+- **Overnight decay logic.** The maximal RTC scope —
   apply accumulated decay during off-time. Requires Unix-timestamp
   math, capping logic, and the NVS-persisted time stretch above.
-- **NTP time sync.** Requires Task 17 + WiFi-client mode (not the AP
-  mode Task 17 actually delivers). Adds a real-world clock without
+- **NTP time sync.** Requires the Wireless Access Point primitive + WiFi-client mode (not the AP
+  mode it actually delivers). Adds a real-world clock without
   manual time-set UI.
 
 **New concepts introduced:**
@@ -139,13 +139,13 @@ screen, wait a minute, watch it tick to `12:01`.
 
 ### Bonus Feature 2 — Web Dashboard (Static Stats Page)
 
-**Builds on:** Task 17 (Wireless Access Point Primitive).
+**Builds on:** the Wireless Access Point primitive.
 
 **Why this is a bonus rather than a critical-path task:**
 
-A web server adds another module of new concepts on top of Task 17 —
+A web server adds another module of new concepts on top of the WiFi AP primitive —
 HTTP request/response, route registration, named callback functions,
-`String` HTML building. The Task 14b audit decided to keep the
+`String` HTML building. We keep the
 critical path at "the pet broadcasts WiFi" and let the dashboard be
 an opt-in follow-on for students curious about how their phone's
 browser actually talks to their pet.
@@ -204,10 +204,10 @@ Always use named handler functions.
 
 ### Bonus Feature 3 — Pet-to-Pet Stat Swap (ESP-NOW)
 
-**Builds on:** Task 6 (IMU shake detection) + Task 17 (Wireless AP, for
+**Builds on:** IMU shake detection (Session 3) + the Wireless AP primitive (for
 the radio being initialised). Note that ESP-NOW does not actually
-require WiFi to be connected — it just needs the radio to be on. Task
-17's `softAP` mode is sufficient.
+require WiFi to be connected — it just needs the radio to be on. The
+`softAP` mode is sufficient.
 
 **REQUIRES TWO M5StickC Plus 2 DEVICES.** This bonus cannot be tested
 in a single-device setup. It is the most demanding bonus in terms of
@@ -393,12 +393,11 @@ five new routes and update the HTML.
 
 ### Bonus Feature 6 — Voice Memos
 
-**Builds on:** Task 16 (Microphone Input — Detect & React).
+**Builds on:** microphone input (detect & react).
 
 **Why this is a bonus:**
 
-This is the **original Task 16 scope** before the Task 14b audit
-right-sized it. Full record + playback needs DMA-style audio buffer
+This is the **original microphone scope** before it was right-sized to a bonus. Full record + playback needs DMA-style audio buffer
 handling, double-buffering, sample-rate matching against the
 `M5.Speaker` output rate, and a UI for browsing recordings — three
 modules of new concepts in one feature. Better as a bonus that
