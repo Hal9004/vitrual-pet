@@ -39,12 +39,12 @@ Each `lib/` module has exactly one job. Do not add logic to a module that belong
 | `Imu` | `lib/Imu/imu_manager.h/.cpp` | MPU6886 accelerometer — detects shake gestures. Call `update()` once per loop, query `wasShaken()` |
 | `Imu` | `lib/Imu/tilt_motion.h/.cpp` | Reusable motion-smoothing helper (pure float maths, no M5/display deps) — low-pass-smooths and clamps live accelerometer tilt into a steady (x, y) value. Its first use is the pet-sprite screen offset (`main.cpp` feeds it `imu.getAccelX/Y()` and passes the offset to `DisplayManager::drawPetSprite()`), but the smoothed motion can drive other interactions too. Lives in `lib/Imu/` next to the raw reader; compiled only under `ENABLE_IMU_PLAY`, with an inner `TILT_MOVEMENT_ENABLED` on/off in `main.cpp` |
 | `Timer` | `lib/Timer/time_manager.h/.cpp` | All automatic stat changes over time (fullness decay, happiness decay, energy drain, …). Add new decay rules here. A `FAST_TEST` compile switch swaps in a fast-decay set for development; fullness is tuned to empty first so the visible bar drives the death |
-| `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts (Task 8 — implemented) |
-| `Microphone` | (out of scope) | Module moved to bonus during the curriculum realignment. See `CURRICULUM_REALIGNMENT.md`. The original stub files were deleted during Task 14a and are not being re-created in the active queue |
+| `Speaker` | `lib/Speaker/speaker_manager.h/.cpp` | Buzzer melodies and sound alerts |
+| `Microphone` | (out of scope) | Module deferred to bonus. See `DEV_ROADMAP.md` Appendix B. No stub files exist — it is not being re-created in the active queue |
 | `Storage` | `lib/Storage/storage_manager.h/.cpp` | NVS persistence via Arduino `Preferences` — saves and loads all pet stats |
 | `Config` | `lib/Config/scaffold_config.h` | The six `ENABLE_*` curriculum feature switches (commented-`#define` style, all ON on this reference branch). Included by every gated file so all separately-compiled translation units agree on which features are built in. Holds the `#error` guard for the one inter-flag rule: `ENABLE_PERSISTENCE` requires `ENABLE_ACTION_MENU` (the Save action lives in the menu) |
 
-Each major feature is wrapped in `#ifdef ENABLE_*` (added in Task 21) so it can be compiled out for a given teaching session — see `lib/Config/scaffold_config.h`. A flag OFF means the feature is genuinely **absent, not inert**: e.g. with `ENABLE_SOUND` off, the `SpeakerManager&` parameter leaves `Pet::updateState()/reset()` and `ActionMenu::confirmAction()` entirely. The flags are verified as a cumulative staircase (Session 1 all-off → Session 6 all-on), not as all 2⁶ combinations.
+Each major feature is wrapped in `#ifdef ENABLE_*` so it can be compiled out for a given teaching session — see `lib/Config/scaffold_config.h`. A flag OFF means the feature is genuinely **absent, not inert**: e.g. with `ENABLE_SOUND` off, the `SpeakerManager&` parameter leaves `Pet::updateState()/reset()` and `ActionMenu::confirmAction()` entirely. The flags are verified as a cumulative staircase (Session 1 all-off → Session 6 all-on), not as all 2⁶ combinations.
 
 ## Curriculum, Lesson Plans & Student Workflow
 
@@ -73,39 +73,20 @@ workflow for this reference repo only — students never touch it.)
 
 ## Current Progress
 
-> `CURRICULUM_REALIGNMENT.md` is the phase-level source of truth; `DEV_ROADMAP.md` has
-> per-task design detail; `COURSE_CHECKLIST.md` tracks per-session/feature status.
+> `DEV_ROADMAP.md` has per-task design detail; `COURSE_CHECKLIST.md` tracks
+> per-session/feature status; `LESSON_PLANS/` holds the delivered curriculum.
 
 **Phase 1 (frozen reference) is complete**, and **all 10 lesson plans are drafted and on
 `main`** (`LESSON_PLANS/SESSION_01–10.md` + `WORKFLOW.md`), authored with the `lesson-design` skill.
+The pet uses the **fullness** model (starts full, decays to 0, feeding refills, `0 = death`) with a
+single fullness bar on the Main screen, and student onboarding is Google Drive + VS Code + PlatformIO.
 
-**Recently shipped (post-freeze):**
-- **All 10 lesson plans** — Reveal→Play→Learn→Build for Sessions 1–6; open-development/showcase for 7–10.
-- **Hunger → Fullness model** — hunger became a depleting `fullness` stat (starts 80, decays to 0, feeding refills, `0 = death`), with a single fullness bar now drawn on the Main screen so Session 1 has a visible stat. Tuned so fullness empties first; Lessons 1/2/5/6 aligned. Device-verified, on `main`.
-- **Onboarding switched Git → Google Drive + VS Code + PlatformIO** across all lessons + the new `WORKFLOW.md`.
-- **`lesson-design` skill** created (user-level) as the lesson-authoring tool.
-
-**Next up — Phase 3 of the realignment:** stand up the separate **`virtual-pet-learning-lab`**
-repo — push the frozen `main`, cut `session-1-start … session-9-start` branches matching each
-session's `ENABLE_*` set, add the student/teacher docs, and device-verify each branch behaves as
-its lesson plan promises. See `CURRICULUM_REALIGNMENT.md` Phases 3–4.
+**Next up:** stand up the separate **`virtual-pet-learning-lab`** repo — push the frozen `main`,
+cut `session-1-start … session-9-start` branches matching each session's `ENABLE_*` set, add the
+student/teacher docs, and device-verify each branch behaves as its lesson plan promises. See
+`DEV_ROADMAP.md` for the per-task detail.
 
 **Deferred:** the board-wide stat-bar colour quirk (e.g. the fullness bar renders green).
-
-### Earlier reference-build history (newest first)
-
-**Task 22 — Doc Sweep.** Brought the docs into line with the now-frozen code. **`COURSE_CHECKLIST.md`** rewritten around the 10-session arc (each session tagged with its day-start state + the `ENABLE_*` flag that activates it; microphone/RTC/wireless/evolution/dashboard/sadness moved to a Bonus section; the stale "template per complexity level" Phase 6 replaced with the real session-branch + lesson-plan model). **`IDEAS.md`** — shipped items (IMU movement, mood sprites) trimmed to one-line pointers and the Idle-Animations stale refs fixed. **`USEFUL_NOTES.md`** — a full section-by-section accuracy audit against the source fixed: the sprite converter (it reads **ABGR8888**, not ARGB; `convertAbgrToRgb565`), a rewrite of the screen-redraw section around the M5Canvas double-buffer (the 5s `STATUS_UPDATE_INTERVAL` throttle + fast-path were removed in Task 13a), the `enum class`→plain-enum and non-existent `ZONE_PET_FACE` examples, the `NavigationManager::update(buttons, bool backSelected)` signatures, the removed `Pet::checkDeathAlert()` and `confirmAction()` `delay(1000)`, adding `AnimationManager`+`TiltMotion` to the module overview, correcting the `Pet` "one job" row (it owns mood and triggers its own sounds), and finishing the Task 19 `player`→`user` rename. **`DEV_ROADMAP.md`** — resolved the stale 2^6 "SETTLE THESE FIRST" design note. Known follow-ups discovered but out of Task 22's scope: the empty `lib/Microphone/` stub files contradict the architecture-map note below (they should be deleted), and the `screen_layout.h:44` comment still says the Stats screen shows a pet face. Branch: `task/22-doc-sweep`.
-
-**Previously completed:** Task 21 — Curriculum Scaffolding Refactor. Added `lib/Config/scaffold_config.h` holding six commented-`#define` `ENABLE_*` switches (all ON on this reference branch; session branches comment some out) plus a `#error` guard enforcing the one inter-flag rule — `ENABLE_PERSISTENCE` requires `ENABLE_ACTION_MENU` because the Save action lives in the menu. Each feature is compiled out when its flag is off (not merely inert): **ENABLE_SOUND** — the `SpeakerManager&` parameter leaves `Pet::updateState/reset` and `ActionMenu::confirmAction` entirely, and the alert/play calls are gated; **ENABLE_PERSISTENCE** — storage + the Save menu action, with the action array kept dense (Back shifts to index 5, `NUM_ACTIONS` → 6) so the B/C wrap-around still works; **ENABLE_ACTION_MENU** — the menu object + the whole Interact screen (NavigationManager case/handler, DisplayManager render path, B-from-Main transition, the "Interact" nav tab); `main.cpp` falls back to placeholder render values through a named-local seam so `renderDisplay()`'s signature never changes; **ENABLE_IMU_PLAY** — only the shake→`play()` link (ImuManager keeps running because the tilt demo also reads it); **ENABLE_MULTISCREEN** — the Stats screen + its mood word ONLY (Main and Interact always exist, so the menu never has to move screens — design decision 3); **ENABLE_MOOD_SPRITES** — the non-NEUTRAL rungs of `computeMood()` and the non-NEUTRAL cases of `spriteForMood()`/`showPetMoodText()`, all falling back to the NEUTRAL face + word. The flags live in one shared header (not `main.cpp`) because a `#define` in `main.cpp` does not reach the separately-compiled `lib/*.cpp` units. Verification is a **cumulative staircase** (Session 1 all-off → Session 6 all-on), NOT all 2^6 combos; every tier compiles and the full staircase was device-verified. Branch `task/21-scaffolding-refactor`, merged to `main`.
-
-**Earlier:** Task 20 — Mood Sprite System. Added a `MoodSprite` enum (`MOOD_NEUTRAL / MOOD_HAPPY / MOOD_UNWELL / MOOD_HUNGRY`) in `lib/Display/screen_layout.h` — placed there (not in `pet.h`) alongside `ScreenState`/`RelevantStat` so `DisplayManager` can name moods without depending on `Pet`; `Pet` includes the lightweight header to return one, mirroring how the action menu uses `RelevantStat`. New `Pet::computeMood()` replaces the old `getDominantMood()` "highest stat wins" scan with a prioritised threshold ladder — `sick > 50 → MOOD_UNWELL`, else `hungry > 70 → MOOD_HUNGRY`, else `happy > 70 → MOOD_HAPPY`, else `MOOD_NEUTRAL` (first match wins). The whole display chain (`renderDisplay → renderMain/Stats/InteractScreen → drawPetSprite`/`showPetMoodText`) now carries a typed `MoodSprite` instead of an `int moodIndex`, so the sprite and the mood word can never disagree. A new `DisplayManager::spriteForMood()` switch is the single place mapping a mood to its artwork; `drawPetSprite()` now performs that lookup itself (the previously-reserved `moodIndex` param is realised, and the redundant `spriteData` param dropped). Four single-frame 80×80 placeholder sprites live in `lib/Display/sprites/{neutral,happy,unwell,hungry}_placeholder.h` (the `unwell` one reuses sad-faced placeholder art); the `AnimationManager` is set to frame count 1 for now, holding frame 0 — ready to bump to 2 when animated per-mood art lands. Known scope limit (accepted): the four moods give no sprite warning for the two *low* fatal stats (`happy → 0`, `energised → 0`) — the face stays NEUTRAL until death; a future `MOOD_SAD`/`MOOD_TIRED` is the natural "add your own mood" student exercise (enum value + `computeMood()` rule + `spriteForMood()` case). Verified on device (each mood's face + word, priority, transparency). Branch: `task/20-mood-sprite-system`.
-
-**Earlier still:** Task 13b — Tilt-Reactive Sprite Movement. Added `lib/Display/tilt_motion.h/.cpp` — a standalone `TiltMotion` helper (pure float maths, no M5/display deps) that turns live accelerometer X/Y into a smoothed, clamped pet-sprite offset. Pipeline per loop: scale tilt by `TILT_SCALE` → `constrain()` to `MAX_OFFSET_X/Y` (so the pet stays on screen) → low-pass filter (`smoothed += (target - smoothed) * SMOOTHING_FACTOR`, the position analogue of the `millis()` timer) → `getOffsetX/Y()` round to whole pixels. Threaded two `spriteOffsetX/Y` primitives through `DisplayManager::renderDisplay()` → `renderMainScreen`/`renderInteractScreen` → `drawPetSprite()` (Stats screen untouched — no sprite). `main.cpp` owns the `TiltMotion` instance, feeds it `imu.getAccelX/Y()` (finally using those getters), and gates the whole effect behind a single `TILT_MOVEMENT_ENABLED` flag — off pins the offset to `0, 0` and the pet draws dead-centre exactly as before. Axis/sign/sensitivity verified correct on-device on the first try (no constant changes needed; to invert an axis, negate `accelX`/`accelY` in `update()`). Student-facing walkthrough added as `SPRITE_GUIDE.md` Part 7. Branch: `task/13b-tilt-movement`.
-
-**Out of scope** (for the learning lab, but kept as design notes / bonus):
-Task 16 (Microphone), Task 17 (Wireless AP), Task 18 (Remote Dashboard), Task 9a (Evolution), Task 15 (RTC).
-
-**Open questions tracked in `CURRICULUM_REALIGNMENT.md`:** other cleanup candidates (for Task 19 — capture as discovered). (Mood threshold values for Task 20 — resolved and shipped.)
 
 ## Hardware Gotchas
 
@@ -181,7 +162,7 @@ git checkout -b task/3-death-reset-condition
 
 # 3. Work, committing one logical change at a time
 git add lib/Pet/pet.h lib/Pet/pet.cpp
-git commit -m "feat: add isDead() — returns true when hunger hits 100 or energy hits 0
+git commit -m "feat: add isDead() — returns true when fullness or energy hits 0
 
 The pet had no way to detect a critical stat. This is the first step
 toward a proper death and reset flow so the game loop can respond."

@@ -379,8 +379,8 @@ below them. The pet zone here is only 36 pixels tall — the tightest space of a
 +---------------------------+  y = 24
 |  Happy: 80                |  label at y = 26   (HAPPY_BAR_ZONE.labelY)
 |  [====================]   |  bar   at y = 36   (HAPPY_BAR_ZONE.barY), height = 10
-|  Hunger: 60               |  label at y = 48   (HUNGER_BAR_ZONE.labelY)
-|  [===============      ]  |  bar   at y = 58   (HUNGER_BAR_ZONE.barY), height = 10
+|  Fullness: 60             |  label at y = 48   (FULLNESS_BAR_ZONE.labelY)
+|  [===============      ]  |  bar   at y = 58   (FULLNESS_BAR_ZONE.barY), height = 10
 |  Energy: 75               |  label at y = 70   (ENERGY_BAR_ZONE.labelY)
 |  [==================   ]  |  bar   at y = 80   (ENERGY_BAR_ZONE.barY), height = 10
 |  Clean: 90                |  label at y = 92   (CLEAN_BAR_ZONE.labelY)
@@ -439,7 +439,7 @@ the action menu indicator below it.
 +---------------------------+  y ~144
 |                           |
 +===========================+  y = 153
-|  Hungry: 72               |  INTERACT_STAT_ZONE: x = 5, y = 153, width = 125, height = 28
+|  Fullness: 72             |  INTERACT_STAT_ZONE: x = 5, y = 153, width = 125, height = 28
 |  [================    ]   |  label at y = 156, bar at y = 168
 +===========================+  y = 181  (153 + 28)
 |                           |
@@ -617,7 +617,7 @@ the loop is almost always a bug (see Hardware Gotcha #2 in `CLAUDE.md`).
 Instead of *waiting*, we *check the clock* every time around the loop and ask: **"has enough time
 passed since I last changed the frame?"** `millis()` is the clock — it returns the number of
 milliseconds since the device powered on, counting up forever. This is the exact same
-non-blocking pattern the students already met in `TimerManager` (hunger rising over time); here it
+non-blocking pattern the students already met in `TimerManager` (fullness falling over time); here it
 is reused to advance an animation frame.
 
 #### What the class remembers (its member variables)
@@ -917,7 +917,7 @@ think that is the pet's "mood", but they answer different questions:
   every frame and is never stored.
 
 Keeping them separate means the pet can be `STATE_IDLE` (doing nothing) yet still look `HUNGRY`
-because its hunger stat is high. The face follows the stats, not the activity.
+because its fullness is low. The face follows the stats, not the activity.
 
 ### 8.2 — `computeMood()`: a priority ladder, not a winner-takes-all
 
@@ -928,7 +928,7 @@ MoodSprite Pet::computeMood() const {
     if (sick > 50) {
         return MOOD_UNWELL;
     }
-    if (hungry > 70) {
+    if (fullness < 30) {
         return MOOD_HUNGRY;
     }
     if (happy > 70) {
@@ -943,13 +943,13 @@ immediately, so every rule below it is skipped. Order therefore encodes **priori
 the worst thing first. Being unwell matters more than being hungry, which matters more than being
 happy. If nothing crosses a threshold, the pet is `MOOD_NEUTRAL`.
 
-A worked example with a fresh pet (its starting stats are `hungry 30, happy 70, sick 0`):
+A worked example with a fresh pet (its starting stats are `fullness 80, happy 70, sick 0`):
 
-| Check | Value | `> threshold`? | Result |
+| Check | Value | threshold met? | Result |
 |---|---|---|---|
-| `sick > 50`   | 0  | no  | fall through |
-| `hungry > 70` | 30 | no  | fall through |
-| `happy > 70`  | 70 | **no** (70 is not *greater than* 70) | fall through |
+| `sick > 50`     | 0  | no  | fall through |
+| `fullness < 30` | 80 | no  | fall through |
+| `happy > 70`    | 70 | **no** (70 is not *greater than* 70) | fall through |
 | (none matched) | — | — | **`MOOD_NEUTRAL`** |
 
 So a brand-new pet shows the **neutral** face, not the happy one — `happy` has to climb *above* 70
@@ -1015,9 +1015,9 @@ const uint16_t* spriteData = spriteForMood(mood, petAnimation.getCurrentFrame())
 canvas.pushImage(spriteX, spriteY, spriteWidth, spriteHeight, spriteData, SPRITE_TRANSPARENT_COLOR);
 ```
 
-Notice `drawPetSprite()` no longer receives the pixel data as a parameter — it is *given the mood*
-and looks up the picture itself. That switch is the hook point earlier tasks left waiting (the
-sprite slot was always there; this task filled it in).
+Notice `drawPetSprite()` does not receive the pixel data as a parameter — it is *given the mood*
+and looks up the picture itself. That switch is the single hook point where a mood becomes a
+specific picture.
 
 ### 8.5 — The face and the word can never disagree
 

@@ -92,7 +92,7 @@ When `main.cpp` creates a `Pet` object, it is like using that blueprint to build
 ```cpp
 // The class is the blueprint
 class Pet {
-    int hungry;       // data it holds
+    int fullness;     // data it holds
     void feed();      // things it can do
 };
 
@@ -101,7 +101,7 @@ Pet myPet;           // one pet
 Pet rivalPet;        // another pet — same blueprint, separate data
 ```
 
-The key idea is **encapsulation**: the data inside a class is hidden from the outside world. Other code cannot reach in and change `Pet::hungry` directly — it has to use the methods the `Pet` class provides (`getHungry()`, `setHungry()`). This means the `Pet` class is always in control of its own data and can enforce rules like "hunger can never go below 0 or above 100."
+The key idea is **encapsulation**: the data inside a class is hidden from the outside world. Other code cannot reach in and change `Pet::fullness` directly — it has to use the methods the `Pet` class provides (`getFullness()`, `setFullness()`). This means the `Pet` class is always in control of its own data and can enforce rules like "fullness can never go below 0 or above 100."
 
 ### What is Inheritance — and why this project does not use it
 
@@ -111,8 +111,8 @@ Inheritance is a way to build a new class by extending an existing one. The new 
 // A general Animal class
 class Animal {
 public:
-    int hungry;
-    void eat() { hungry = hungry - 10; }
+    int fullness;
+    void eat() { fullness = fullness + 10; }
 };
 
 // Dog inherits everything from Animal, and adds its own behaviour
@@ -204,7 +204,7 @@ You will notice that the functions in `speaker_manager.cpp` use `delay()` betwee
 
 The sound functions only ever run inside `confirmAction()`, which is called when the user presses Button A to confirm a menu choice. That is a deliberate, **one-shot response** to something the user just did — not a background event — so a short melody of a few hundred milliseconds is exactly the kind of brief, intentional pause the user expects as acknowledgement of their button press. The melody's own `delay()` calls between notes are the only blocking here, and they last only as long as the notes play.
 
-The rule is more precisely stated as: **do not use `delay()` for background, automatic events that should happen silently without interrupting the user**. The stat decay timers are a perfect example — if hunger increased every 5 seconds and the screen froze for a moment each time, the device would feel broken. The melodies are different: they are a direct, intentional response to something the user just did.
+The rule is more precisely stated as: **do not use `delay()` for background, automatic events that should happen silently without interrupting the user**. The stat decay timers are a perfect example — if fullness decreased every 5 seconds and the screen froze for a moment each time, the device would feel broken. The melodies are different: they are a direct, intentional response to something the user just did.
 
 The hunger and sickness alert beeps are a minor exception — they do call `delay()` from the main loop for about 300 ms each time they fire. That brief freeze is a deliberate trade-off: the beep needs two separate tones to be recognisable, and the simplicity of the code is worth the very short interruption that happens at most once every 15 seconds.
 
@@ -243,7 +243,7 @@ Every time `loop()` runs, this check takes almost zero time — it is just subtr
 
 ### Where to find this pattern in the project
 
-Every decay and accumulation timer in `lib/Timer/time_manager.cpp` uses exactly this pattern — `applyHungerIncrease()`, `applyHappinessDecay()`, `applyEnergyDrain()`, and so on. The hunger alert and sickness alert in `src/main.cpp` use it too. Once you recognise the three-part structure, you will see it everywhere in embedded code.
+Every decay timer in `lib/Timer/time_manager.cpp` uses exactly this pattern — `applyFullnessDecay()`, `applyHappinessDecay()`, `applyEnergyDrain()`, and so on. The hunger alert and sickness alert in `src/main.cpp` use it too. Once you recognise the three-part structure, you will see it everywhere in embedded code.
 
 ---
 
@@ -295,9 +295,9 @@ Both commands erase everything. After either one, you must re-upload your firmwa
 You will notice that some functions in the class headers end with the word `const`:
 
 ```cpp
-PetState getState() const;
-int      getHungry() const;
-bool     isDead()    const;
+PetState getState()    const;
+int      getFullness() const;
+bool     isDead()      const;
 ```
 
 This `const` is a **promise to the compiler** that the function will not modify any member variables of the object. Functions marked this way are called **const member functions**.
@@ -317,8 +317,8 @@ When a function receives an object as `const Pet&`, it is promising not to modif
 ```cpp
 // The const Pet& parameter means: "I promise not to modify this pet."
 void StorageManager::save(const Pet& pet) {
-    prefs.putInt("hungry", pet.getHungry());  // allowed — getHungry() is const
-    pet.setHungry(50);                        // compiler error — setHungry() is not const
+    prefs.putInt("fullness", pet.getFullness());  // allowed — getFullness() is const
+    pet.setFullness(50);                          // compiler error — setFullness() is not const
 }
 ```
 
@@ -341,8 +341,8 @@ When a member is declared `static` in a class, it belongs to the **class itself*
 ```cpp
 class Pet {
 public:
-    static const int DEFAULT_HUNGRY = 30;  // belongs to Pet the class
-    int getHungry() const;                 // belongs to each Pet object
+    static const int DEFAULT_FULLNESS = 80;  // belongs to Pet the class
+    int getFullness() const;                  // belongs to each Pet object
 };
 ```
 
@@ -350,22 +350,22 @@ The way you access each type of member reflects this difference:
 
 ```cpp
 // Instance member — accessed via a dot on a specific object
-pet.getHungry()        // pet is an object; getHungry() belongs to that object
+pet.getFullness()        // pet is an object; getFullness() belongs to that object
 
 // Static member — accessed via :: on the class name, no object needed
-Pet::DEFAULT_HUNGRY    // no object required; it belongs to the class itself
+Pet::DEFAULT_FULLNESS    // no object required; it belongs to the class itself
 ```
 
 ### Why :: is needed outside the class
 
-Inside `pet.cpp`, the compiler already knows it is working inside the `Pet` class context, so `DEFAULT_HUNGRY` on its own is enough. But in a different file like `storage_manager.cpp`, the compiler has no idea where `DEFAULT_HUNGRY` comes from unless you tell it:
+Inside `pet.cpp`, the compiler already knows it is working inside the `Pet` class context, so `DEFAULT_FULLNESS` on its own is enough. But in a different file like `storage_manager.cpp`, the compiler has no idea where `DEFAULT_FULLNESS` comes from unless you tell it:
 
 ```cpp
 // Compiler does not know which class to look in — fails
-prefs.getInt("hungry", DEFAULT_HUNGRY);
+prefs.getInt("fullness", DEFAULT_FULLNESS);
 
 // Compiler knows to look inside Pet — works
-prefs.getInt("hungry", Pet::DEFAULT_HUNGRY);
+prefs.getInt("fullness", Pet::DEFAULT_FULLNESS);
 ```
 
 ### Plain enums vs `enum class` — when you need ::
@@ -377,7 +377,7 @@ ACTION_FEED    // a value of the plain enum ActionType — written directly, no 
 SCREEN_STATS   // a value of the plain enum ScreenState — also written directly
 ```
 
-A plain enum's values live in the surrounding scope, so you write them by name with no `::`. The prefix (`ACTION_`, `SCREEN_`) is what keeps them from clashing with other names. If these had instead been declared `enum class ActionType { FEED, ... }`, the values would live *inside* the type and you would have to write `ActionType::FEED` — the same `::` you already use for `Pet::DEFAULT_HUNGRY`. This project chooses plain enums precisely so beginners can write the value directly.
+A plain enum's values live in the surrounding scope, so you write them by name with no `::`. The prefix (`ACTION_`, `SCREEN_`) is what keeps them from clashing with other names. If these had instead been declared `enum class ActionType { FEED, ... }`, the values would live *inside* the type and you would have to write `ActionType::FEED` — the same `::` you already use for `Pet::DEFAULT_FULLNESS`. This project chooses plain enums precisely so beginners can write the value directly.
 
 Think of `::` as saying *"open this container and find the name inside it."* The container can be a class, an `enum class`, or a namespace — `::` works the same way in all three cases.
 
@@ -394,15 +394,15 @@ public:
 
 // In pet.cpp — the definition (what it does)
 void Pet::feed() {
-    hungry = hungry - 20;
-    happy  = happy  + 15;
+    fullness = fullness + 20;
+    happy    = happy    + 15;
     constrainValues();
 }
 ```
 
 `Pet::feed()` means "this is the implementation of the `feed` function that belongs to the `Pet` class." Without the `Pet::` prefix, the compiler would treat it as a standalone free function with no connection to the class at all.
 
-Once you are inside the function body — between the `{` and `}` — the compiler knows you are in `Pet` context. That is why you can write `hungry` and `constrainValues()` directly without any prefix. The `Pet::` on the function name is the door; everything inside is already in the room.
+Once you are inside the function body — between the `{` and `}` — the compiler knows you are in `Pet` context. That is why you can write `fullness` and `constrainValues()` directly without any prefix. The `Pet::` on the function name is the door; everything inside is already in the room.
 
 You can see this pattern used consistently throughout the project:
 
@@ -446,7 +446,7 @@ Button A pressed
   → menu.confirmAction() is called in main.cpp
     → executePetAction() calls pet.feed()
       → feed() calls setState(STATE_EATING)   ← state changes here
-      → feed() adjusts hunger, happy, etc.
+      → feed() adjusts fullness, happy, etc.
   → next loop() iteration
     → pet.updateState() runs
       → sees STATE_EATING
@@ -676,7 +676,7 @@ With zone structs:
 
 ```cpp
 M5.Lcd.setCursor(STATS_ZONE.x, HAPPY_BAR_ZONE.labelY);
-M5.Lcd.setCursor(STATS_ZONE.x, HUNGER_BAR_ZONE.labelY);
+M5.Lcd.setCursor(STATS_ZONE.x, FULLNESS_BAR_ZONE.labelY);
 M5.Lcd.setCursor(STATS_ZONE.x, ENERGY_BAR_ZONE.labelY);
 ```
 
@@ -702,9 +702,9 @@ This is not duplication for its own sake — it is each screen owning its own la
 
 ## Why DisplayManager Does Not Decide What to Draw
 
-### The old approach
+### The tempting wrong approach
 
-Before Task 11a, `DisplayManager` tracked its own internal `DisplayState` enum:
+One tempting design lets `DisplayManager` track its own internal `DisplayState` enum:
 
 ```cpp
 enum class DisplayState {
@@ -718,9 +718,9 @@ This meant `DisplayManager` was making two decisions at once: *what to draw* and
 
 Worse, `STATUS_VIEW` and `MENU_INDICATOR` were not really different screens — they were both the same stats layout, just with or without the action indicator drawn over the top. As the number of real screens grew, this approach would have needed a new `DisplayState` value for every combination of layout and overlay.
 
-### The new approach — the caller decides, DisplayManager executes
+### The approach this project uses — the caller decides, DisplayManager executes
 
-Now `renderDisplay()` receives a `ScreenState` from the caller:
+Instead, `renderDisplay()` receives a `ScreenState` from the caller:
 
 ```cpp
 void DisplayManager::renderDisplay(..., ScreenState screenState) {
@@ -830,9 +830,9 @@ Because the LCD is only ever updated by that one push of a fully-drawn frame, th
 
 ### Why redraw everything every frame instead of only what changed?
 
-An earlier version of this project tried to be clever: it threw most frames away with a 5-second redraw throttle and only repainted small regions (like the menu strip) when they changed, tracking each fast-changing element with its own "did this change?" variable. That saved SPI traffic, but it had two costs — stat changes could sit stale on screen for up to 5 seconds, and every animated element needed its own bookkeeping.
+One tempting optimisation tries to be clever: throw most frames away with a multi-second redraw throttle and only repaint small regions (like the menu strip) when they change, tracking each fast-changing element with its own "did this change?" variable. That saves SPI traffic, but it has two costs — stat changes can sit stale on screen for several seconds, and every animated element needs its own bookkeeping.
 
-The off-screen canvas removed the need for all of that. Pushing one pre-drawn 135×240 buffer is fast enough to do on every loop without flicker, so the throttle and the per-region fast-paths were deleted (Task 13a). The rule is now simply: **redraw the whole canvas every frame, then push it once.** Stat changes and the sprite animation both appear instantly, and there are no `last...`-changed flags to keep in sync.
+The off-screen canvas removes the need for all of that. Pushing one pre-drawn 135×240 buffer is fast enough to do on every loop without flicker, so there is no throttle and no per-region fast-path. The rule is simply: **redraw the whole canvas every frame, then push it once.** Stat changes and the sprite animation both appear instantly, and there are no `last...`-changed flags to keep in sync.
 
 The one piece of `last...` tracking that remains is `lastRenderedScreen`, and it has nothing to do with flicker — it just lets `DisplayManager` notice when the user has switched screens so it can restart the sprite animation cleanly from frame 0.
 

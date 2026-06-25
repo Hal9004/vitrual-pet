@@ -1,11 +1,11 @@
 # Tamagotchi Project — Course Checklist
 
-Organised around the **10-session curriculum arc** (the source-of-truth table lives in
-`CURRICULUM_REALIGNMENT.md`). This repo is the **frozen reference implementation**: every
-core item below is built and working on `main`. Each session's day-start branch in the
-`virtual-pet-learning-lab` repo turns features on or off with the `ENABLE_*` switches in
-`lib/Config/scaffold_config.h`, so a session's codebase contains only what students have
-reached so far.
+Organised around the **10-session curriculum arc** (the per-session lesson plans live in
+`LESSON_PLANS/SESSION_01.md` … `SESSION_10.md`; task-level detail is in `DEV_ROADMAP.md`).
+This repo is the **frozen reference implementation**: every core item below is built and
+working on `main`. Each session's day-start branch turns features on or off with the
+`ENABLE_*` switches in `lib/Config/scaffold_config.h`, so a session's codebase contains
+only what students have reached so far.
 
 > A flag OFF means the feature is genuinely **absent**, not inert. Verification is a
 > cumulative staircase (Session 1 all-off → Session 6 all-on), NOT all 2⁶ combinations —
@@ -16,7 +16,7 @@ reached so far.
 
 ## Session 1 — First Pet on Screen
 **Day-start:** boot + screen + one button + one stat + bar + sprite-display path.
-**Students build:** Git basics, the Piskel → C++ sprite pipeline, their own sprite + pet name, one decay timer.
+**Students build:** the Piskel → C++ sprite pipeline (via Google Drive + VS Code + PlatformIO), their own sprite + pet name, one decay timer.
 
 - [x] Hardware init (M5.begin, LCD, Serial) — `src/main.cpp` → `setup()`, `DisplayManager::init()`
 - [x] Asset pipeline (image → C++ array) — `tools/piskel_converter`, `SPRITE_GUIDE.md`. Piskel exports **ABGR8888**; the tool converts to RGB565 and pre-byte-swaps for the M5StickC Plus 2's big-endian SPI byte order (transparent key `0x1FF8`)
@@ -27,7 +27,7 @@ reached so far.
 **Day-start:** + decay timer + multi-stat scaffolding (stubbed).
 **Activated by:** `ENABLE_ACTION_MENU`.
 
-- [x] Five stats decay independently — `TimerManager` (hunger, happiness, energy, cleanliness, sickness)
+- [x] Five stats decay independently — `TimerManager` (fullness, happiness, energy, cleanliness, sickness)
 - [x] Action menu — Feed / Play / Sleep / Bathe / Heal — `lib/Actions/action_menu.cpp`; B & C cycle, A confirms
 - [x] State machine (IDLE / EATING / SLEEPING / PLAYING / SICK / HEALING / BATHING / DEAD) — `lib/Pet/pet.*`
 - [x] Death / reset condition (handling 0 stats) — `Pet::isDead()` / `reset()`, death screen via `renderDisplay()`
@@ -37,14 +37,14 @@ reached so far.
 **Activated by:** `ENABLE_IMU_PLAY`.
 
 - [x] Shake-to-play — `lib/Imu/imu_manager.cpp` → `wasShaken()` triggers `pet.play()`
-- [x] Tilt-reactive sprite movement (optional demo) — `lib/Display/tilt_motion.*`, gated by `TILT_MOVEMENT_ENABLED`
+- [x] Tilt-reactive sprite movement (optional demo) — `lib/Imu/tilt_motion.*`, gated by `TILT_MOVEMENT_ENABLED`
 
 ## Session 4 — Sound
 **Day-start:** + buzzer init.
 **Activated by:** `ENABLE_SOUND`.
 
-- [x] Buzzer melodies for all five actions + hunger/sickness alerts — `lib/Speaker/speaker_manager.cpp`
-- [x] Pet plays its own death / reset / hunger / sickness sounds — `Pet::updateState()` / `reset()` take a `SpeakerManager&`
+- [x] Buzzer melodies for all five actions + low-fullness/sickness alerts — `lib/Speaker/speaker_manager.cpp` (`playHungerAlertSound`)
+- [x] Pet plays its own death / reset / low-fullness / sickness sounds — `Pet::updateState()` / `reset()` take a `SpeakerManager&`
 
 ## Session 5 — Persistence
 **Day-start:** + NVS persistence stubs.
@@ -71,9 +71,8 @@ No code — demo and reflection.
 
 ## Bonus / Out of Scope (not core sessions)
 
-Right-sized out of the critical path during the Task 14b audit / curriculum realignment.
-Kept as opt-in extensions and design references. Full design notes live in
-`DEV_ROADMAP.md` Appendix B.
+Kept as opt-in extensions and design references, outside the core 10-session arc.
+Full design notes live in `DEV_ROADMAP.md` Appendix B.
 
 - [ ] Sadness logic — `sad` rises automatically when `happy` is low; needs a `TimerManager` rule + a sad sprite. The natural "add your own mood" (`MOOD_SAD` / `MOOD_TIRED`) extension exercise.
 - [ ] Microphone input (detect & react) — Level-6 heap allocation, too dense for cold students; bonus.
@@ -85,9 +84,8 @@ Kept as opt-in extensions and design references. Full design notes live in
 
 ---
 
-## After the reference freeze — building the lab
-(See `CURRICULUM_REALIGNMENT.md` Phases 2–4.)
+## Curriculum delivery — lesson plans & day-start branches
+(See `DEV_ROADMAP.md` for task-level detail.)
 
-- [ ] Write Session 1's lesson plan — `LESSON_PLANS/SESSION_01.md` — and verify its day-start build flashes
-- [ ] Stand up `virtual-pet-learning-lab`; push cleaned `main`; cut `session-1-start` … `session-9-start` branches
-- [ ] Write lesson plans `SESSION_02.md` … `SESSION_10.md`; verify each branch compiles and behaves as its plan promises
+- [x] All ten lesson plans drafted — `LESSON_PLANS/SESSION_01.md` … `SESSION_10.md`
+- [ ] Cut the `session-N-start` day-start branches; verify each compiles and behaves as its lesson plan promises
