@@ -63,6 +63,16 @@ The confident also: break and fix a key, or add a brand-new value that persists.
    then **power the device off and on** — the pet comes back exactly as you left it, instead
    of starting over.
 
+> **About "power off":** power the device down by **holding the C button**, then turn it back
+> on. The pet only returns if you pressed **Save** *before* powering off — saving is what
+> writes the values to flash. If the battery dies before you save, the latest changes are lost.
+
+> **Watch it on the Serial Monitor (your feedback tool):** turn on `DEBUG` (uncomment the
+> `-DDEBUG` line in `platformio.ini`), then open the **Serial Monitor** — the plug icon in
+> PlatformIO, or `pio device monitor`. The pet prints its stats every few seconds, plus the
+> save/load messages — so you can *confirm* a value really saved and reloaded, including your
+> own new stat in the challenges below.
+
 ## Navigation tour — *teach this before any tweaking*
 
 Update the **"meet the team" map** (same diagram, new "you are here"):
@@ -70,7 +80,8 @@ Update the **"meet the team" map** (same diagram, new "you are here"):
 - **New menu item:** **Save**.
 - **Still asleep:** the Stats screen, moods.
 
-Keep the habits: **read the `.h` to use it**. Your **workshop is two files** today.
+Keep the habits: **read the `.h` to use it**. Today you mainly edit `storage_manager.cpp`,
+plus `platformio.ini` to turn on the Serial Monitor.
 
 ---
 
@@ -88,6 +99,11 @@ Everyone does these. Each is **a small, safe change with an obvious result.** Op
 - **Dial 3 — the first-boot default.** In `load()`, the second value in
   `prefs.getInt("fullness", Pet::DEFAULT_FULLNESS)` is what a brand-new pet uses before any
   save exists. Change it (e.g. to `10`) → a fresh/cleared pet starts almost empty (starving).
+- **Dial 4 — death wipes the save (no code).** Let the pet die (neglect it, or use `FAST_TEST`),
+  then press **A** to restart. The new pet comes back with the **`DEFAULT_` values**, *not* your
+  saved game — because resetting after death calls `storage.clear()`, so the next boot has
+  nothing to load and falls back to the defaults. Watch the Serial Monitor: the stats jump
+  straight to the defaults.
 
 Predict-then-test: pairs say what will survive a reboot before pulling the power.
 
@@ -137,7 +153,10 @@ their pet permanent across a reboot.
 - **★★★ Persist a brand-new value *(add a matching key pair)*.** Add a "times fed" counter
   that goes up in `feed()`, then save it with `prefs.putInt("feedCount", ...)` and load it
   with `prefs.getInt("feedCount", 0)`. Worked twins: the existing seven put/get pairs.
-  *(The full "add persisted state" exercise — touches `pet` and `storage`.)*
+  **Check it works on the Serial Monitor:** print your counter (copy the
+  `printPetStateToSerial()` pattern in `src/main.cpp`), Save, power-cycle, and watch it come
+  back instead of resetting to 0. *(The full "add persisted state" exercise — touches `pet`,
+  `storage`, and your print in `main.cpp`.)*
 
 ---
 
@@ -145,7 +164,8 @@ their pet permanent across a reboot.
 
 - **Newly awake:** Storage (long-term memory); **new menu item:** Save.
 - **Your workshop (editable today):** `lib/Config/scaffold_config.h`, `lib/Storage/storage_manager.cpp`
-  (and `lib/Pet/pet.h` defaults if you tune the fresh start).
+  (and `lib/Pet/pet.h` defaults if you tune the fresh start), plus `platformio.ini` + `src/main.cpp`
+  to print stats to the Serial Monitor.
 - **Still asleep / not for today:** the Stats screen (`ENABLE_MULTISCREEN`), mood sprites.
 
 ---
