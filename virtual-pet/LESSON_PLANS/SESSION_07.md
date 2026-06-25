@@ -108,16 +108,21 @@ should clear at least a ★; ★★★ tracks may span into Session 8.
 - **Rebalance the whole game.** Files: `lib/Timer/time_manager.cpp` (decay) + the action amounts in `pet.cpp`. Twin: the existing constants.
 
 ### ★★ Add something new
-- **Idle animation** — a gentle `millis()`-driven bob. Files: `lib/Imu/tilt_motion.*` (sum a sine offset) + `drawPetSprite()`. Twin: the existing tilt offset (the bob is the same idea on a timer). *(See `IDEAS.md`.)*
+- **Idle animation** — a gentle `millis()`-driven bob. Files: `lib/Imu/tilt_motion.*` (sum a sine offset) + `drawPetSprite()`. Twin: the existing tilt offset (the bob is the same idea on a timer). *(See `SPRITE_GUIDE.md` Part 6 and `IDEAS.md` for the detail.)*
 - **Animated mood sprites** — 2-frame faces. Files: `lib/Display/animation_manager.cpp` (frame count) + new Piskel frames. Twin: the existing single-frame moods.
-- **A persisted counter / high score** (e.g. *times fed*, *longest survival*). Files: `pet` + `lib/Storage/storage_manager.cpp`. Twin: the seven existing `putInt`/`getInt` pairs.
+- **A persisted counter / high score** (e.g. *times fed*, *longest survival*). Files: `pet` + `lib/Storage/storage_manager.cpp`. Twin: the seven existing `putInt`/`getInt` pairs — it's the same save/load pattern you learned in Session 5, applied to a new value.
 
-### ★★★ Ambitious (often spans Session 8; uses the design notes in `DEV_ROADMAP.md` Appendix B)
+### ★★★ Ambitious — reach goals (often span Session 8)
+
+> **These have no starter code in the project yet** — they're advanced research projects to
+> attempt *with your teacher's help*, not copy-a-twin challenges. Take one on only if you're
+> confident and want to explore well beyond what we've built together.
+
 - **Pet-to-pet greetings (ESP-NOW)** — shake to send a happiness gift to a friend's pet.
-  **Needs two devices.** New `lib/Wireless/peer_link.*` from the Bonus 3 design. The biggest
-  "wow," the most new ground (MAC addresses, sending data between devices).
-- **Evolution / growth stages** — the pet's sprite changes as it ages well. (Bonus / design note.)
-- **Web dashboard** — the pet broadcasts WiFi and serves a stats page. (Bonus 2.)
+  **Needs two devices** and a new `lib/Wireless/` module. The biggest "wow," and the most new
+  ground (MAC addresses, sending data between devices).
+- **Evolution / growth stages** — the pet's sprite changes as it ages well.
+- **Web dashboard** — the pet broadcasts WiFi and serves a stats page from the device.
 
 > **Floor guarantee:** a student who is unsure should take a ★ track — a worked twin exists,
 > so it's a copy-and-change-one-thing task. Nobody faces a blank page.

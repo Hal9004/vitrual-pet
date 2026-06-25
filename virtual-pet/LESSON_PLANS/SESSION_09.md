@@ -85,7 +85,8 @@ prints stat values inside `#ifdef DEBUG` blocks (`Serial.println(...)`), which i
 you peek at a value. And the `FAST_TEST` switch in `lib/Timer/time_manager.cpp` lets you
 **reproduce** a slow decay/death bug in seconds instead of minutes.
 
-> New tool today: the **Serial monitor** — your window into the running pet. Add a
+> The **Serial monitor** — your window into the running pet — isn't new: you met it in
+> Session 5 to watch your pet save and reload. Today you use it to *debug*: add a
 > `Serial.println(myValue);` where you're confused, and read what it actually prints.
 
 ---
